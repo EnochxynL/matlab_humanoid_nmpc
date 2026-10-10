@@ -1,0 +1,4 @@
+g1_plant_bridge_msgs/PlantState state
+bool[2] controller_contact_flags
+float64 receive_wall_time
+float64 send_wall_time

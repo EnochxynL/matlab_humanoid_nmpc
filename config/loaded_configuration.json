@@ -1,0 +1,503 @@
+{
+    "source_config": {
+        "interface": {
+            "verbose": "false",
+            "\/\/": "show",
+            "the": "loaded",
+            "parameters": "",
+            "useAnalyticalGradientsDynamics": "false",
+            "useAnalyticalGradientsConstraints": "false"
+        },
+        "model_settings": {
+            "robotName": "g1",
+            "foot_constraint": {
+                "positionErrorGain_z": "100.0",
+                "orientationErrorGain": "80.0",
+                "linearVelocityErrorGain_z": "10.0",
+                "linearVelocityErrorGain_xy": "20.0",
+                "angularVelocityErrorGain": "20.0",
+                "linearAccelerationErrorGain_z": "1.0",
+                "linearAccelerationErrorGain_xy": "1.0",
+                "angularAccelerationErrorGain": "1.0"
+            },
+            "phaseTransitionStanceTime": "0.0",
+            "verboseCppAd": "true",
+            "recompileLibrariesCppAd": "false",
+            "modelFolderCppAd": "build\/wb_mpc_cppad_autocode_gen",
+            "fixedJointNames": {
+                "[0]": "left_wrist_roll_joint",
+                "[1]": "left_wrist_pitch_joint",
+                "[2]": "left_wrist_yaw_joint",
+                "[3]": "right_wrist_roll_joint",
+                "[4]": "right_wrist_pitch_joint",
+                "[5]": "right_wrist_yaw_joint"
+            },
+            "contactNames6DoF": {
+                "[0]": "foot_l_contact",
+                "[1]": "foot_r_contact"
+            },
+            "contactParentJointNames": {
+                "[0]": "left_ankle_roll_joint",
+                "[1]": "right_ankle_roll_joint"
+            },
+            "armJointNames": {
+                "left_shoulder_y": "left_shoulder_pitch_joint",
+                "right_shoulder_y": "right_shoulder_pitch_joint",
+                "left_elbow_y": "left_elbow_joint",
+                "right_elbow_y": "right_elbow_joint"
+            }
+        },
+        "swing_trajectory_config": {
+            "liftOffVelocity": "0.05",
+            "touchDownVelocity": "-0.0",
+            "swingHeight": "0.08",
+            "touchDownHeightOffset": "-0.001",
+            "swingTimeScale": "0.4",
+            "impactProximityFactorLiftOffVelocity": "-0.15",
+            "impactProximityFactorTouchDownVelocity": "0.3",
+            "impactProximityFactorMidPointValue": "0.005"
+        },
+        "multiple_shooting": {
+            "nThreads": "4",
+            "dt": "0.035",
+            "sqpIteration": "1",
+            "deltaTol": "1e-4",
+            "g_max": "1e-2",
+            "g_min": "1e-6",
+            "inequalityConstraintMu": "0.1",
+            "inequalityConstraintDelta": "5.0",
+            "projectStateInputEqualityConstraints": "true",
+            "printSolverStatistics": "true",
+            "printSolverStatus": "false",
+            "printLinesearch": "false",
+            "useFeedbackPolicy": "false",
+            "integratorType": "RK4",
+            "threadPriority": "90"
+        },
+        "rollout": {
+            "AbsTolODE": "1e-5",
+            "RelTolODE": "1e-3",
+            "timeStep": "0.015",
+            "integratorType": "ODE45",
+            "maxNumStepsPerSecond": "10000",
+            "checkNumericalStability": "false"
+        },
+        "mpc": {
+            "timeHorizon": "1.1",
+            "solutionTimeWindow": "-1",
+            "coldStart": "false",
+            "debugPrint": "false",
+            "mpcDesiredFrequency": "60",
+            "mrtDesiredFrequency": "500"
+        },
+        "initialState": {
+            "(0,0)": "0.0",
+            "(1,0)": "0.0",
+            "(2,0)": "0.8",
+            "(3,0)": "0.0",
+            "(4,0)": "0.0",
+            "(5,0)": "0.0",
+            "(6,0)": "-0.05",
+            "(7,0)": "0.0",
+            "(8,0)": "0.0",
+            "(9,0)": "0.1",
+            "(10,0)": "-0.05",
+            "(11,0)": "0.0",
+            "(12,0)": "-0.05",
+            "(13,0)": "0.0",
+            "(14,0)": "0.0",
+            "(15,0)": "0.1",
+            "(16,0)": "-0.05",
+            "(17,0)": "0.0",
+            "(18,0)": "0.0",
+            "(19,0)": "0.0",
+            "(20,0)": "0.0",
+            "(21,0)": "0.0",
+            "(22,0)": "0.0",
+            "(23,0)": "0.0",
+            "(24,0)": "0.0",
+            "(25,0)": "0.0",
+            "(26,0)": "0.0",
+            "(27,0)": "0.0",
+            "(28,0)": "0.0",
+            "(29,0)": "0.0",
+            "(30,0)": "0.0",
+            "(31,0)": "0.0",
+            "(32,0)": "0.0",
+            "(33,0)": "0.0",
+            "(34,0)": "0.0",
+            "(35,0)": "0.0",
+            "(36,0)": "0.0",
+            "(37,0)": "0.0",
+            "(38,0)": "0.0",
+            "(39,0)": "0.0",
+            "(40,0)": "0.0",
+            "(41,0)": "0.0",
+            "(42,0)": "0.0",
+            "(43,0)": "0.0",
+            "(44,0)": "0.0",
+            "(45,0)": "0.0",
+            "(46,0)": "0.0",
+            "(47,0)": "0.0",
+            "(48,0)": "0.0",
+            "(49,0)": "0.0",
+            "(50,0)": "0.0",
+            "(51,0)": "0.0",
+            "(52,0)": "0.0",
+            "(53,0)": "0.0",
+            "(54,0)": "0.0",
+            "(55,0)": "0.0",
+            "(56,0)": "0.0",
+            "(57,0)": "0.0"
+        },
+        "Q": {
+            "scaling": "1e+0",
+            "(0,0)": "0.0",
+            "(1,1)": "0.0",
+            "(2,2)": "10.0",
+            "(3,3)": "0.0",
+            "(4,4)": "20.0",
+            "(5,5)": "20.0",
+            "(6,6)": "0.05",
+            "(7,7)": "0.2",
+            "(8,8)": "0.2",
+            "(9,9)": "0.1",
+            "(10,10)": "0.1",
+            "(11,11)": "0.1",
+            "(12,12)": "0.05",
+            "(13,13)": "0.2",
+            "(14,14)": "0.2",
+            "(15,15)": "0.1",
+            "(16,16)": "0.1",
+            "(17,17)": "0.1",
+            "(18,18)": "2.0",
+            "(19,19)": "2.0",
+            "(20,20)": "2.0",
+            "(21,21)": "0.4",
+            "(22,22)": "2.0",
+            "(23,23)": "0.4",
+            "(24,24)": "0.4",
+            "(25,25)": "0.4",
+            "(26,26)": "2.0",
+            "(27,27)": "0.4",
+            "(28,28)": "0.4",
+            "(29,29)": "3.0",
+            "(30,30)": "3.0",
+            "(31,31)": "3.0",
+            "(32,32)": "3.0",
+            "(33,33)": "3.0",
+            "(34,34)": "3.0",
+            "(35,35)": "0.001",
+            "(36,36)": "0.001",
+            "(37,37)": "0.001",
+            "(38,38)": "0.001",
+            "(39,39)": "0.001",
+            "(40,40)": "0.001",
+            "(41,41)": "0.001",
+            "(42,42)": "0.001",
+            "(43,43)": "0.001",
+            "(44,44)": "0.001",
+            "(45,45)": "0.001",
+            "(46,46)": "0.001",
+            "(47,47)": "0.2",
+            "(48,48)": "0.2",
+            "(49,49)": "0.2",
+            "(50,50)": "0.02",
+            "(51,51)": "0.02",
+            "(52,52)": "0.02",
+            "(53,53)": "0.02",
+            "(54,54)": "0.02",
+            "(55,55)": "0.02",
+            "(56,56)": "0.02",
+            "(57,57)": "0.02"
+        },
+        "R": {
+            "scaling": "1e-3",
+            "(0,0)": "0.003",
+            "(1,1)": "0.003",
+            "(2,2)": "0.001",
+            "(3,3)": "0.01",
+            "(4,4)": "0.01",
+            "(5,5)": "0.1",
+            "(6,6)": "0.003",
+            "(7,7)": "0.003",
+            "(8,8)": "0.001",
+            "(9,9)": "0.01",
+            "(10,10)": "0.01",
+            "(11,11)": "0.1",
+            "(12,12)": "0.005",
+            "(13,13)": "0.005",
+            "(14,14)": "0.005",
+            "(15,15)": "0.005",
+            "(16,16)": "0.005",
+            "(17,17)": "0.005",
+            "(18,18)": "0.005",
+            "(19,19)": "0.005",
+            "(20,20)": "0.005",
+            "(21,21)": "0.005",
+            "(22,22)": "0.005",
+            "(23,23)": "0.005",
+            "(24,24)": "0.005",
+            "(25,25)": "0.005",
+            "(26,26)": "0.005",
+            "(27,27)": "0.005",
+            "(28,28)": "0.005",
+            "(29,29)": "0.005",
+            "(30,30)": "0.005",
+            "(31,31)": "0.005",
+            "(32,32)": "0.005",
+            "(33,33)": "0.005",
+            "(34,34)": "0.005"
+        },
+        "terminalCostScaling": "4.0",
+        "Q_final": {
+            "scaling": "1e+0",
+            "(0,0)": "0.0",
+            "(1,1)": "0.0",
+            "(2,2)": "10.0",
+            "(3,3)": "0.0",
+            "(4,4)": "20.0",
+            "(5,5)": "20.0",
+            "(6,6)": "0.05",
+            "(7,7)": "0.1",
+            "(8,8)": "0.1",
+            "(9,9)": "0.1",
+            "(10,10)": "0.1",
+            "(11,11)": "0.1",
+            "(12,12)": "0.05",
+            "(13,13)": "0.1",
+            "(14,14)": "0.1",
+            "(15,15)": "0.1",
+            "(16,16)": "0.1",
+            "(17,17)": "0.1",
+            "(18,18)": "2.0",
+            "(19,19)": "2.0",
+            "(20,20)": "2.0",
+            "(21,21)": "0.4",
+            "(22,22)": "2.0",
+            "(23,23)": "0.4",
+            "(24,24)": "0.4",
+            "(25,25)": "0.4",
+            "(26,26)": "2.0",
+            "(27,27)": "0.4",
+            "(28,28)": "0.4",
+            "(29,29)": "3.0",
+            "(30,30)": "3.0",
+            "(31,31)": "3.0",
+            "(32,32)": "3.0",
+            "(33,33)": "3.0",
+            "(34,34)": "3.0",
+            "(35,35)": "0.001",
+            "(36,36)": "0.001",
+            "(37,37)": "0.001",
+            "(38,38)": "0.001",
+            "(39,39)": "0.001",
+            "(40,40)": "0.001",
+            "(41,41)": "0.001",
+            "(42,42)": "0.001",
+            "(43,43)": "0.001",
+            "(44,44)": "0.001",
+            "(45,45)": "0.001",
+            "(46,46)": "0.001",
+            "(47,47)": "0.2",
+            "(48,48)": "0.2",
+            "(49,49)": "0.2",
+            "(50,50)": "0.02",
+            "(51,51)": "0.02",
+            "(52,52)": "0.02",
+            "(53,53)": "0.02",
+            "(54,54)": "0.02",
+            "(55,55)": "0.02",
+            "(56,56)": "0.02",
+            "(57,57)": "0.02"
+        },
+        "task_space_foot_cost_weights": {
+            "pos_x": "0.0",
+            "pos_y": "0.0",
+            "pos_z": "0.0",
+            "orientation_x": "10000.0",
+            "orientation_y": "10000.0",
+            "orientation_z": "0.0",
+            "lin_velocity_x": "50.0",
+            "lin_velocity_y": "50.0",
+            "lin_velocity_z": "0.0",
+            "ang_velocity_x": "100.0",
+            "ang_velocity_y": "100.0",
+            "ang_velocity_z": "100.0",
+            "lin_acceleration_x": "5.0",
+            "lin_acceleration_y": "5.0",
+            "lin_acceleration_z": "0.0",
+            "ang_acceleration_x": "2.0",
+            "ang_acceleration_y": "2.0",
+            "ang_acceleration_z": "2.0"
+        },
+        "contacts": {
+            "contact_frame_translation": {
+                "x": "0.035",
+                "y": "0.0",
+                "z": "-0.035"
+            },
+            "contact_rectangle": {
+                "x_max": "0.09",
+                "x_min": "-0.09",
+                "y_max": "0.03",
+                "y_min": "-0.03"
+            },
+            "frictionForceConeSoftConstraint": {
+                "frictionCoefficient": "0.4",
+                "mu": "0.2",
+                "delta": "5.0"
+            },
+            "contactMomentXYSoftConstraint": {
+                "mu": "0.6",
+                "delta": "0.03"
+            }
+        },
+        "jointLimits": {
+            "mu": "1200.0",
+            "delta": "0.1"
+        },
+        "collision_constraint": {
+            "foot": {
+                "leftAnkleFrame": "left_ankle_roll_joint",
+                "rightAnkleFrame": "right_ankle_roll_joint",
+                "footCollisionSphereRadius": "0.05"
+            },
+            "knee": {
+                "leftKneeFrame": "left_knee_joint",
+                "rightKneeFrame": "right_knee_joint",
+                "kneeCollisionSphereRadius": "0.075"
+            },
+            "mu": "1500",
+            "delta": "0.04"
+        }
+    },
+    "state_dim": "58",
+    "input_dim": "35",
+    "loaded": {
+        "horizon": "1.1000000000000001",
+        "mpc_hz": "60",
+        "mrt_hz": "500",
+        "cold_start": "false",
+        "sqp": {
+            "sqpIteration": "1",
+            "deltaTol": "0.0001",
+            "costTol": "0.0001",
+            "alpha_decay": "0.5",
+            "alpha_min": "0.0001",
+            "gamma_c": "9.9999999999999995e-07",
+            "g_max": "0.01",
+            "g_min": "9.9999999999999995e-07",
+            "armijoFactor": "0.0001",
+            "dt": "0.035000000000000003",
+            "useFeedbackPolicy": "false",
+            "createValueFunction": "false",
+            "inequalityConstraintMu": "0.10000000000000001",
+            "inequalityConstraintDelta": "5",
+            "projectStateInputEqualityConstraints": "true",
+            "extractProjectionMultiplier": "false",
+            "nThreads": "4",
+            "threadPriority": "90",
+            "integrator": "RK4"
+        }
+    },
+    "joint_names_mpc_order": [
+        "left_hip_pitch_joint",
+        "left_hip_roll_joint",
+        "left_hip_yaw_joint",
+        "left_knee_joint",
+        "left_ankle_pitch_joint",
+        "left_ankle_roll_joint",
+        "right_hip_pitch_joint",
+        "right_hip_roll_joint",
+        "right_hip_yaw_joint",
+        "right_knee_joint",
+        "right_ankle_pitch_joint",
+        "right_ankle_roll_joint",
+        "waist_yaw_joint",
+        "waist_roll_joint",
+        "waist_pitch_joint",
+        "left_shoulder_pitch_joint",
+        "left_shoulder_roll_joint",
+        "left_shoulder_yaw_joint",
+        "left_elbow_joint",
+        "right_shoulder_pitch_joint",
+        "right_shoulder_roll_joint",
+        "right_shoulder_yaw_joint",
+        "right_elbow_joint"
+    ],
+    "running_cost": [
+        {
+            "name": "foot_r_contact_TaskSpaceTrackingCost",
+            "index": "2"
+        },
+        {
+            "name": "foot_l_contact_TaskSpaceTrackingCost",
+            "index": "1"
+        },
+        {
+            "name": "stateInputQuadraticCost",
+            "index": "0"
+        }
+    ],
+    "terminal_cost": [
+        {
+            "name": "terminalCost",
+            "index": "0"
+        }
+    ],
+    "state_soft": [
+        {
+            "name": "FootCollisionSoftConstraint",
+            "index": "1"
+        },
+        {
+            "name": "jointLimits",
+            "index": "0"
+        }
+    ],
+    "input_soft": [
+        {
+            "name": "foot_r_contact_contactMomentXY",
+            "index": "3"
+        },
+        {
+            "name": "foot_r_contact_frictionForceCone",
+            "index": "2"
+        },
+        {
+            "name": "foot_l_contact_contactMomentXY",
+            "index": "1"
+        },
+        {
+            "name": "foot_l_contact_frictionForceCone",
+            "index": "0"
+        }
+    ],
+    "hard_equality": [
+        {
+            "name": "foot_r_contact_normalVelocity",
+            "index": "5"
+        },
+        {
+            "name": "foot_r_contact_zeroWrench",
+            "index": "3"
+        },
+        {
+            "name": "foot_l_contact_normalVelocity",
+            "index": "2"
+        },
+        {
+            "name": "foot_l_contact_zeroVelocity",
+            "index": "1"
+        },
+        {
+            "name": "foot_r_contact_zeroVelocity",
+            "index": "4"
+        },
+        {
+            "name": "foot_l_contact_zeroWrench",
+            "index": "0"
+        }
+    ]
+}

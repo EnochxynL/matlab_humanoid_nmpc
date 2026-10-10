@@ -1,0 +1,12 @@
+uint64 session_id
+uint64 sequence
+builtin_interfaces/Time stamp
+float64 sim_time
+float64[3] base_position_world
+float64[4] base_orientation_wxyz
+float64[3] base_linear_velocity_local
+float64[3] base_angular_velocity_local
+string[] joint_names
+float64[29] joint_position
+float64[29] joint_velocity
+bool[2] measured_contact_flags
