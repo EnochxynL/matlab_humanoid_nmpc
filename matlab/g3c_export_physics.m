@@ -1,6 +1,6 @@
 function g3c_export_physics(logs,folder)
 %G3C_EXPORT_PHYSICS Common numeric schema, preserving native MAT Dataset.
-cfg=g3a_config();state=logs.get('PlantState').Values;
+cfg=g1b_config();state=logs.get('PlantState').Values;
 T=table(state.sim_time.Time,'VariableNames',{'sim_time'});
 fields={'base_position_world','base_orientation_wxyz','base_linear_velocity_local','base_angular_velocity_local'};
 labels={{'p_x','p_y','p_z'},{'q_w','q_x','q_y','q_z'},{'v_x','v_y','v_z'},{'w_x','w_y','w_z'}};

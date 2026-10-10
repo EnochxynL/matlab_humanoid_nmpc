@@ -9,4 +9,4 @@ test -f "$stdlib"
 # MATLAB also ships an older OctoMap with the same SONAME. Pinocchio's Coal
 # needs the system version. Load the matching pair before MATLAB's toolboxes.
 export LD_PRELOAD="$stdlib:/usr/lib/x86_64-linux-gnu/liboctomath.so.1.9:/usr/lib/x86_64-linux-gnu/liboctomap.so.1.9:/usr/lib/x86_64-linux-gnu/libgomp.so.1${LD_PRELOAD:+:$LD_PRELOAD}"
-exec "$matlab_root/bin/matlab" -desktop -sd "$root" -r "matlab.engine.shareEngine('G1Inprocess'); shareMATLABSession; open_inprocess;"
+exec "$matlab_root/bin/matlab" -desktop -sd "$root" -r "if ~matlab.engine.isEngineShared, matlab.engine.shareEngine('G1Inprocess'); end; shareMATLABSession; open_inprocess;"

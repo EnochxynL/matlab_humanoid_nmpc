@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<package format="3"><name>ros2_robot_hw_interface</name><version>0.1.0</version>
-<description>Independent G1 Simscape plant transport boundary.</description>
-<maintainer email="enoch@example.com">Enoch</maintainer><license>BSD-3-Clause</license>
-<buildtool_depend>ament_cmake</buildtool_depend>
-<depend>robot_model</depend><depend>urdf</depend><depend>rclcpp</depend><depend>g1_plant_bridge_msgs</depend>
-<export><build_type>ament_cmake</build_type></export></package>

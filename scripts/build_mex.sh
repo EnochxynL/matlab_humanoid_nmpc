@@ -6,7 +6,7 @@ export CMAKE_BUILD_PARALLEL_LEVEL=1
 export MAKEFLAGS=-j1
 flags='-DBOOST_MPL_LIMIT_LIST_SIZE=30 -DBOOST_MPL_LIMIT_VECTOR_SIZE=30 -DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS -DBOOST_FUSION_INVOKE_MAX_ARITY=10 -DBOOST_FUSION_INVOKE_PROCEDURE_MAX_ARITY=10 -DBOOST_FUSION_INVOKE_FUNCTION_OBJECT_MAX_ARITY=10 -isystem /opt/ros/jazzy/include/pinocchio/deprecated'
 colcon --log-base "$root/build/colcon_log" build \
- --base-paths "$root/third_party/ros2" "$root/ros2_ws/src" \
+ --base-paths "$root/third_party/ros2" \
  --build-base "$root/build/ros2" --install-base "$root/install" \
  --executor sequential \
  --cmake-args -DCMAKE_BUILD_TYPE=Release '-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG' \

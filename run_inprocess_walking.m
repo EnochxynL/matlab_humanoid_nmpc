@@ -8,7 +8,7 @@ env=jsondecode(fileread(fullfile(root,'config/controller_environment.json')));
 env.TASK5A_AUTHORITY='SIMULINK_REFERENCE';env.TASK5A_PACKET_FILE='IN_PROCESS_ONLY';
 env.TASK5C_GEOMETRY_CACHE=fullfile(root,'build/moment_ad');env.TASK5C_COLLISION_CACHE=fullfile(root,'build/collision_ad');env.TASK5C_FOOT_COST_CACHE=fullfile(root,'build/foot_cost_ad');
 keys=fieldnames(env);old=cell(size(keys));for k=1:numel(keys),old{k}=getenv(keys{k});setenv(keys{k},env.(keys{k}));end
-cleanup=onCleanup(@finish);diary(fullfile(folder,'matlab.log'));
+cleanup=onCleanup(@()finish(keys,old));diary(fullfile(folder,'matlab.log'));
 g1_write_json(fullfile(root,'runtime/current_inprocess_run.json'),struct('folder',folder,'status','STARTING'));
 [~,mem]=system('cat /proc/meminfo');fid=fopen(fullfile(folder,'memory_before.txt'),'w');fprintf(fid,'%s',mem);fclose(fid);
 g1c_define_buses();task5a_define_buses();cfg=g1b_config();cfg.modelName='g1_inprocess_walking';
@@ -16,12 +16,18 @@ session=struct('root',root,'folder',folder,'duration',4.8,'transport','IN_PROCES
 g1_write_json(fullfile(folder,'configuration.json'),session);
 wall=tic;g1_ocp_mex('init',root,folder);startup=toc(wall);session.startup_wall_s=startup;
 open_system(fullfile(root,'models',[cfg.modelName '.slx']));
-data=g1b_synthetic_action(cfg,'zero',4.8);in=g1b_sim_input(cfg,data,4.8);
+in=Simulink.SimulationInput(cfg.modelName);
+in=in.setModelParameter('StopTime','4.8','OutputOption','SpecifiedOutputTimes', ...
+ 'OutputTimes',mat2str(0:cfg.driveTs:4.8,17));
+names={'g1_q0','g1_qd0','g1_base_p0','g1_base_rpy0','g1_gravity'};
+values={cfg.initialQ,zeros(29,1),cfg.initialPosition,cfg.initialRpy,cfg.gravity};
+for k=1:numel(names),in=in.setVariable(names{k},values{k},'Workspace',cfg.modelName);end
 in=in.setVariable('task5a_standing',0,'Workspace',cfg.modelName);
 in=in.setModelParameter('MaxStep','0.0005','SimMechanicsOpenEditorOnUpdate','on','CaptureErrors','on');
 if exist('layout.LayoutStateManager','class')
  layoutHold=layout.LayoutStateManager.instance().getScopedLayoutListenerDisabler(cfg.modelName); %#ok<NASGU>
 end
+g1_write_json(fullfile(root,'runtime/current_inprocess_run.json'),struct('folder',folder,'status','SIMULATING'));
 fprintf('Starting genuine Simscape walking: StopTime=4.8 s; evidence=%s\n',folder);
 wall=tic;out=sim(in);session.execution_wall_s=toc(wall);
 clear layoutHold;
@@ -70,7 +76,7 @@ plot(contact.Right.total_force_world.Time,g1_series_matrix(contact.Right.total_f
 legend('Left','Right');ylabel('Actual foot Fz (N)');xlabel('Physical time (s)');grid on;
 exportgraphics(f,fullfile(folder,'physical_summary.png'));close(f);
 fprintf('Run complete; Mechanics Explorer replay and evidence: %s\n',folder);
- function finish()
-  g1_ocp_mex('close');diary off;for j=1:numel(keys),setenv(keys{j},old{j});end
+ function finish(envKeys,envPrevious)
+  g1_ocp_mex('close');diary off;for j=1:numel(envKeys),setenv(envKeys{j},envPrevious{j});end
  end
 end
