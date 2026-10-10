@@ -4,5 +4,7 @@ root = fileparts(mfilename('fullpath'));
 cd(root); addpath(fullfile(root,'matlab'));
 cfg = g1.initialize();
 open_system(cfg.modelFile);
-fprintf('Ready: run_walking starts the real 4.8 s Simscape experiment.\n');
+fprintf('Model opened; MEX is not initialized yet.\n');
+fprintf('Start from the MATLAB command window: out = run_walking;\n');
+fprintf('Do not click Simulink Run directly: it bypasses controller initialization.\n');
 end
