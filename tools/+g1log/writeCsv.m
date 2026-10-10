@@ -1,4 +1,4 @@
-function g3c_precise_csv(T,file)
+function writeCsv(T,file)
 %G3C_PRECISE_CSV Numeric tables with 17 significant digits for exact replay.
 assert(all(varfun(@isnumeric,T,'OutputFormat','uniform') | varfun(@islogical,T,'OutputFormat','uniform')));
 fileID=fopen(file,'w');assert(fileID>=0);cleanup=onCleanup(@()fclose(fileID));

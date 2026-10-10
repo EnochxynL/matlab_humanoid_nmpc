@@ -1,4 +1,4 @@
-function g1_write_json(path,data)
+function writeJson(path,data)
 %G1_WRITE_JSON Save machine-readable evidence with actual newlines.
 fid = fopen(path,'w');
 assert(fid >= 0,'Cannot write %s.',path);

@@ -1,4 +1,4 @@
-function values = g1_series_matrix(signal)
+function values = signalMatrix(signal)
 %G1_SERIES_MATRIX Return samples-by-elements for vector or matrix signals.
 count = numel(signal.Time);
 if signal.IsTimeFirst
