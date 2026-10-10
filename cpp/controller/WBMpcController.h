@@ -40,7 +40,7 @@ namespace task5c {struct Evidence;}
 
 #include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
-#include <ocs2_ros2_interfaces/mrt/DummyObserver.h>
+#include "interfaces/PolicyObserver.h"
 #include <robot_model/ControllerBase.h>
 #include "humanoid_common_mpc/reference_manager/ProceduralMpcMotionManager.h"
 #include "robot_model/RobotDescription.h"

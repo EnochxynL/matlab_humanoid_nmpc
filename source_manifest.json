@@ -5,27 +5,6 @@
   "source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",
   "historical_visual": "PASS: gait essentially unchanged, normal; original lateral/yaw drift retained",
   "historical_duration": 4.8,
-  "source_packages": [
-    "blasfeo_catkin",
-    "hpipm_catkin",
-    "humanoid_common_mpc",
-    "humanoid_mpc_msgs",
-    "humanoid_wb_mpc",
-    "ocs2_centroidal_model",
-    "ocs2_core",
-    "ocs2_ddp",
-    "ocs2_mpc",
-    "ocs2_oc",
-    "ocs2_pinocchio_interface",
-    "ocs2_qp_solver",
-    "ocs2_robotic_tools",
-    "ocs2_ros2_interfaces",
-    "ocs2_ros2_msgs",
-    "ocs2_sqp",
-    "ocs2_thirdparty",
-    "robot_core",
-    "robot_model"
-  ],
   "extracted_on": "2026-10-10",
   "runtime_transport": "in-process MATLAB MEX; no ROS2 nodes/topics/reference-file IPC",
   "models": [
@@ -86,5 +65,80 @@
     "online_helpers": "embedded in Simulink/Stateflow",
     "matlab_configuration_files": 2,
     "offline_logging_files": 5
+  },
+  "source_packages_before_ros_free_refactor": [
+    "blasfeo_catkin",
+    "hpipm_catkin",
+    "humanoid_common_mpc",
+    "humanoid_mpc_msgs",
+    "humanoid_wb_mpc",
+    "ocs2_centroidal_model",
+    "ocs2_core",
+    "ocs2_ddp",
+    "ocs2_mpc",
+    "ocs2_oc",
+    "ocs2_pinocchio_interface",
+    "ocs2_qp_solver",
+    "ocs2_robotic_tools",
+    "ocs2_ros2_interfaces",
+    "ocs2_ros2_msgs",
+    "ocs2_sqp",
+    "ocs2_thirdparty",
+    "robot_core",
+    "robot_model"
+  ],
+  "source_layout": {
+    "whole_body": "cpp/whole_body",
+    "robot": "cpp/robot",
+    "ocs2_snapshot": "third_party/ocs2_ros2",
+    "build_adapter": "cmake/NumericalLibraries.cmake",
+    "runtime_artifacts": "build/standalone/lib"
+  },
+  "build_system": "Plain CMake; no ament/colcon/ROS communication or message generation",
+  "ros_free_refactor": {
+    "baseline_sha": "c93943d2cbf219489c7ce2af0924f5672bc1146d",
+    "ocs2_preserved_files": 1055,
+    "ocs2_snapshot_changed_files": 0,
+    "ocs2_ros_packages": "Preserved upstream sources; excluded from build and runtime",
+    "removed_project_ros_message_package": "humanoid_mpc_msgs",
+    "pure_policy_observer": "Extracted ROS-free DummyObserver interface with original licence",
+    "numerical_prefix_on_this_machine": "/opt/ros/jazzy (Pinocchio/Coal/URDFDOM only)",
+    "validation": "PASS",
+    "ocs2_source_remote": "https://github.com/manumerous/ocs2_ros2.git",
+    "original_clone_head": "bf9ae46f3c6dc751348d8002c03aa2f4a7cc17e7",
+    "business_source_review": {
+      "business_source_files": 117,
+      "changed_source_files": [
+        "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/command/WalkingVelocityCommand.h",
+        "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/gait/GaitScheduleUpdater.h",
+        "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/mrt/WBMpcMrtJointController.h",
+        "cpp/robot/robot_model/src/RobotDescription.cpp"
+      ]
+    },
+    "retained_physics_reference_generated_math": "Byte unchanged from c93943d",
+    "compile_dependency_audit": {
+      "compilation_units": 422,
+      "forbidden_ROS_includes_or_sources": []
+    },
+    "link_dependency_audit": {
+      "ROS_dynamic_dependencies": [],
+      "missing_dependencies": []
+    },
+    "offline_mex_replay": {
+      "passed": true,
+      "kind": "saved tick0 offline MEX replay; no physical simulation",
+      "loaded_mex": "/media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/g1_ocp_mex.mexa64",
+      "output_dimension": 118,
+      "maximum_absolute_error": 0,
+      "maximum_scaled_error": 0,
+      "scaled_tolerance": 1e-09,
+      "mode_and_query_time_exact": true,
+      "initialization_wall_s": 2.090259,
+      "first_update_wall_s": 0.043789
+    },
+    "fresh_cmake_build": "PASS",
+    "real_4p8_physics_rerun": "NOT RUN",
+    "local_evidence": "build/ros_free_refactor/",
+    "resolved_build_issue": "Pinocchio overwrites Boost_LIBRARIES; explicitly link Boost log/log_setup/system targets"
   }
 }
