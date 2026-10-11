@@ -13,11 +13,14 @@ std::unique_ptr<WaveBControlTimeWBMpcController> controller;
 std::vector<size_t> ids;
 uint64_t lastTick=UINT64_MAX, sequence=0;
 vector_t lastResult=vector_t::Zero(118);
+vector_t lastPolicy=vector_t::Zero(95);
+bool actionReady=false;
+double lastRawTime=0;
 std::ofstream sampleLog;
 std::unique_ptr<CanonicalControlTime> canonicalLog;
 std::string stringArg(const mxArray* a){if(!mxIsChar(a))throw std::runtime_error("Expected character vector");char*p=mxArrayToString(a);std::string s(p);mxFree(p);return s;}
 const double* doubles(const mxArray*a,size_t n){if(!mxIsDouble(a)||mxIsComplex(a)||mxGetNumberOfElements(a)!=n)throw std::runtime_error("Invalid numeric argument dimensions");auto*p=mxGetPr(a);for(size_t j=0;j<n;++j)if(!std::isfinite(p[j]))throw std::runtime_error("Nonfinite argument");return p;}
-void close(){sampleLog.close();canonicalLog.reset();controller.reset();state.reset();description.reset();context.reset();ids.clear();lastTick=UINT64_MAX;sequence=0;}
+void close(){sampleLog.close();canonicalLog.reset();controller.reset();state.reset();description.reset();context.reset();ids.clear();lastTick=UINT64_MAX;sequence=0;actionReady=false;}
 void atExit(){close();}
 void init(const std::string& root,const std::string& folder){
  if(context)throw std::runtime_error("Close existing MEX controller before initialization");
@@ -43,13 +46,13 @@ void reference(const double*a){
  for(size_t k=0;k<=m;++k)p.schedule.modeSequence.push_back(static_cast<size_t>(a[350+k]));
  p.terminal=a[415];for(int k=0;k<8;++k)p.swing[k]=a[416+k];for(int k=0;k<4;++k)p.filtered[k]=a[424+k];context->currentPacket=std::move(p);
 }
-void step(const double*a){
+void query(const double*a){
  if(!controller)throw std::runtime_error("Initialize MEX first");uint64_t tick=static_cast<uint64_t>(std::llround(a[0]/.002));
  if(a[3]<.35 || a[3]>1.3)throw std::runtime_error("Base height outside physical safety envelope");
  double pitch=std::asin(std::clamp(2*(a[4]*a[6]-a[7]*a[5]),-1.,1.));
  double roll=std::atan2(2*(a[4]*a[5]+a[6]*a[7]),1-2*(a[5]*a[5]+a[6]*a[6]));
  if(std::abs(pitch)>.7853981633974483 || std::abs(roll)>.7853981633974483)throw std::runtime_error("Tilt outside physical safety envelope");
- if(lastTick==tick)return;if(lastTick!=UINT64_MAX&&tick!=lastTick+1)throw std::runtime_error("Nonsequential physical tick");
+ if(lastTick==tick)return;if(lastTick!=UINT64_MAX&&!actionReady)throw std::runtime_error("Complete inverse dynamics before advancing policy tick");if(lastTick!=UINT64_MAX&&tick!=lastTick+1)throw std::runtime_error("Nonsequential physical tick");
  double t=canonicalLog->accept(tick,a[0],1,tick);
  state->setTime(t);state->setRootPositionInWorldFrame(robot::vector3_t(a+1));
  robot::quaternion_t q(a[4],a[5],a[6],a[7]);if(std::abs(q.norm()-1)>1e-6)throw std::runtime_error("Quaternion rejected");state->setRootRotationLocalToWorldFrame(q);
@@ -58,9 +61,20 @@ void step(const double*a){
  // Original successful controller uses STANCE for measured observation mode.
  state->setContactFlag(0,true);state->setContactFlag(1,true);
  if(lastTick==UINT64_MAX)controller->startMpcThread(*state);
- vector_t x,u,tau;size_t mode;controller->evaluatePlan(*state,x,u,tau,mode);
- lastResult<<x,u,tau,double(mode),t+.005;lastTick=tick;
- sampleLog<<tick<<','<<a[0]<<','<<t;for(int j=0;j<118;++j)sampleLog<<','<<lastResult[j];sampleLog<<'\n'<<std::flush;
+ vector_t x,u;size_t mode;controller->evaluatePolicy(*state,x,u,mode);
+ lastPolicy<<x,u,double(mode),t+.005;lastTick=tick;lastRawTime=a[0];actionReady=false;
+}
+void inverseDynamics(const double* p){
+ if(!controller||lastTick==UINT64_MAX)throw std::runtime_error("Query a policy before inverse dynamics");
+ // Bind the action to exactly the policy queried in this tick; reject stale/mutated packets.
+ if(!(Eigen::Map<const vector_t>(p,95).array()==lastPolicy.array()).all())
+  throw std::runtime_error("Inverse dynamics policy identity mismatch");
+ if(actionReady)return;
+ vector_t x=lastPolicy.head(58),u=lastPolicy.segment(58,35);
+ vector_t tau=controller->inverseDynamics(x,u);
+ lastResult<<x,u,tau,lastPolicy[93],lastPolicy[94];actionReady=true;
+ sampleLog<<lastTick<<','<<lastRawTime<<','<<double(lastTick)*.002;
+ for(int j=0;j<118;++j)sampleLog<<','<<lastResult[j];sampleLog<<'\n'<<std::flush;
 }
 }
 void mexFunction(int nlhs,mxArray*plhs[],int nrhs,const mxArray*prhs[]){
@@ -69,7 +83,9 @@ void mexFunction(int nlhs,mxArray*plhs[],int nrhs,const mxArray*prhs[]){
   if(command=="init"){if(nrhs!=3||nlhs)throw std::runtime_error("init(root,folder)");static bool registered=false;if(!registered){mexAtExit(atExit);registered=true;}init(stringArg(prhs[1]),stringArg(prhs[2]));}
   else if(command=="close"){close();if(mexIsLocked())mexUnlock();}
   else if(command=="reference"){if(nrhs!=2)throw std::runtime_error("reference requires 428 values");reference(doubles(prhs[1],428));}
-  else if(command=="step"){if(nrhs!=2||nlhs!=1)throw std::runtime_error("step requires 74 values and one output");step(doubles(prhs[1],74));plhs[0]=mxCreateDoubleMatrix(118,1,mxREAL);std::copy(lastResult.data(),lastResult.data()+118,mxGetPr(plhs[0]));}
+  else if(command=="step"){if(nrhs!=2||nlhs!=1)throw std::runtime_error("step requires 74 values and one output");query(doubles(prhs[1],74));inverseDynamics(lastPolicy.data());plhs[0]=mxCreateDoubleMatrix(118,1,mxREAL);std::copy(lastResult.data(),lastResult.data()+118,mxGetPr(plhs[0]));}
+  else if(command=="query"){if(nrhs!=2||nlhs!=1)throw std::runtime_error("query requires 74 values and one output");query(doubles(prhs[1],74));plhs[0]=mxCreateDoubleMatrix(95,1,mxREAL);std::copy(lastPolicy.data(),lastPolicy.data()+95,mxGetPr(plhs[0]));}
+  else if(command=="inverse_dynamics"){if(nrhs!=2||nlhs!=1)throw std::runtime_error("inverse_dynamics requires queried 95-value policy and one output");inverseDynamics(doubles(prhs[1],95));plhs[0]=mxCreateDoubleMatrix(23,1,mxREAL);std::copy(lastResult.data()+93,lastResult.data()+116,mxGetPr(plhs[0]));}
   else throw std::runtime_error("Unknown MEX command");
  }catch(const std::exception&e){mexErrMsgIdAndTxt("G1:PlannerMex","%s",e.what());}
 }

@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "kind": "saved true tick0; no physics advancement",
+  "loaded_mex": "/media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/g1_ocp_mex.mexa64",
+  "split_vs_combined_exact": true,
+  "saved_baseline_max_abs_error": 0,
+  "saved_baseline_max_scaled_error": 0,
+  "scaled_tolerance": 1e-09,
+  "mutated_policy_rejected": true,
+  "unfinished_tick_rejected": true,
+  "repeated_calls_idempotent": true,
+  "complete_action_log_rows": 1,
+  "initialization_wall_s": 2.107049,
+  "baseline_commit": "220d3801672a9ff47ca78abee0401475543610bc",
+  "model_status": "UNCHANGED: model_edit/model_read/library.settingsLookup unavailable in shared MATLAB",
+  "model_sha256": "9dd8ff1b8e1cbe9184da4dfea03f92a44d59bfed3cda1f674eba6642495b24b0",
+  "full_physics_regression": "NOT_RUN",
+  "new_mex_commands": {
+    "query": "74 observation -> 95 policy",
+    "inverse_dynamics": "95 current policy -> 23 torques"
+  }
+}

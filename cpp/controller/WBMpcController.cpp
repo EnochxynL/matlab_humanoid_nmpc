@@ -346,8 +346,8 @@ void WaveBControlTimeWBMpcController::deterministicSolverWorker() {
   }
 }
 
-void WaveBControlTimeWBMpcController::evaluatePlan(const ::robot::model::RobotState& state,
-                                                  vector_t& x, vector_t& u, vector_t& tau, size_t& mode) {
+void WaveBControlTimeWBMpcController::evaluatePolicy(const ::robot::model::RobotState& state,
+                                                    vector_t& x, vector_t& u, size_t& mode) {
   if (timingMode_ != TimingMode::SIMULATION_TIME_DETERMINISTIC)
     throw std::runtime_error("MEX requires deterministic simulation scheduling");
   deterministicUpdate(state);
@@ -355,9 +355,22 @@ void WaveBControlTimeWBMpcController::evaluatePlan(const ::robot::model::RobotSt
   mcpMrtInterface_.setCurrentObservation(currentMpcObservation_);
   if (!mcpMrtInterface_.initialPolicyReceived()) throw std::runtime_error("No publishable OCS2 policy");
   mcpMrtInterface_.evaluatePolicy(currentMpcObservation_.time + 0.005, currentMpcObservation_.state, x, u, mode);
-  tau = computeJointTorques<scalar_t>(x, u, pinocchioInterface_, mpcRobotModel_);
+  if (!x.allFinite() || !u.allFinite()) throw std::runtime_error("Nonfinite policy output");
+}
+
+vector_t WaveBControlTimeWBMpcController::inverseDynamics(const vector_t& x, const vector_t& u) {
+  if (x.size() != 58 || u.size() != 35 || !x.allFinite() || !u.allFinite())
+    throw std::runtime_error("Invalid inverse dynamics inputs");
+  vector_t tau = computeJointTorques<scalar_t>(x, u, pinocchioInterface_, mpcRobotModel_);
   if (visualizerPtr_) visualizerPtr_->update(currentMpcObservation_, mcpMrtInterface_.getPolicy(), mcpMrtInterface_.getCommand());
-  if (!x.allFinite() || !u.allFinite() || !tau.allFinite()) throw std::runtime_error("Nonfinite planner/ID output");
+  if (!tau.allFinite()) throw std::runtime_error("Nonfinite inverse dynamics output");
+  return tau;
+}
+
+void WaveBControlTimeWBMpcController::evaluatePlan(const ::robot::model::RobotState& state,
+                                                 vector_t& x, vector_t& u, vector_t& tau, size_t& mode) {
+  evaluatePolicy(state, x, u, mode);
+  tau = inverseDynamics(x, u);
 }
 
 }  // namespace ocs2::humanoid

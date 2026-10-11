@@ -88,6 +88,10 @@ class WaveBControlTimeWBMpcController final : public ::robot::model::ControlBase
 
   void startMpcThread(const ::robot::model::RobotState& initRobotState);
 
+  // Separate policy evaluation and inverse dynamics; the legacy combined API remains.
+  void evaluatePolicy(const ::robot::model::RobotState& state, vector_t& x, vector_t& u, size_t& mode);
+  vector_t inverseDynamics(const vector_t& x, const vector_t& u);
+
   // In-process planner/ID boundary. Joint action assembly belongs to Simulink.
   void evaluatePlan(const ::robot::model::RobotState& state, vector_t& x, vector_t& u, vector_t& tau, size_t& mode);
 
