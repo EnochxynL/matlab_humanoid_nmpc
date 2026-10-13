@@ -1,0 +1,78 @@
+{
+  "official_main_observed_sha": "26386754b8bf31ab78b503971d0cbf4fdbcd7cb4",
+  "files": {
+    "ocs2_sqp/src/SqpSolver.cpp": {
+      "official_path": "ocs2_sqp/ocs2_sqp/src/SqpSolver.cpp",
+      "official_sha256": "38217b36c64c249be70a339b4799d25e8c0bd471ba730d50c0d11d714a86d402",
+      "matches_current_snapshot": false
+    },
+    "ocs2_sqp/include/ocs2_sqp/SqpSettings.h": {
+      "official_path": "ocs2_sqp/ocs2_sqp/include/ocs2_sqp/SqpSettings.h",
+      "official_sha256": "5bad0d9443c4388100b5d38089ae43b0fbb232ceb149a523cd9d7f07ac940115",
+      "matches_current_snapshot": true
+    },
+    "ocs2_mpc/src/MRT_BASE.cpp": {
+      "official_sha256": "123ca64e9620e88c5e36e2edda181c8c52e320db5378b1abb9e269824f0ebf52",
+      "matches_current_snapshot": true
+    },
+    "ocs2_core/src/automatic_differentation/CppAdInterface.cpp": {
+      "official_sha256": "34828d085446a0d58cde2cfa3fa4f7486824249cb2f165c68ce4fc1ed67d0496",
+      "matches_current_snapshot": true
+    },
+    "ocs2_core/CMakeLists.txt": {
+      "official_sha256": "ed65de36d8659469bb9e87c3c65f90bb9ff63a0a1d2375de10ae53ec456d23de",
+      "matches_current_snapshot": false
+    },
+    "hpipm_catkin/src/HpipmInterface.cpp": {
+      "official_path": "ocs2_sqp/hpipm_catkin/src/HpipmInterface.cpp",
+      "official_sha256": "fc86185237f8034a25bd04684f410d707d079b78248a66903001714e99280478",
+      "matches_current_snapshot": true
+    },
+    "ocs2_sqp/src/SqpSettings.cpp": {
+      "official_path": "ocs2_sqp/ocs2_sqp/src/SqpSettings.cpp",
+      "official_sha256": "1ac63f5dd3eb8e4c0f3a3dc6f7b48198283d5db6f4b1c1ffe4dfae71ae7c8856",
+      "matches_current_snapshot": true
+    }
+  },
+  "solver_tree_entries": [
+    {
+      "path": "ocs2_sqp/hpipm_catkin/src/HpipmInterface.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "65408a45589fe63d34e5ccaee4b90eabfbc32517",
+      "size": 22626,
+      "url": "https://api.github.com/repos/leggedrobotics/ocs2/git/blobs/65408a45589fe63d34e5ccaee4b90eabfbc32517"
+    },
+    {
+      "path": "ocs2_sqp/hpipm_catkin/test/testHpipmInterface.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1d3f7a6df5efa80feeeeb2a63d62edd24a001576",
+      "size": 12354,
+      "url": "https://api.github.com/repos/leggedrobotics/ocs2/git/blobs/1d3f7a6df5efa80feeeeb2a63d62edd24a001576"
+    },
+    {
+      "path": "ocs2_sqp/ocs2_sqp/include/ocs2_sqp/SqpSettings.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a9570edf61ae3fb2655a40fbfacbaa6d451d4c9b",
+      "size": 4945,
+      "url": "https://api.github.com/repos/leggedrobotics/ocs2/git/blobs/a9570edf61ae3fb2655a40fbfacbaa6d451d4c9b"
+    },
+    {
+      "path": "ocs2_sqp/ocs2_sqp/src/SqpSolver.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "26f3fd1f48e85700fa3872f59ca4d2e4360f3da4",
+      "size": 26463,
+      "url": "https://api.github.com/repos/leggedrobotics/ocs2/git/blobs/26f3fd1f48e85700fa3872f59ca4d2e4360f3da4"
+    }
+  ],
+  "sqp_source_after_removing_benchmark_getter_and_whitespace_equal": true,
+  "project_baseline_head": "b333dde35a37f9fa11e059cd76fbf7c306d25104",
+  "phase": "analysis_only",
+  "official_version_status": "candidate inspected, not substituted or frozen for implementation",
+  "current_runtime_source": "https://github.com/manumerous/ocs2_ros2.git",
+  "windows_build_status": "NOT_TESTED; GCC/Linux AD backend confirmed in current and inspected official source",
+  "production_changes": "none"
+}
