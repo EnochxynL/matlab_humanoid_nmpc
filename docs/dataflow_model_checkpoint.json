@@ -1,0 +1,62 @@
+{
+  "passed": true,
+  "kind": "4.8 s saved real observations/reference, control-only Simulink replay",
+  "physical_simulation": false,
+  "ticks": 2401,
+  "mpc_updates": 289,
+  "policy_and_id_max_absolute_error": 0,
+  "maximum_scaled_error": 0,
+  "scaled_tolerance": 1e-09,
+  "joint_action_max_absolute_error": 0,
+  "mode_exact": true,
+  "canonical_time_exact": true,
+  "observation_first72_exact": true,
+  "measured_contact_flags_exact": true,
+  "diagnostic_assembly_exact": true,
+  "startup_wall_s": 2.038344,
+  "control_replay_wall_s": 29.755002,
+  "baseline_commit": "12dc21bbcc0a68e41ae3465b9cd45a9878791c94",
+  "model_status": "DEPLOYED: separate PlannerPolicy, InverseDynamics, ActionGeneration and PolicyDiagnostics",
+  "model_sha256": "117d5142046a5862265dbc5aedcb1c27ce4f2514fb38452742a77edaf14ac218",
+  "mex_sha256": "5addf2cc2551f938267ea3d3bc2a5be2f397b3a68e4da7874fbf2e2842b282a8",
+  "structural_check": {
+    "errors": 0,
+    "preexisting_world_frame_sensor_warnings": 4
+  },
+  "unchanged_core": {
+    "PhysicalPlant": {
+      "system_xml_files": 50,
+      "byte_unchanged": true,
+      "changed": []
+    },
+    "JointDrive": {
+      "system_xml_files": 1,
+      "byte_unchanged": true,
+      "changed": []
+    }
+  },
+  "unchanged_files": {
+    "models/g1_reference.slx": {
+      "worktree_sha256": "36b30bcd45600d984071f253ce4fe88b9bf4ec81a44292ea3513171107f0e752",
+      "comparison": "byte equal"
+    },
+    "models/g1_data.sldd": {
+      "worktree_sha256": "6bc9b32b1f6681cc3479c909c663530f0ee86002a6cf3ad52b739db0197af76b",
+      "comparison": "byte equal"
+    },
+    "config/task.info": {
+      "worktree_sha256": "a2874575077597570c4fdbd98e40225694d116de3070f6d50de0619d8ea5022f",
+      "comparison": "equal after CRLF/LF normalization (existing checkout line endings)"
+    },
+    "config/reference.info": {
+      "worktree_sha256": "eb8530c83c76351da5d3ed5ba5535a8c445764e23f0f6d14daeb4de8185f8494",
+      "comparison": "equal after CRLF/LF normalization (existing checkout line endings)"
+    },
+    "config/gait.info": {
+      "worktree_sha256": "a0534fcc1525e97c00b94b17b9440124ec4fc4baebd7e3ec82390942076d0ee0",
+      "comparison": "equal after CRLF/LF normalization (existing checkout line endings)"
+    }
+  },
+  "full_physics_regression": "NOT_RUN: full saved-observation control replay only; no new visual acceptance",
+  "artifact_directory": "build/dataflow_refactor"
+}

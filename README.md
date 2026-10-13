@@ -73,4 +73,4 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 
 本次业务/依赖分离已完成独立普通 CMake 编译、422 个编译单元的 ROS 依赖检查、MEX 动态库依赖检查，以及清除 ROS 环境变量后的 tick0 离线查询。118 维输出与已验收的保存基线差异为零；未重新运行完整 4.8 秒物理闭环。验证摘要见 `source_manifest.json`，本机详细日志在 `build/ros_free_refactor/`。
 
-控制链可视化重构的接口合同与当前完成边界见 [数据流边界说明](docs/dataflow_boundaries.md)。策略查询/逆动力学接口已拆分验证，模型仍使用兼容 `step`；未完成新块图验收。
+控制链已显式拆为 `ObservationHandling → PlannerPolicy → InverseDynamics / ActionGeneration → JointDrive → PhysicalPlant`。`PolicyDiagnostics` 保留历史输出，并记录策略状态、输入、模式和查询时间。结构图、代码与数据流的实际边界及验证证据见 [数据流边界说明](docs/dataflow_boundaries.md)。
