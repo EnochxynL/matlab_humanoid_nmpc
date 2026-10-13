@@ -60,11 +60,11 @@ class JointTorqueCostCppAd final : public StateInputCostGaussNewtonAd {
   ad_vector_t costVectorFunction(ad_scalar_t time,
                                  const ad_vector_t& state,
                                  const ad_vector_t& input,
-                                 const ad_vector_t& parameters) override;
+                                 const ad_vector_t& parameters) const override;
 
   vector_t sqrtWeights_;
 
-  PinocchioInterfaceCppAd pinocchioInterfaceCppAd_;
+  mutable PinocchioInterfaceCppAd pinocchioInterfaceCppAd_;
   WBAccelMpcRobotModel<ad_scalar_t>* mpcRobotModelPtr_;
 };
 

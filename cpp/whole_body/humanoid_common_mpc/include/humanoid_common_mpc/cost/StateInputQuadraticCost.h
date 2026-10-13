@@ -30,14 +30,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <ocs2_core/cost/QuadraticStateInputCost.h>
+#include "extensions/G1QuadraticStateInputCost.h"
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
 #include "humanoid_common_mpc/common/MpcRobotModelBase.h"
 #include "humanoid_common_mpc/reference_manager/SwitchedModelReferenceManager.h"
 
 namespace ocs2::humanoid {
 
-class StateInputQuadraticCost final : public QuadraticStateInputCost {
+class StateInputQuadraticCost final : public G1QuadraticStateInputCost {
  public:
   StateInputQuadraticCost(matrix_t Q,
                           matrix_t R,

@@ -45,7 +45,7 @@ StateInputQuadraticCost::StateInputQuadraticCost(matrix_t Q,
                                                  const SwitchedModelReferenceManager& referenceManager,
                                                  const PinocchioInterface& pinocchioInterface,
                                                  const MpcRobotModelBase<scalar_t>& mpcRobotModel)
-    : QuadraticStateInputCost(std::move(Q), std::move(R)),
+    : G1QuadraticStateInputCost(std::move(Q), std::move(R)),
       referenceManagerPtr_(&referenceManager),
       pinInterface_(pinocchioInterface),
       mpcRobotModelPtr_(&mpcRobotModel) {}
@@ -55,7 +55,7 @@ StateInputQuadraticCost::StateInputQuadraticCost(matrix_t Q,
 /******************************************************************************************************/
 
 StateInputQuadraticCost::StateInputQuadraticCost(const StateInputQuadraticCost& rhs)
-    : QuadraticStateInputCost(rhs),
+    : G1QuadraticStateInputCost(rhs),
       referenceManagerPtr_(rhs.referenceManagerPtr_),
       pinInterface_(rhs.pinInterface_),
       mpcRobotModelPtr_(rhs.mpcRobotModelPtr_) {}

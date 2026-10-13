@@ -1,3 +1,4 @@
+#include "extensions/G1RotationTransforms.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -372,7 +373,7 @@ ad_vector_t PinocchioEndEffectorDynamicsCppAd::getOrientationCppAd(const ad_vect
 
   ad_vector_t orientations(4 * endEffectorFrameIds_.size());
   for (size_t i = 0; i < endEffectorFrameIds_.size(); i++) {
-    orientations.segment<4>(4 * i) = matrixToQuaternion(data.oMf[endEffectorFrameIds_[i]].rotation()).coeffs();
+    orientations.segment<4>(4 * i) = g1::geometry::matrixToQuaternion(data.oMf[endEffectorFrameIds_[i]].rotation()).coeffs();
   }
   return orientations;
 }
@@ -437,10 +438,10 @@ ad_vector_t PinocchioEndEffectorDynamicsCppAd::getOrientationErrorCppAd(const ad
   ad_vector_t errors(3 * endEffectorFrameIds_.size());
   for (size_t i = 0; i < endEffectorFrameIds_.size(); i++) {
     const size_t frameId = endEffectorFrameIds_[i];
-    const ad_quaternion_t eeOrientation = matrixToQuaternion(data.oMf[frameId].rotation());
+    const Eigen::Quaternion<ad_scalar_t> eeOrientation = g1::geometry::matrixToQuaternion(data.oMf[frameId].rotation());
     ad_quaternion_t eeReferenceOrientation;
     eeReferenceOrientation.coeffs() = params.segment<4>(4 * i);
-    errors.segment<3>(3 * i) = ocs2::quaternionDistance(eeOrientation, eeReferenceOrientation);
+    errors.segment<3>(3 * i) = g1::geometry::quaternionDistance(eeOrientation, eeReferenceOrientation);
   }
   return errors;
 }
@@ -511,7 +512,7 @@ ad_vector_t PinocchioEndEffectorDynamicsCppAd::getOrientationErrorWrtPlaneCppAd(
   for (size_t i = 0; i < endEffectorFrameIds_.size(); i++) {
     const size_t frameId = endEffectorFrameIds_[i];
     ad_vector_t planeNormal = params.segment<3>(3 * i);
-    errors.segment<3>(3 * i) = rotationMatrixDistanceToPlane<ad_scalar_t>(data.oMf[frameId].rotation(), planeNormal);
+    errors.segment<3>(3 * i) = g1::geometry::rotationMatrixDistanceToPlane<ad_scalar_t>(data.oMf[frameId].rotation(), planeNormal);
   }
   return errors;
 }

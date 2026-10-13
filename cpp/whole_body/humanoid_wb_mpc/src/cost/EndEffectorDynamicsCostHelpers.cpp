@@ -1,3 +1,4 @@
+#include "extensions/G1RotationTransforms.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -117,7 +118,7 @@ EndEffectorDynamicsWeights EndEffectorDynamicsWeights::getWeights(const std::str
 template <typename SCALAR_T>
 VECTOR18_T<SCALAR_T> computeTaskSpaceErrors(const EndEffectorDynamicsCostElement<SCALAR_T>& current,
                                             const EndEffectorDynamicsCostElement<SCALAR_T>& reference) {
-  const VECTOR3_T<SCALAR_T> orientationError = quaternionDistance<SCALAR_T>(current.getOrientation(), reference.getOrientation());
+  const VECTOR3_T<SCALAR_T> orientationError = g1::geometry::quaternionDistance<SCALAR_T>(current.getOrientation(), reference.getOrientation());
 
   VECTOR18_T<SCALAR_T> errors;
   errors << (current.getPosition() - reference.getPosition()), orientationError,

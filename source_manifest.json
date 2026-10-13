@@ -140,5 +140,18 @@
     "real_4p8_physics_rerun": "NOT RUN",
     "local_evidence": "build/ros_free_refactor/",
     "resolved_build_issue": "Pinocchio overwrites Boost_LIBRARIES; explicitly link Boost log/log_setup/system targets"
+  },
+  "standalone_core_extraction": {
+    "report": "docs/official_ocs2_transition.md",
+    "acceptance": "docs/core_extraction_acceptance.json",
+    "source_root": "cpp",
+    "public_api": "cpp/include/g1_controller/G1Controller.h",
+    "matlab_adapter": "adapters/matlab/PlannerMex.cpp",
+    "official_ocs2_commit": "26386754b8bf31ab78b503971d0cbf4fdbcd7cb4",
+    "dependency_management": "git submodule",
+    "controller_output_replay": "bit-exact, 2401 ticks and 289 MPC updates",
+    "model_and_generated_math": "byte unchanged",
+    "physical_simulation": "not repeated",
+    "windows": "not implemented"
   }
 }

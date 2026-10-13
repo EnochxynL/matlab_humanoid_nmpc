@@ -1,11 +1,12 @@
+#include "extensions/ActiveConstraint.h"
 #pragma once
 #include "math/FusedMomentGraph.h"
 #include "math/GeneratedFootContracts.h"
 #include <humanoid_common_mpc/contact/ContactRectangle.h>
-#include <ocs2_core/soft_constraint/StateInputSoftConstraint.h>
+#include "extensions/G1StateInputSoftConstraint.h"
 #include "contactMomentMargins.h"
 namespace task5c::momentfused {
-class GeneratedMoment final:public StateInputConstraint {
+class GeneratedMoment final:public StateInputConstraint, public g1::ActiveConstraint {
  std::unique_ptr<StateInputConstraint> original_;FusedMomentGraph dependency_;Authority auth_;std::shared_ptr<Evidence> evidence_;
  VectorFunctionLinearApproximation candidate(double t,const vector_t&x,const vector_t&u,bool jac)const {++evidence_->generated;return dependency_.evaluate(t,x,u,jac);}
  public:
@@ -13,7 +14,7 @@ class GeneratedMoment final:public StateInputConstraint {
  GeneratedMoment(const GeneratedMoment&r):StateInputConstraint(r),original_(r.original_->clone()),dependency_(r.dependency_),auth_(r.auth_),evidence_(r.evidence_){++evidence_->clones;}
  GeneratedMoment*clone()const override{return new GeneratedMoment(*this);}
  bool isActive(double t)const override{++evidence_->activation;return original_->isActive(t);}
- void setActive(bool v)override{original_->setActive(v);}bool getActive()const override{return original_->getActive();}
+ void setActive(bool v)override{g1::setActive(*original_,v);}bool getActive()const override{return g1::active(*original_);}
  size_t getNumConstraints(double t)const override{return original_->getNumConstraints(t);}
  vector_t getValue(double t,const vector_t&x,const vector_t&u,const PreComputation&p)const override{
   ++evidence_->value;evidence_->stack();if(auth_==Authority::Legacy){++evidence_->legacyEvaluations;return original_->getValue(t,x,u,p);}
@@ -27,7 +28,7 @@ class GeneratedMoment final:public StateInputConstraint {
 inline OptimalControlProblem installMoment(OptimalControlProblem p,WBMpcInterface&i,const std::string&task,std::shared_ptr<Evidence>e){
  if(!std::getenv("TASK5C_MOMENT"))return p;
  auto cache=std::getenv("TASK5C_GEOMETRY_CACHE");if(!cache)throw std::runtime_error("Require isolated geometry cache path");
- for(int leg=0;leg<2;++leg){auto name=i.modelSettings().contactNames6DoF[leg]+"_contactMomentXY";auto&cost=p.softConstraintPtr->get<StateInputSoftConstraint>(name);auto&ptr=cost.getConstraintPtr();ptr=std::make_unique<GeneratedMoment>(i,leg,task,cache,std::move(ptr),authorityFor("TASK5C_MOMENT_AUTHORITY"),e);}
+ for(int leg=0;leg<2;++leg){auto name=i.modelSettings().contactNames6DoF[leg]+"_contactMomentXY";auto&cost=p.softConstraintPtr->get<G1StateInputSoftConstraint>(name);auto&ptr=cost.getConstraintPtr();ptr=std::make_unique<GeneratedMoment>(i,leg,task,cache,std::move(ptr),authorityFor("TASK5C_MOMENT_AUTHORITY"),e);}
  return p;
 }
 }

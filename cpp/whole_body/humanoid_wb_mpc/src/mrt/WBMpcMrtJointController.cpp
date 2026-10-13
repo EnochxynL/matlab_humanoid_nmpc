@@ -1,3 +1,4 @@
+#include "extensions/MeasuredMode.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 
@@ -78,7 +79,7 @@ WBMpcMrtJointController::~WBMpcMrtJointController() {
 void WBMpcMrtJointController::startMpcThread(const ::robot::model::RobotState& initRobotState) {
   updateMpcObservation(currentMpcObservation_, initRobotState);
   // Set observation to MPC
-  mcpMrtInterface_.setCurrentObservation(currentMpcObservation_);
+  setObservation(currentMpcObservation_);
   solver_worker_ = std::jthread(&WBMpcMrtJointController::solverWorker, this);
 }
 
@@ -127,7 +128,7 @@ void WBMpcMrtJointController::computeJointControlAction(scalar_t time,
                                                         ::robot::model::RobotJointAction& robotJointAction) {
   updateMpcObservation(currentMpcObservation_, robotState);
   // Set observation to MPC
-  mcpMrtInterface_.setCurrentObservation(currentMpcObservation_);
+  setObservation(currentMpcObservation_);
 
   vector_t mpcPolicyState;
   vector_t mpcPolicyInput;
@@ -198,13 +199,13 @@ void WBMpcMrtJointController::computeJointControlAction(scalar_t time,
 /******************************************************************************************************/
 
 void WBMpcMrtJointController::solverWorker() {
-  mcpMrtInterface_.resetMpcNode(currentObservationToResetTrajectory(mcpMrtInterface_.getCurrentObservation()));
+  mcpMrtInterface_.resetMpcNode(currentObservationToResetTrajectory(latestObservation()));
   std::cerr << "MPC is reset. NMPC solver started!" << std::endl;
 
   while (!terminateThread_.load()) {
     auto targetTimeForNextIteration = std::chrono::steady_clock::now() + std::chrono::microseconds(mpcDeltaTMicroSeconds_);
 
-    mcpMrtInterface_.advanceMpc();
+    advanceMpc();
 
     // Publish if Policy has been updated
     if (!mcpMrtInterface_.updatePolicy()) {
@@ -249,3 +250,22 @@ TargetTrajectories WBMpcMrtJointController::currentObservationToResetTrajectory(
 }
 
 }  // namespace ocs2::humanoid
+
+namespace ocs2::humanoid {
+void WBMpcMrtJointController::setObservation(const SystemObservation& observation) {
+ std::lock_guard<std::mutex> lock(observationCopyMutex_);
+ observationCopy_=observation;
+ mcpMrtInterface_.setCurrentObservation(observation);
+}
+SystemObservation WBMpcMrtJointController::latestObservation() {
+ std::lock_guard<std::mutex> lock(observationCopyMutex_);
+ return observationCopy_;
+}
+void WBMpcMrtJointController::advanceMpc() {
+ auto observation=latestObservation();
+ auto* receiver=dynamic_cast<g1::MeasuredModeReceiver*>(&mcpMrtInterface_.getReferenceManager());
+ if(!receiver)throw std::runtime_error("G1 reference manager lacks measured-mode receiver");
+ receiver->setMeasuredMode(observation.mode);
+ mcpMrtInterface_.advanceMpc();
+}
+}

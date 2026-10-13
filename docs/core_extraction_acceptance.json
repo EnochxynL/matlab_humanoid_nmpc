@@ -1,0 +1,70 @@
+{
+  "baseline_head": "7b4e3e0b703eaa9889236e2a5066908dfb4a59f4",
+  "vendor_commits": {
+    "ocs2": {
+      "repository": "https://github.com/leggedrobotics/ocs2.git",
+      "commit": "26386754b8bf31ab78b503971d0cbf4fdbcd7cb4",
+      "source_directory": "third_party/ocs2",
+      "management": "git submodule",
+      "local_patches": [],
+      "previous_fork_commit": "bf9ae46f3c6dc751348d8002c03aa2f4a7cc17e7",
+      "build_adaptations": [
+        "External CMake generation: Frame.parent to Frame.parentJoint in two Pinocchio-3 translation units (three occurrences total)",
+        "External compiler include of standard fstream header for SqpSolver.cpp target; no solver calculation changes"
+      ]
+    },
+    "blasfeo": {
+      "repository": "https://github.com/giaf/blasfeo.git",
+      "commit": "ae6e2d1dea015862a09990b95905038a756ffc7d",
+      "source_directory": "third_party/blasfeo",
+      "management": "git submodule",
+      "local_patches": []
+    },
+    "hpipm": {
+      "repository": "https://github.com/giaf/hpipm.git",
+      "commit": "255ffdf38d3a5e2c3285b29568ce65ae286e5faf",
+      "source_directory": "third_party/hpipm",
+      "management": "git submodule",
+      "local_patches": []
+    }
+  },
+  "core_split": {
+    "passed": true,
+    "ticks": 2401,
+    "mode": "split",
+    "maximum_absolute_error": 0,
+    "different_double_bit_patterns": 0,
+    "physical_simulation": false
+  },
+  "core_step": {
+    "passed": true,
+    "ticks": 2401,
+    "mode": "step",
+    "maximum_absolute_error": 0,
+    "different_double_bit_patterns": 0,
+    "physical_simulation": false
+  },
+  "mex": {
+    "passed": true,
+    "ticks": 2401,
+    "mpc_updates": 289,
+    "maximum_absolute_error": 0,
+    "different_double_bit_patterns": 0,
+    "split_step_equal": true,
+    "identity_guards_passed": true,
+    "physical_simulation": false,
+    "mex_path": "/media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/g1_ocp_mex.mexa64"
+  },
+  "sdk_disabled_core_build": true,
+  "sdk_disabled_compile_units": 427,
+  "matlab_or_ros_runtime_dependencies": false,
+  "frozen_artifacts": {
+    "models": true,
+    "generated": true
+  },
+  "physical_simulation": false,
+  "artifacts_sha256": {
+    "build/standalone/lib/libg1_controller.so": "55a59db709f04116d5c2e44bac416f315e587402bf96893b39def2fe0191d513",
+    "build/standalone/lib/g1_ocp_mex.mexa64": "1e08f7ed35e382810af8eb9d9128ba09e1a37543fb5092997eda4f14365691c2"
+  }
+}

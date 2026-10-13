@@ -73,13 +73,13 @@ class EndEffectorDynamicsQuadraticCost : public ocs2::StateInputCostGaussNewtonA
   ad_vector_t costVectorFunction(ad_scalar_t time,
                                  const ad_vector_t& state,
                                  const ad_vector_t& input,
-                                 const ad_vector_t& parameters) override;
+                                 const ad_vector_t& parameters) const override;
 
   Eigen::Matrix<ad_scalar_t, 18, 1> sqrtWeights_;
 
   size_t contactIndex_;
   pinocchio::FrameIndex frameID_;
-  PinocchioInterfaceCppAd pinocchioInterfaceCppAd_;
+  mutable PinocchioInterfaceCppAd pinocchioInterfaceCppAd_;
   std::shared_ptr<EndEffectorDynamics<scalar_t>> endEffectorDynamicsPtr_;
   WBAccelMpcRobotModel<ad_scalar_t>* mpcRobotModelPtr_;
 };

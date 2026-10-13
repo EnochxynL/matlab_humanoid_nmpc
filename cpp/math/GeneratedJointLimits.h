@@ -1,3 +1,4 @@
+#include "extensions/TermRegistry.h"
 #pragma once
 #include "math/GeneratedPenalties.h"
 #include "jointLimitCost.h"
@@ -54,11 +55,11 @@ inline OptimalControlProblem installJointLimits(OptimalControlProblem p,WBMpcInt
   auto bounds=readPinocchioJointLimits(i.getPinocchioInterface(),i.modelSettings());
   auto replacement=std::make_unique<StateCostCollection>();
   std::vector<std::pair<size_t,std::string>> ordered;
-  for(auto& [name,index]:p.stateSoftConstraintPtr->getTermNameMap())ordered.emplace_back(index,name);
+  for(auto& [name,index]:g1::termNames(*p.stateSoftConstraintPtr))ordered.emplace_back(index,name);
   std::sort(ordered.begin(),ordered.end());
   for(auto& [index,name]:ordered){auto old=p.stateSoftConstraintPtr->extract(name);
     if(name=="jointLimits")old=std::make_unique<GeneratedJointLimits>(std::move(old),bounds,authorityFor("TASK5C_JOINT_AUTHORITY"),e);
-    replacement->add(name,std::move(old));}
+    g1::addTerm(*replacement,name,std::move(old));}
   p.stateSoftConstraintPtr=std::move(replacement);return p;
 }
 }

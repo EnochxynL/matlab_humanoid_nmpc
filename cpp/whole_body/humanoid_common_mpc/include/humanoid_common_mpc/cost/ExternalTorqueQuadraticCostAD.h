@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ocs2_core/cost/StateInputGaussNewtonCostAd.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
-#include <ocs2_robotic_tools/end_effector/EndEffectorKinematics.h>
+#include "extensions/G1EndEffectorKinematics.h"
 #include <pinocchio/algorithm/frames.hpp>
 
 #include "humanoid_common_mpc/common/ModelSettings.h"
@@ -80,7 +80,7 @@ class ExternalTorqueQuadraticCostAD : public ocs2::StateInputCostGaussNewtonAd {
   ad_vector_t costVectorFunction(ad_scalar_t time,
                                  const ad_vector_t& state,
                                  const ad_vector_t& input,
-                                 const ad_vector_t& parameters) override;
+                                 const ad_vector_t& parameters) const override;
 
   const size_t contactPointIndex_;
   const pinocchio::FrameIndex frameID_;
@@ -88,7 +88,7 @@ class ExternalTorqueQuadraticCostAD : public ocs2::StateInputCostGaussNewtonAd {
   vector_t sqrtWeights_;
   const std::vector<std::string> activeJointNames_;
   const SwitchedModelReferenceManager* referenceManagerPtr_;
-  PinocchioInterfaceCppAd pinocchioInterfaceCppAd_;
+  mutable PinocchioInterfaceCppAd pinocchioInterfaceCppAd_;
   const std::unique_ptr<MpcRobotModelBase<ad_scalar_t>> mpcRobotModelADPtr;
   bool isActive_ = true;
 };

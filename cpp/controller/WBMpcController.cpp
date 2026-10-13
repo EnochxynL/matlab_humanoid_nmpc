@@ -1,3 +1,4 @@
+#include "extensions/MeasuredMode.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 
@@ -83,7 +84,7 @@ WaveBControlTimeWBMpcController::~WaveBControlTimeWBMpcController() {
 void WaveBControlTimeWBMpcController::startMpcThread(const ::robot::model::RobotState& initRobotState) {
   updateMpcObservation(currentMpcObservation_, initRobotState);
   // Set observation to MPC
-  mcpMrtInterface_.setCurrentObservation(currentMpcObservation_);
+  setObservation(currentMpcObservation_);
   if (timingMode_ == TimingMode::SIMULATION_TIME_DETERMINISTIC) {
     epoch_ = ControlTime(initRobotState.getTime()).seconds;
     lastObservationTime_ = epoch_;
@@ -158,7 +159,7 @@ void WaveBControlTimeWBMpcController::computeJointControlAction(scalar_t time,
   if (timingMode_ == TimingMode::SIMULATION_TIME_DETERMINISTIC) deterministicUpdate(robotState);
   updateMpcObservation(currentMpcObservation_, robotState);
   // Set observation to MPC
-  mcpMrtInterface_.setCurrentObservation(currentMpcObservation_);
+  setObservation(currentMpcObservation_);
 
   vector_t mpcPolicyState;
   vector_t mpcPolicyInput;
@@ -229,13 +230,13 @@ void WaveBControlTimeWBMpcController::computeJointControlAction(scalar_t time,
 /******************************************************************************************************/
 
 void WaveBControlTimeWBMpcController::asynchronousSolverWorker() {
-  mcpMrtInterface_.resetMpcNode(currentObservationToResetTrajectory(mcpMrtInterface_.getCurrentObservation()));
+  mcpMrtInterface_.resetMpcNode(currentObservationToResetTrajectory(latestObservation()));
   std::cerr << "MPC is reset. NMPC solver started!" << std::endl;
 
   while (!terminateThread_.load()) {
     auto targetTimeForNextIteration = std::chrono::steady_clock::now() + std::chrono::microseconds(mpcDeltaTMicroSeconds_);
 
-    mcpMrtInterface_.advanceMpc();
+    advanceMpc();
 
     // Publish if Policy has been updated
     if (!mcpMrtInterface_.updatePolicy()) {
@@ -328,10 +329,10 @@ void WaveBControlTimeWBMpcController::deterministicSolverWorker() {
         if (terminateThread_.load()) break;
         observation = requestObservation_; request = requested_; deadline = requestDeadline_;
       }
-      mcpMrtInterface_.setCurrentObservation(observation);
+      setObservation(observation);
       if (reset) { mcpMrtInterface_.resetMpcNode(currentObservationToResetTrajectory(observation)); reset = false; }
       if (trace_) trace_("solver_started", observation.time, deadline, request);
-      mcpMrtInterface_.advanceMpc();
+      advanceMpc();
       if (trace_) trace_("solver_finished", observation.time, deadline, request);
       if (!mcpMrtInterface_.updatePolicy()) throw std::runtime_error("Requested offline solve did not install a policy");
       if (trace_) trace_("policy_installed", observation.time, deadline, request);
@@ -352,7 +353,7 @@ void WaveBControlTimeWBMpcController::evaluatePolicy(const ::robot::model::Robot
     throw std::runtime_error("MEX requires deterministic simulation scheduling");
   deterministicUpdate(state);
   updateMpcObservation(currentMpcObservation_, state);
-  mcpMrtInterface_.setCurrentObservation(currentMpcObservation_);
+  setObservation(currentMpcObservation_);
   if (!mcpMrtInterface_.initialPolicyReceived()) throw std::runtime_error("No publishable OCS2 policy");
   mcpMrtInterface_.evaluatePolicy(currentMpcObservation_.time + 0.005, currentMpcObservation_.state, x, u, mode);
   if (!x.allFinite() || !u.allFinite()) throw std::runtime_error("Nonfinite policy output");
@@ -374,3 +375,22 @@ void WaveBControlTimeWBMpcController::evaluatePlan(const ::robot::model::RobotSt
 }
 
 }  // namespace ocs2::humanoid
+
+namespace ocs2::humanoid {
+void WaveBControlTimeWBMpcController::setObservation(const SystemObservation& observation) {
+ std::lock_guard<std::mutex> lock(observationCopyMutex_);
+ observationCopy_ = observation;
+ mcpMrtInterface_.setCurrentObservation(observation);
+}
+SystemObservation WaveBControlTimeWBMpcController::latestObservation() {
+ std::lock_guard<std::mutex> lock(observationCopyMutex_);
+ return observationCopy_;
+}
+void WaveBControlTimeWBMpcController::advanceMpc() {
+ auto observation = latestObservation();
+ auto* receiver = dynamic_cast<g1::MeasuredModeReceiver*>(&mcpMrtInterface_.getReferenceManager());
+ if (!receiver) throw std::runtime_error("G1 reference manager lacks measured-mode receiver");
+ receiver->setMeasuredMode(observation.mode);
+ mcpMrtInterface_.advanceMpc();
+}
+}

@@ -1,15 +1,16 @@
+#include "extensions/TermRegistry.h"
 #pragma once
 #include "math/GeneratedFriction.h"
 #include "../../generated/barriers/polynomialBarrier/lib/polynomialBarrier.h"
 #include "../../generated/barriers/relaxedBarrier/lib/relaxedBarrier.h"
 #include <ocs2_core/cost/StateCostCollection.h>
-#include <ocs2_core/soft_constraint/StateSoftConstraint.h>
+#include "extensions/G1StateSoftConstraint.h"
 
 namespace task5c {
 // Keep the original owning soft cost, constraint, mode gate, reduction and chain
 // rule. Replace only the public scalar penalty object. JointLimits is separate.
-class GeneratedPenalty final : public augmented::AugmentedPenaltyBase {
-  std::unique_ptr<augmented::AugmentedPenaltyBase> original_;
+class GeneratedPenalty final : public augmented::G1AugmentedPenaltyBase {
+  std::unique_ptr<augmented::G1AugmentedPenaltyBase> original_;
   bool polynomial_;
   Authority authority_;
   std::shared_ptr<Evidence> evidence_;
@@ -37,7 +38,7 @@ class GeneratedPenalty final : public augmented::AugmentedPenaltyBase {
     return generated;
   }
  public:
-  GeneratedPenalty(std::unique_ptr<augmented::AugmentedPenaltyBase> p, bool poly,
+  GeneratedPenalty(std::unique_ptr<augmented::G1AugmentedPenaltyBase> p, bool poly,
                    Authority a, std::shared_ptr<Evidence> e)
       : original_(std::move(p)),polynomial_(poly),authority_(a),evidence_(std::move(e)) {}
   GeneratedPenalty(const GeneratedPenalty& p)
@@ -56,7 +57,7 @@ class GeneratedPenalty final : public augmented::AugmentedPenaltyBase {
 inline OptimalControlProblem installPenalties(OptimalControlProblem p,
     std::shared_ptr<Evidence> poly,std::shared_ptr<Evidence> relaxed) {
   if (!std::getenv("TASK5C_BARRIERS")) return p;
-  auto replace=[&](MultidimensionalPenalty& penalties) {
+  auto replace=[&](G1MultidimensionalPenalty& penalties) {
     for (auto& original:penalties.getPenaltyPtrArray()) {
       bool polynomial=original->name()=="PieceWisePolynomialBarrierPenalty";
       if (!polynomial && original->name()!="RelaxedBarrierPenalty")
@@ -66,10 +67,10 @@ inline OptimalControlProblem installPenalties(OptimalControlProblem p,
           polynomial?poly:relaxed);
     }
   };
-  for (auto& [name,index]:p.softConstraintPtr->getTermNameMap())
-    replace(p.softConstraintPtr->get<StateInputSoftConstraint>(name).getPenalty());
-  // Only collision is a StateSoftConstraint; JointLimits has private concrete ownership.
-  replace(p.stateSoftConstraintPtr->get<StateSoftConstraint>("FootCollisionSoftConstraint").getPenalty());
+  for (auto& [name,index]:g1::termNames(*p.softConstraintPtr))
+    replace(p.softConstraintPtr->get<G1StateInputSoftConstraint>(name).getPenalty());
+  // Only collision is a G1StateSoftConstraint; JointLimits has private concrete ownership.
+  replace(p.stateSoftConstraintPtr->get<G1StateSoftConstraint>("FootCollisionSoftConstraint").getPenalty());
   return p;
 }
 }

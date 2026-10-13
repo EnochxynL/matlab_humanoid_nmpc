@@ -51,6 +51,12 @@ class WaveBControlTimeWBMpcController final : public ::robot::model::ControlBase
  public:
   void setMathematicsEvidence(std::shared_ptr<task5c::Evidence> state,std::shared_ptr<task5c::Evidence> nominal) {stateEvidence_=std::move(state);nominalInputEvidence_=std::move(nominal);}
  private:
+  void setObservation(const SystemObservation& observation);
+  SystemObservation latestObservation();
+  void advanceMpc();
+  std::mutex observationCopyMutex_;
+  SystemObservation observationCopy_;
+
   std::shared_ptr<task5c::Evidence> stateEvidence_,nominalInputEvidence_;
  public:
   /**

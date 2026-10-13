@@ -1,3 +1,4 @@
+#include "extensions/G1RotationTransforms.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -38,7 +39,7 @@ namespace ocs2::humanoid {
 
 EndEffectorKinematicsQuadraticCost::EndEffectorKinematicsQuadraticCost(EndEffectorKinematicsWeights weights,
                                                                        const PinocchioInterface& pinocchioInterface,
-                                                                       const EndEffectorKinematics<scalar_t>& endEffectorKinematics,
+                                                                       const G1EndEffectorKinematics<scalar_t>& endEffectorKinematics,
                                                                        const MpcRobotModelBase<ad_scalar_t>& mpcRobotModelAD,
                                                                        std::string endEffectorName,
                                                                        const ModelSettings& modelSettings)
@@ -94,7 +95,7 @@ vector_t EndEffectorKinematicsQuadraticCost::getParameters(scalar_t time,
 /******************************************************************************************************/
 
 EndEffectorKinematicsCostElement<scalar_t> EndEffectorKinematicsQuadraticCost::getReferenceCostElement(
-    const vector_t& state, const vector_t& input, const EndEffectorKinematics<scalar_t>& endEffectorKinematics) {
+    const vector_t& state, const vector_t& input, const G1EndEffectorKinematics<scalar_t>& endEffectorKinematics) {
   EndEffectorKinematicsCostElement<scalar_t> costElement;
   costElement.setPosition(endEffectorKinematics.getPosition(state)[0]);
   costElement.setOrientation(endEffectorKinematics.getOrientation(state)[0]);
@@ -110,7 +111,7 @@ EndEffectorKinematicsCostElement<scalar_t> EndEffectorKinematicsQuadraticCost::g
 ad_vector_t EndEffectorKinematicsQuadraticCost::costVectorFunction(ad_scalar_t time,
                                                                    const ad_vector_t& state,
                                                                    const ad_vector_t& input,
-                                                                   const ad_vector_t& parameters) {
+                                                                   const ad_vector_t& parameters) const {
   const pinocchio::ReferenceFrame rf = pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED;
 
   const auto& model = pinocchioInterfaceCppAd_.getModel();
@@ -124,7 +125,7 @@ ad_vector_t EndEffectorKinematicsQuadraticCost::costVectorFunction(ad_scalar_t t
   // auto oMf = data.oMf;
   ad_vector_t position = frameData.translation();
   ad_vector_t linearVelocity = pinocchio::getFrameVelocity(model, data, frameID_, rf).linear();
-  ad_quaternion_t orientation = matrixToQuaternion(frameData.rotation());
+  Eigen::Quaternion<ad_scalar_t> orientation = g1::geometry::matrixToQuaternion(frameData.rotation());
   ad_vector_t angularVelocity = pinocchio::getFrameVelocity(model, data, frameID_, rf).angular();
   ad_vector_t taskSpaceVec(13);
   taskSpaceVec << position, orientation.coeffs(), linearVelocity, angularVelocity;

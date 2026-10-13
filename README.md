@@ -40,17 +40,20 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 | `math/` | 16 个已验收数学函数的 MATLAB 源定义，对应现有生成库 |
 | `tools/+g1log/` | 5 个离线日志工具：收集信号、转换矩阵、导出物理 CSV、写 CSV/JSON |
 | `open_project.m`、`run_walking.m` | 打开工程与仿真编排入口 |
-| `cpp/mex/` | MEX 生命周期及信号接入 |
-| `cpp/controller/` | OCS2 求解、策略查询与逆动力学 |
-| `cpp/reference/`、`cpp/time/` | 参考接入与确定性控制时间 |
-| `cpp/math/`、`generated/` | 已验收数学适配及生成源码 |
-| `cpp/diagnostics/` | 控制链诊断 |
+| `adapters/matlab/` | 六个原 MEX 命令、协议转换和 MATLAB 实例生命周期 |
+| `cpp/include/g1_controller/` | 不暴露 MATLAB/ROS/OCS2 类型的公开 C++ API |
+| `cpp/controller/` | 核心实例、状态缓存、求解线程与原调度 |
+| `cpp/whole_body/humanoid_wb_mpc/src/dynamics/` | 原逆动力学辅助计算 |
+| `cpp/reference/`、`time/` | 原参考消费与 canonical time |
+| `cpp/math/`、`generated/` | 已验收数学适配及原样生成源码；独立标量类型支持 |
+| `cpp/diagnostics/` | 原控制链诊断 |
 | `assets/`、`config/`、`data/` | 网格、URDF、任务与物理参数 |
-| `cpp/whole_body/` | 全身 NMPC 业务数学：动力学、接触、代价、约束、参考管理和初始化 |
-| `cpp/robot/` | 机器人状态、动作、模型描述和控制器基础类型 |
-| `cpp/interfaces/` | 不依赖 ROS 的策略观察接口 |
-| `third_party/ocs2_ros2/` | 保留的 OCS2 派生版本源码快照，原文件未改写 |
-| `third_party/blasfeo/`、`third_party/hpipm/` | 底层数值库源码及许可证 |
+| `cpp/whole_body/` | 原全身 OCP 数学和 composition root |
+| `cpp/robot/` | 原机器人状态、动作和模型描述 |
+| `cpp/extensions/` | 自定义罚函数、软约束所有权、权重与模式元数据、六维足端接口及旋转辅助函数 |
+| `cpp/interfaces/` | 内部纯 C++ 观察接口 |
+| `third_party/ocs2/` | 官方 OCS2 固定提交 submodule，原文件未改写 |
+| `third_party/blasfeo/`、`third_party/hpipm/` | 原版固定提交 submodule 与许可证 |
 | `cmake/NumericalLibraries.cmake` | 外部普通 CMake 适配，直接构建上述库与业务源码 |
 
 在线升/降步态判断、步态参数查询、摆足参考、四元数转换和接触 wrench/CoP 计算均已嵌入模型。固定配置与总线由数据字典管理；模型工作区仅保留可覆盖的初始状态、重力和站立开关。模型及数据字典是源文件，不需要外部构图脚本才能打开。
@@ -67,10 +70,35 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 
 构建产物位于 `build/standalone/lib/`，MATLAB 从这里加载 MEX。旧 `build/controller/`、`install/` 只作为本机历史产物保留，不参与新构建。默认串行编译，以限制内存。
 
-`third_party/ocs2_ros2/` 中仍保留上游 ROS 接口、消息包及 ament 构建文件，遵守本次“OCS2 暂时不动”的边界；当前普通 CMake 不执行这些文件，也不编译、链接这些 ROS 组件。项目自己的消息包、ROS 头文件依赖和 colcon 构建流程已移除。URDF 解析使用独立 URDFDOM。
+`third_party/ocs2/` 中仍保留上游 ROS 接口、消息包及 catkin 构建文件，遵守本次“上游目录原样保留”的边界；当前普通 CMake 不执行这些文件，也不编译、链接这些 ROS 组件。项目自己的消息包、ROS 头文件依赖和 colcon 构建流程已移除。URDF 解析使用独立 URDFDOM。
 
 这次结构调整尚不代表 Windows 构建通过：保留的 OCS2 CppAD 动态代码加载及部分诊断仍使用 Linux API，需要后续单独适配。
 
 本次业务/依赖分离已完成独立普通 CMake 编译、422 个编译单元的 ROS 依赖检查、MEX 动态库依赖检查，以及清除 ROS 环境变量后的 tick0 离线查询。118 维输出与已验收的保存基线差异为零；未重新运行完整 4.8 秒物理闭环。验证摘要见 `source_manifest.json`，本机详细日志在 `build/ros_free_refactor/`。
 
 控制链已显式拆为 `ObservationHandling → PlannerPolicy → InverseDynamics / ActionGeneration → JointDrive → PhysicalPlant`。`PolicyDiagnostics` 保留历史输出，并记录策略状态、输入、模式和查询时间。结构图、代码与数据流的实际边界及验证证据见 [数据流边界说明](docs/dataflow_boundaries.md)。
+
+## 独立 C++ 核心
+
+`G1_BUILD_CORE=ON` 建立 `libg1_controller.so`；`G1_BUILD_MATLAB=ON` 额外建立 `g1_ocp_mex.mexa64`。MEX 只链接核心，不直接编译 OCP 或 controller。
+
+```bash
+# 不查找 MATLAB、不编译 MEX
+./scripts/build_core.sh
+# 核心 + 原 MEX 接口
+./scripts/build_mex.sh
+# 核验固定来源的 OCS2 子目录快照
+python3 scripts/verify_dependencies.py
+```
+
+公开入口为 `g1_controller::G1Controller`：`initialize`、`setReference`、`query`、`inverseDynamics`、`step`、`shutdown`。数据类型定义在 `cpp/include/g1_controller/G1Controller.h`，依赖只有标准 C++。保留的数学 authority 环境来自 `config/controller_environment.json`；standalone replay driver 给出了不借 MATLAB 设置该环境的示例。
+
+核心不包含 MATLAB SDK/MEX API；原生成数学文件未改写，项目独立类型头的标量类型与此前 SDK 通过静态断言核对。模型、协议、solver、权重和时间语义未改变。Pinocchio 等数值包当前仍安装于 `/opt/ros/jazzy`，这是发现安装包的前缀，不是 ROS 构建工具或通信依赖。
+
+当前 OCS2 仍固定为允许的 fork commit `bf9ae46f3c6dc751348d8002c03aa2f4a7cc17e7`，没有换版本。其 1056 个保存文件均核对同一来源 commit；恢复了此前改动的两个未使用 CMake 元数据文件，所有 OCS2 算法源码保持该来源版本原样。布局映射和文件校验见 `third_party/dependencies.lock.json`。这不等同于已迁移到官方 OCS2。
+
+本阶段不进行 Windows 适配或 solver 优化。验收结果见 `docs/core_extraction_acceptance.json`；本机编译、无 MATLAB 配置、fixture 和重放证据位于 `build/core_extraction/`。
+
+依赖初始化：`git submodule update --init --recursive`。第三方源码由 submodule 管理，版本见 `third_party/dependencies.lock.json`。
+
+官方 OCS2 接入方式和验收见 `docs/official_ocs2_transition.md`。

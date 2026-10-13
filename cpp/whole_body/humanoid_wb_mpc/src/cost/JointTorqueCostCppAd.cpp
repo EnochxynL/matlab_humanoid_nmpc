@@ -81,7 +81,7 @@ JointTorqueCostCppAd::JointTorqueCostCppAd(const JointTorqueCostCppAd& other)
 ad_vector_t JointTorqueCostCppAd::costVectorFunction(ad_scalar_t time,
                                                      const ad_vector_t& state,
                                                      const ad_vector_t& input,
-                                                     const ad_vector_t& parameters) {
+                                                     const ad_vector_t& parameters) const {
   return computeJointTorques<ad_scalar_t>(state, input, pinocchioInterfaceCppAd_, *mpcRobotModelPtr_).cwiseProduct(parameters);
 }
 

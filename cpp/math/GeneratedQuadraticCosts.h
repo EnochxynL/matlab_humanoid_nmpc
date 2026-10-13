@@ -1,10 +1,11 @@
+#include "extensions/TermRegistry.h"
 #pragma once
 #include "math/GeneratedJointLimits.h"
 #include "math/GeneratedNominals.h"
 #include "quadraticTerminal.h"
 #include "quadraticRunning.h"
-#include <ocs2_core/cost/QuadraticStateCost.h>
-#include <ocs2_core/cost/QuadraticStateInputCost.h>
+#include "extensions/G1QuadraticStateCost.h"
+#include "extensions/G1QuadraticStateInputCost.h"
 #include <humanoid_common_mpc/pinocchio_model/DynamicsHelperFunctions.h>
 namespace task5c {
 inline void costShadow(const ScalarFunctionQuadraticApproximation& a,
@@ -22,7 +23,7 @@ inline void costShadow(const ScalarFunctionQuadraticApproximation& a,
 class GeneratedTerminal final : public StateCost {
   std::unique_ptr<StateCost> old_; Authority authority_; std::shared_ptr<Evidence> e_;
   ScalarFunctionQuadraticApproximation candidate(scalar_t t,const vector_t& x,const TargetTrajectories& target) const {
-    matrix_t q;dynamic_cast<QuadraticStateCost&>(*old_).getGains(q);
+    matrix_t q;dynamic_cast<G1QuadraticStateCost&>(*old_).getGains(q);
     const auto desired=target.getDesiredState(t);ScalarFunctionQuadraticApproximation a;
     a.dfdx.resize(58);a.dfdxx.resize(58,58);
     quadraticTerminal(x.data(),desired.data(),q.data(),&a.f,a.dfdx.data(),a.dfdxx.data());++e_->generated;return a;
@@ -46,7 +47,7 @@ class GeneratedRunning final : public StateInputCost {
   std::shared_ptr<Evidence> nominalStateEvidence_,nominalInputEvidence_;
   const SwitchedModelReferenceManager* ref_;const PinocchioInterface* pin_;const MpcRobotModelBase<scalar_t>* model_;
   ScalarFunctionQuadraticApproximation candidate(scalar_t t,const vector_t& x,const vector_t& u,const TargetTrajectories& target) const {
-    matrix_t q,r,p;dynamic_cast<QuadraticStateInputCost&>(*old_).getGains(q,r,p);
+    matrix_t q,r,p;dynamic_cast<G1QuadraticStateInputCost&>(*old_).getGains(q,r,p);
     if(p.size())throw std::runtime_error("Frozen WB quadratic P must remain empty");
     const auto nominalX=generatedNominalState(*ref_,*model_,target,x,t,nominalStateEvidence_);
     const auto nominalU=generatedNominalInput(*pin_,ref_->getContactFlags(t),*model_,nominalInputEvidence_);
@@ -75,10 +76,10 @@ inline OptimalControlProblem installQuadraticCosts(OptimalControlProblem p,WBMpc
     std::shared_ptr<Evidence> terminal,std::shared_ptr<Evidence> running,std::shared_ptr<Evidence> ns,std::shared_ptr<Evidence> ni) {
   if(!std::getenv("TASK5C_QUADRATIC"))return p;
   auto terminalOld=p.finalCostPtr->extract("terminalCost");
-  p.finalCostPtr->add("terminalCost",std::make_unique<GeneratedTerminal>(std::move(terminalOld),authorityFor("TASK5C_TERMINAL_AUTHORITY"),terminal));
+  g1::addTerm(*p.finalCostPtr,"terminalCost",std::make_unique<GeneratedTerminal>(std::move(terminalOld),authorityFor("TASK5C_TERMINAL_AUTHORITY"),terminal));
   // Both collections each contain exactly this one term in the frozen WB OCP.
   auto runningOld=p.costPtr->extract("stateInputQuadraticCost");
-  p.costPtr->add("stateInputQuadraticCost",std::make_unique<GeneratedRunning>(std::move(runningOld),authorityFor("TASK5C_RUNNING_AUTHORITY"),running,i,ns,ni));
+  g1::addTerm(*p.costPtr,"stateInputQuadraticCost",std::make_unique<GeneratedRunning>(std::move(runningOld),authorityFor("TASK5C_RUNNING_AUTHORITY"),running,i,ns,ni));
   return p;
 }
 }

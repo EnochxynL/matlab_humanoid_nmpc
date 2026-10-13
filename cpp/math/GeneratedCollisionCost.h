@@ -1,12 +1,13 @@
+#include "extensions/TermRegistry.h"
 #pragma once
 #include "math/CollisionGraph.h"
 #include "math/GeneratedMoment.h"
-#include <ocs2_core/soft_constraint/StateSoftConstraint.h>
+#include "extensions/G1StateSoftConstraint.h"
 namespace task5c::collision {
 class GeneratedCollisionCost final:public StateCost {
- std::unique_ptr<StateSoftConstraint>original_;std::unique_ptr<FootCollisionConstraint>lifecycle_;MultidimensionalPenalty penalty_;CollisionGraph graph_;Authority auth_;std::shared_ptr<Evidence>evidence_;
+ std::unique_ptr<G1StateSoftConstraint>original_;std::unique_ptr<FootCollisionConstraint>lifecycle_;G1MultidimensionalPenalty penalty_;CollisionGraph graph_;Authority auth_;std::shared_ptr<Evidence>evidence_;
  public:
- GeneratedCollisionCost(StateSoftConstraint&old,WBMpcInterface&i,const std::string&task,const std::string&cache,Authority a,std::shared_ptr<Evidence>e):original_(old.clone()),lifecycle_(old.get<FootCollisionConstraint>().clone()),penalty_(old.getPenalty()),graph_(i,task,cache),auth_(a),evidence_(std::move(e)){}
+ GeneratedCollisionCost(G1StateSoftConstraint&old,WBMpcInterface&i,const std::string&task,const std::string&cache,Authority a,std::shared_ptr<Evidence>e):original_(old.clone()),lifecycle_(old.get<FootCollisionConstraint>().clone()),penalty_(old.getPenalty()),graph_(i,task,cache),auth_(a),evidence_(std::move(e)){}
  GeneratedCollisionCost(const GeneratedCollisionCost&r):StateCost(r),original_(r.original_->clone()),lifecycle_(r.lifecycle_->clone()),penalty_(r.penalty_),graph_(r.graph_),auth_(r.auth_),evidence_(r.evidence_){++evidence_->clones;}
  GeneratedCollisionCost*clone()const override{return new GeneratedCollisionCost(*this);}
  bool isActive(double t)const override{++evidence_->activation;return lifecycle_->isActive(t);}
@@ -25,7 +26,7 @@ class GeneratedCollisionCost final:public StateCost {
 };
 inline OptimalControlProblem installCollision(OptimalControlProblem p,WBMpcInterface&i,const std::string&task,std::shared_ptr<Evidence>e){
  if(!std::getenv("TASK5C_COLLISION"))return p;const char*cache=std::getenv("TASK5C_COLLISION_CACHE");if(!cache)throw std::runtime_error("Require isolated collision cache");
- std::vector<std::pair<size_t,std::string>>names;for(auto [name,index]:p.stateSoftConstraintPtr->getTermNameMap())names.emplace_back(index,name);std::sort(names.begin(),names.end());auto replacement=std::make_unique<StateCostCollection>();
- for(auto [index,name]:names){if(name=="FootCollisionSoftConstraint")replacement->add(name,std::make_unique<GeneratedCollisionCost>(p.stateSoftConstraintPtr->get<StateSoftConstraint>(name),i,task,cache,authorityFor("TASK5C_COLLISION_AUTHORITY"),e));else replacement->add(name,std::unique_ptr<StateCost>(p.stateSoftConstraintPtr->get(name).clone()));}p.stateSoftConstraintPtr=std::move(replacement);return p;
+ std::vector<std::pair<size_t,std::string>>names;for(auto [name,index]:g1::termNames(*p.stateSoftConstraintPtr))names.emplace_back(index,name);std::sort(names.begin(),names.end());auto replacement=std::make_unique<StateCostCollection>();
+ for(auto [index,name]:names){if(name=="FootCollisionSoftConstraint")g1::addTerm(*replacement,name,std::make_unique<GeneratedCollisionCost>(p.stateSoftConstraintPtr->get<G1StateSoftConstraint>(name),i,task,cache,authorityFor("TASK5C_COLLISION_AUTHORITY"),e));else g1::addTerm(*replacement,name,std::unique_ptr<StateCost>(p.stateSoftConstraintPtr->get(name).clone()));}p.stateSoftConstraintPtr=std::move(replacement);return p;
 }
 }

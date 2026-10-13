@@ -1,3 +1,4 @@
+#include "extensions/MeasuredMode.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -44,8 +45,10 @@ namespace ocs2::humanoid {
 /**
  * Manages the ModeSchedule and the TargetTrajectories for switched model.
  */
-class SwitchedModelReferenceManager : public ReferenceManager {
+class SwitchedModelReferenceManager : public ReferenceManager, public g1::MeasuredModeReceiver {
  public:
+  void setMeasuredMode(size_t mode) override { measuredMode_ = mode; }
+
   SwitchedModelReferenceManager(std::shared_ptr<GaitSchedule> gaitSchedulePtr,
                                 std::shared_ptr<SwingTrajectoryPlanner> swingTrajectoryPtr,
                                 const PinocchioInterface& pinocchioInterface,
@@ -76,10 +79,10 @@ class SwitchedModelReferenceManager : public ReferenceManager {
   vector_t getDesiredState(const TargetTrajectories& targetTrajectories, const vector_t& state, scalar_t time) const;
 
  protected:
+  size_t measuredMode_ = 3;
   virtual void modifyReferences(scalar_t initTime,
                                 scalar_t finalTime,
                                 const vector_t& initState,
-                                size_t initMode,
                                 TargetTrajectories& targetTrajectories,
                                 ModeSchedule& modeSchedule) override;
 

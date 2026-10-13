@@ -72,6 +72,12 @@ class WBMpcMrtJointController final : public ::robot::model::ControlBase {
   void startMpcThread(const ::robot::model::RobotState& initRobotState);
 
  private:
+  void setObservation(const SystemObservation& observation);
+  SystemObservation latestObservation();
+  void advanceMpc();
+  std::mutex observationCopyMutex_;
+  SystemObservation observationCopy_;
+
   /**
    * Handles the MPC solver thread.
    */

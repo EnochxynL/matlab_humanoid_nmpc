@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 #include <ocs2_core/cost/StateCost.h>
-#include <ocs2_core/penalties/penalties/PieceWisePolynomialBarrierPenalty.h>
+#include "extensions/G1PieceWisePolynomialBarrierPenalty.h"
 
 #include "humanoid_common_mpc/common/MpcRobotModelBase.h"
 #include "humanoid_common_mpc/common/Types.h"
@@ -50,7 +50,7 @@ class JointLimitsSoftConstraint final : public StateCost {
    * @param barrierSettings : Settings for the position barrier penalty function.
    */
   JointLimitsSoftConstraint(std::pair<vector_t, vector_t> positionlimits,
-                            ocs2::PieceWisePolynomialBarrierPenalty::Config barrierSettings,
+                            ocs2::G1PieceWisePolynomialBarrierPenalty::Config barrierSettings,
                             const MpcRobotModelBase<scalar_t>& mpcRobotModel);
 
   JointLimitsSoftConstraint* clone() const override { return new JointLimitsSoftConstraint(*this); }
@@ -78,7 +78,7 @@ class JointLimitsSoftConstraint final : public StateCost {
  private:
   JointLimitsSoftConstraint(const JointLimitsSoftConstraint& rhs);
 
-  std::unique_ptr<PieceWisePolynomialBarrierPenalty> jointPositionPenaltyPtr_;
+  std::unique_ptr<G1PieceWisePolynomialBarrierPenalty> jointPositionPenaltyPtr_;
   const MpcRobotModelBase<scalar_t>* mpcRobotModelPtr_;
   std::pair<vector_t, vector_t> positionLimits_;
   scalar_t offset_;

@@ -1,0 +1,9 @@
+[submodule "ocs2"]
+	path = third_party/ocs2
+	url = https://github.com/leggedrobotics/ocs2.git
+[submodule "blasfeo"]
+	path = third_party/blasfeo
+	url = https://github.com/giaf/blasfeo.git
+[submodule "hpipm"]
+	path = third_party/hpipm
+	url = https://github.com/giaf/hpipm.git

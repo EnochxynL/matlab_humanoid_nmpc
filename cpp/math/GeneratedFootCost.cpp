@@ -1,3 +1,4 @@
+#include "extensions/TermRegistry.h"
 #include "math/GeneratedFootCost.h"
 #include "math/FootCostGraph.h"
 
@@ -16,7 +17,7 @@ ScalarFunctionQuadraticApproximation GeneratedFootCost::getQuadraticApproximatio
  }
 OptimalControlProblem installFootCosts(OptimalControlProblem p,WBMpcInterface&i,std::shared_ptr<Evidence>e){
  if(!std::getenv("TASK5C_FOOT_COST"))return p;const char*cache=std::getenv("TASK5C_FOOT_COST_CACHE");if(!cache)throw std::runtime_error("Require isolated foot cost cache");
- std::vector<std::pair<size_t,std::string>>names;for(auto [name,index]:p.costPtr->getTermNameMap())names.emplace_back(index,name);std::sort(names.begin(),names.end());auto replacement=std::make_unique<StateInputCostCollection>();int replaced=0;
- for(auto [index,name]:names){int leg=-1;for(int k=0;k<2;++k)if(name==i.modelSettings().contactNames6DoF[k]+"_TaskSpaceTrackingCost")leg=k;if(leg>=0){auto&old=dynamic_cast<EndEffectorDynamicsFootCost&>(p.costPtr->get(name));replacement->add(name,std::make_unique<GeneratedFootCost>(old,i,leg,cache,authorityFor("TASK5C_FOOT_COST_AUTHORITY"),e));++replaced;}else replacement->add(name,std::unique_ptr<StateInputCost>(p.costPtr->get(name).clone()));}if(replaced!=2)throw std::runtime_error("Foot owning cost boundary not found");p.costPtr=std::move(replacement);return p;
+ std::vector<std::pair<size_t,std::string>>names;for(auto [name,index]:g1::termNames(*p.costPtr))names.emplace_back(index,name);std::sort(names.begin(),names.end());auto replacement=std::make_unique<StateInputCostCollection>();int replaced=0;
+ for(auto [index,name]:names){int leg=-1;for(int k=0;k<2;++k)if(name==i.modelSettings().contactNames6DoF[k]+"_TaskSpaceTrackingCost")leg=k;if(leg>=0){auto&old=dynamic_cast<EndEffectorDynamicsFootCost&>(p.costPtr->get(name));g1::addTerm(*replacement,name,std::make_unique<GeneratedFootCost>(old,i,leg,cache,authorityFor("TASK5C_FOOT_COST_AUTHORITY"),e));++replaced;}else g1::addTerm(*replacement,name,std::unique_ptr<StateInputCost>(p.costPtr->get(name).clone()));}if(replaced!=2)throw std::runtime_error("Foot owning cost boundary not found");p.costPtr=std::move(replacement);return p;
 }
 }

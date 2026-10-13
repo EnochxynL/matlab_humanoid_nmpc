@@ -140,13 +140,12 @@ vector_t SwitchedModelReferenceManager::getDesiredState(const TargetTrajectories
 void SwitchedModelReferenceManager::modifyReferences(scalar_t initTime,
                                                      scalar_t finalTime,
                                                      const vector_t& initState,
-                                                     size_t initMode,
                                                      TargetTrajectories& targetTrajectories,
                                                      ModeSchedule& modeSchedule) {
   const auto timeHorizon = finalTime - initTime;
   modeSchedule = gaitSchedulePtr_->getModeSchedule(initTime - timeHorizon, finalTime + timeHorizon);
 
-  scalar_t terrainHeight = adaptToCurrentGroundHeight(targetTrajectories, initState, initMode);
+  scalar_t terrainHeight = adaptToCurrentGroundHeight(targetTrajectories, initState, measuredMode_);
 
   swingTrajectoryPtr_->update(modeSchedule, terrainHeight);
 

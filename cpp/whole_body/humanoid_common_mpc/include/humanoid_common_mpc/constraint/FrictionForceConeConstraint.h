@@ -1,3 +1,4 @@
+#include "extensions/ActiveConstraint.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -52,7 +53,7 @@ namespace ocs2::humanoid {
  * sqrt(regularization) instead of Fz = 0
  *
  */
-class FrictionForceConeConstraint final : public StateInputConstraint {
+class FrictionForceConeConstraint final : public StateInputConstraint, public g1::ActiveConstraint {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

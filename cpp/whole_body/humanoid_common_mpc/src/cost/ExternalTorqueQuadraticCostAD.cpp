@@ -110,7 +110,7 @@ vector_t ExternalTorqueQuadraticCostAD::getParameters(scalar_t time,
 ad_vector_t ExternalTorqueQuadraticCostAD::costVectorFunction(ad_scalar_t time,
                                                               const ad_vector_t& state,
                                                               const ad_vector_t& input,
-                                                              const ad_vector_t& parameters) {
+                                                              const ad_vector_t& parameters) const {
   const pinocchio::ReferenceFrame rf = pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED;
 
   const auto& model = pinocchioInterfaceCppAd_.getModel();

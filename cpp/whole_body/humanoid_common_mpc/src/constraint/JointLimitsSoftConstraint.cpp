@@ -37,9 +37,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace ocs2::humanoid {
 
 JointLimitsSoftConstraint::JointLimitsSoftConstraint(std::pair<vector_t, vector_t> positionlimits,
-                                                     ocs2::PieceWisePolynomialBarrierPenalty::Config barrierSettings,
+                                                     ocs2::G1PieceWisePolynomialBarrierPenalty::Config barrierSettings,
                                                      const MpcRobotModelBase<scalar_t>& mpcRobotModel)
-    : jointPositionPenaltyPtr_(new ocs2::PieceWisePolynomialBarrierPenalty(barrierSettings)),
+    : jointPositionPenaltyPtr_(new ocs2::G1PieceWisePolynomialBarrierPenalty(barrierSettings)),
       positionLimits_(positionlimits),
       mpcRobotModelPtr_(&mpcRobotModel),
       offset_(0.0) {
@@ -100,11 +100,11 @@ ScalarFunctionQuadraticApproximation JointLimitsSoftConstraint::getQuadraticAppr
 }
 
 void JointLimitsSoftConstraint::setGains(const scalar_t& mu, const scalar_t& delta) {
-  jointPositionPenaltyPtr_->setConfig(ocs2::PieceWisePolynomialBarrierPenalty::Config(mu, delta));
+  jointPositionPenaltyPtr_->setConfig(ocs2::G1PieceWisePolynomialBarrierPenalty::Config(mu, delta));
 }
 
 void JointLimitsSoftConstraint::getGains(scalar_t& mu, scalar_t& delta) const {
-  ocs2::PieceWisePolynomialBarrierPenalty::Config config;
+  ocs2::G1PieceWisePolynomialBarrierPenalty::Config config;
   jointPositionPenaltyPtr_->getConfig(config);
   mu = config.mu;
   delta = config.delta;

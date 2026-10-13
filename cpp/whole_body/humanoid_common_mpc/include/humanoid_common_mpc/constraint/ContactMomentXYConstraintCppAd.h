@@ -1,3 +1,4 @@
+#include "extensions/ActiveConstraint.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -45,7 +46,7 @@ namespace ocs2::humanoid {
  * Implements the constraint h(t,x,u) >= 0 to constrain the contact moment in the x-y plane.
  */
 
-class ContactMomentXYConstraintCppAd final : public StateInputConstraintCppAd {
+class ContactMomentXYConstraintCppAd final : public StateInputConstraintCppAd, public g1::ActiveConstraint {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   ContactMomentXYConstraintCppAd(const SwitchedModelReferenceManager& referenceManager,

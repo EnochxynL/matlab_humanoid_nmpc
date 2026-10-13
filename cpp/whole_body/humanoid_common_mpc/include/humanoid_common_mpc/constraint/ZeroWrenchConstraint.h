@@ -1,3 +1,4 @@
+#include "extensions/ActiveConstraint.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -36,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace ocs2::humanoid {
 
-class ZeroWrenchConstraint final : public StateInputConstraint {
+class ZeroWrenchConstraint final : public StateInputConstraint, public g1::ActiveConstraint {
  public:
   /*
    * Constructor

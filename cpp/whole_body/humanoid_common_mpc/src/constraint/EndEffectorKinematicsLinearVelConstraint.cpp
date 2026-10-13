@@ -36,7 +36,7 @@ namespace ocs2::humanoid {
 /******************************************************************************************************/
 /******************************************************************************************************/
 EndEffectorKinematicsLinearVelConstraint::EndEffectorKinematicsLinearVelConstraint(
-    const EndEffectorKinematics<scalar_t>& endEffectorKinematics, size_t numConstraints, Config config)
+    const G1EndEffectorKinematics<scalar_t>& endEffectorKinematics, size_t numConstraints, Config config)
     : StateInputConstraint(ConstraintOrder::Linear),
       endEffectorKinematicsPtr_(endEffectorKinematics.clone()),
       numConstraints_(numConstraints),

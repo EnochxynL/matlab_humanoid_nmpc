@@ -1,0 +1,252 @@
+#include "g1_controller/G1Controller.h"
+#include "whole_body/PlannerContext.h"
+#include <algorithm>
+#include <cmath>
+#include <filesystem>
+#include <robot_model/RobotState.h>
+#include <stdexcept>
+
+namespace g1_controller {
+struct G1Controller::Impl {
+  std::unique_ptr<PlannerContext> context;
+  std::unique_ptr<robot::model::RobotDescription> description;
+  std::unique_ptr<robot::model::RobotState> state;
+  std::unique_ptr<WaveBControlTimeWBMpcController> controller;
+  std::vector<size_t> ids;
+  uint64_t lastTick = UINT64_MAX, sequence = 0;
+  vector_t lastResult = vector_t::Zero(118);
+  vector_t lastPolicy = vector_t::Zero(95);
+  bool actionReady = false;
+  double lastRawTime = 0;
+  std::ofstream sampleLog;
+  std::unique_ptr<CanonicalControlTime> canonicalLog;
+  void close() {
+    sampleLog.close();
+    canonicalLog.reset();
+    controller.reset();
+    state.reset();
+    description.reset();
+    context.reset();
+    ids.clear();
+    lastTick = UINT64_MAX;
+    sequence = 0;
+    actionReady = false;
+  }
+  void init(const std::string &root, const std::string &folder) {
+    if (context)
+      throw std::runtime_error(
+          "Close existing MEX controller before initialization");
+    std::filesystem::create_directories(folder);
+    Inputs inputs(root, folder);
+    context = std::make_unique<PlannerContext>(inputs);
+    context->expectedSession = 1;
+    canonicalLog = std::make_unique<CanonicalControlTime>(folder);
+    sampleLog.open(folder + "/planner_samples.csv");
+    sampleLog << std::setprecision(17)
+              << "control_tick,raw_time,canonical_time";
+    for (int j = 0; j < 118; ++j)
+      sampleLog << ",value" << j;
+    sampleLog << "\n";
+    description = std::make_unique<robot::model::RobotDescription>(inputs.urdf);
+    state = std::make_unique<robot::model::RobotState>(*description);
+    auto names = description->getJointNames();
+    std::sort(names.begin(), names.end());
+    ids = description->getJointIndices(names);
+    controller = std::make_unique<WaveBControlTimeWBMpcController>(
+        *description, context->interface.modelSettings(), context->mpc,
+        context->interface.getPinocchioInterface(),
+        context->interface.mpcSettings().mpcDesiredFrequency_,
+        context->structure);
+    context->configure(*controller);
+  }
+  void reference(const double *a) {
+    if (!context)
+      throw std::runtime_error("Initialize MEX first");
+    if (!a[1])
+      return;
+    if (sequence && context->currentPacket.tick == static_cast<uint64_t>(a[0]))
+      return;
+    task5a::Packet p;
+    p.tick = static_cast<uint64_t>(a[0]);
+    p.session = 1;
+    p.sequence = ++sequence;
+    size_t n = static_cast<size_t>(a[2]), m = static_cast<size_t>(a[285]);
+    if ((n != 1 && n != 3) || m < 1 || m > 64)
+      throw std::runtime_error("Reference shape rejected");
+    for (size_t k = 0; k < n; ++k) {
+      p.target.timeTrajectory.push_back(a[3 + k]);
+      p.target.stateTrajectory.emplace_back(
+          Eigen::Map<const vector_t>(a + 6 + 58 * k, 58));
+      p.target.inputTrajectory.emplace_back(
+          Eigen::Map<const vector_t>(a + 180 + 35 * k, 35));
+    }
+    for (size_t k = 0; k < m; ++k)
+      p.schedule.eventTimes.push_back(a[286 + k]);
+    for (size_t k = 0; k <= m; ++k)
+      p.schedule.modeSequence.push_back(static_cast<size_t>(a[350 + k]));
+    p.terminal = a[415];
+    for (int k = 0; k < 8; ++k)
+      p.swing[k] = a[416 + k];
+    for (int k = 0; k < 4; ++k)
+      p.filtered[k] = a[424 + k];
+    context->currentPacket = std::move(p);
+  }
+  void query(const double *a) {
+    if (!controller)
+      throw std::runtime_error("Initialize MEX first");
+    uint64_t tick = static_cast<uint64_t>(std::llround(a[0] / .002));
+    if (a[3] < .35 || a[3] > 1.3)
+      throw std::runtime_error("Base height outside physical safety envelope");
+    double pitch =
+        std::asin(std::clamp(2 * (a[4] * a[6] - a[7] * a[5]), -1., 1.));
+    double roll = std::atan2(2 * (a[4] * a[5] + a[6] * a[7]),
+                             1 - 2 * (a[5] * a[5] + a[6] * a[6]));
+    if (std::abs(pitch) > .7853981633974483 ||
+        std::abs(roll) > .7853981633974483)
+      throw std::runtime_error("Tilt outside physical safety envelope");
+    if (lastTick == tick)
+      return;
+    if (lastTick != UINT64_MAX && !actionReady)
+      throw std::runtime_error(
+          "Complete inverse dynamics before advancing policy tick");
+    if (lastTick != UINT64_MAX && tick != lastTick + 1)
+      throw std::runtime_error("Nonsequential physical tick");
+    double t = canonicalLog->accept(tick, a[0], 1, tick);
+    state->setTime(t);
+    state->setRootPositionInWorldFrame(robot::vector3_t(a + 1));
+    robot::quaternion_t q(a[4], a[5], a[6], a[7]);
+    if (std::abs(q.norm() - 1) > 1e-6)
+      throw std::runtime_error("Quaternion rejected");
+    state->setRootRotationLocalToWorldFrame(q);
+    state->setRootLinearVelocityInLocalFrame(robot::vector3_t(a + 8));
+    state->setRootAngularVelocityInLocalFrame(robot::vector3_t(a + 11));
+    for (size_t j = 0; j < 29; ++j) {
+      state->setJointPosition(ids[j], a[14 + j]);
+      state->setJointVelocity(ids[j], a[43 + j]);
+    }
+    // Original successful controller uses STANCE for measured observation mode.
+    state->setContactFlag(0, true);
+    state->setContactFlag(1, true);
+    if (lastTick == UINT64_MAX)
+      controller->startMpcThread(*state);
+    vector_t x, u;
+    size_t mode;
+    controller->evaluatePolicy(*state, x, u, mode);
+    lastPolicy << x, u, double(mode), t + .005;
+    lastTick = tick;
+    lastRawTime = a[0];
+    actionReady = false;
+  }
+  void inverseDynamics(const double *p) {
+    if (!controller || lastTick == UINT64_MAX)
+      throw std::runtime_error("Query a policy before inverse dynamics");
+    // Bind the action to exactly the policy queried in this tick; reject
+    // stale/mutated packets.
+    if (!(Eigen::Map<const vector_t>(p, 95).array() == lastPolicy.array())
+             .all())
+      throw std::runtime_error("Inverse dynamics policy identity mismatch");
+    if (actionReady)
+      return;
+    vector_t x = lastPolicy.head(58), u = lastPolicy.segment(58, 35);
+    vector_t tau = controller->inverseDynamics(x, u);
+    lastResult << x, u, tau, lastPolicy[93], lastPolicy[94];
+    actionReady = true;
+    sampleLog << lastTick << ',' << lastRawTime << ','
+              << double(lastTick) * .002;
+    for (int j = 0; j < 118; ++j)
+      sampleLog << ',' << lastResult[j];
+    sampleLog << '\n' << std::flush;
+  }
+};
+
+namespace {
+std::array<double, 74> encodeObservation(const Observation &o) {
+  std::array<double, 74> a{};
+  a[0] = o.rawBackendTime;
+  std::copy(o.basePosition.begin(), o.basePosition.end(), a.begin() + 1);
+  std::copy(o.baseOrientationWxyz.begin(), o.baseOrientationWxyz.end(),
+            a.begin() + 4);
+  std::copy(o.baseLinearVelocityLocal.begin(), o.baseLinearVelocityLocal.end(),
+            a.begin() + 8);
+  std::copy(o.baseAngularVelocityLocal.begin(),
+            o.baseAngularVelocityLocal.end(), a.begin() + 11);
+  std::copy(o.jointPositions.begin(), o.jointPositions.end(), a.begin() + 14);
+  std::copy(o.jointVelocities.begin(), o.jointVelocities.end(), a.begin() + 43);
+  std::copy(o.measuredContacts.begin(), o.measuredContacts.end(),
+            a.begin() + 72);
+  return a;
+}
+std::array<double, 95> encodePolicy(const Policy &p) {
+  std::array<double, 95> a{};
+  std::copy(p.state.begin(), p.state.end(), a.begin());
+  std::copy(p.input.begin(), p.input.end(), a.begin() + 58);
+  a[93] = p.mode;
+  a[94] = p.queryTime;
+  return a;
+}
+Policy decodePolicy(const double *a) {
+  Policy p;
+  std::copy_n(a, 58, p.state.begin());
+  std::copy_n(a + 58, 35, p.input.begin());
+  p.mode = a[93];
+  p.queryTime = a[94];
+  return p;
+}
+void requireFinite(const double *data, std::size_t count) {
+  for (std::size_t i = 0; i < count; ++i)
+    if (!std::isfinite(data[i]))
+      throw std::runtime_error("Nonfinite argument");
+}
+} // namespace
+
+G1Controller::G1Controller() : impl_(std::make_unique<Impl>()) {}
+G1Controller::~G1Controller() { shutdown(); }
+void G1Controller::initialize(const ControllerConfig &config) {
+  impl_->init(config.projectRoot, config.logDirectory);
+}
+void G1Controller::shutdown() noexcept { impl_->close(); }
+void G1Controller::setReference(const Reference &r) {
+  // Keep the accepted reference layout local to the retained OCP adapter.
+  std::array<double, 428> a{};
+  a[0] = static_cast<double>(r.tick);
+  a[1] = r.publish;
+  a[2] = static_cast<double>(r.targetCount);
+  std::copy(r.targetTimes.begin(), r.targetTimes.end(), a.begin() + 3);
+  for (std::size_t k = 0; k < 3; ++k) {
+    std::copy(r.targetStates[k].begin(), r.targetStates[k].end(),
+              a.begin() + 6 + 58 * k);
+    std::copy(r.targetInputs[k].begin(), r.targetInputs[k].end(),
+              a.begin() + 180 + 35 * k);
+  }
+  a[285] = static_cast<double>(r.eventCount);
+  std::copy(r.eventTimes.begin(), r.eventTimes.end(), a.begin() + 286);
+  for (std::size_t k = 0; k < 65; ++k)
+    a[350 + k] = static_cast<double>(r.modes[k]);
+  a[415] = r.terminalTime;
+  std::copy(r.swingParameters.begin(), r.swingParameters.end(),
+            a.begin() + 416);
+  std::copy(r.filteredCommand.begin(), r.filteredCommand.end(),
+            a.begin() + 424);
+  requireFinite(a.data(), a.size());
+  impl_->reference(a.data());
+}
+Policy G1Controller::query(const Observation &observation) {
+  const auto a = encodeObservation(observation);
+  requireFinite(a.data(), a.size());
+  impl_->query(a.data());
+  return decodePolicy(impl_->lastPolicy.data());
+}
+Torque G1Controller::inverseDynamics(const Policy &policy) {
+  const auto p = encodePolicy(policy);
+  requireFinite(p.data(), p.size());
+  impl_->inverseDynamics(p.data());
+  Torque torque;
+  std::copy_n(impl_->lastResult.data() + 93, 23, torque.begin());
+  return torque;
+}
+ControlResult G1Controller::step(const Observation &observation) {
+  Policy policy = query(observation);
+  Torque torque = inverseDynamics(policy);
+  return {policy, torque};
+}
+} // namespace g1_controller

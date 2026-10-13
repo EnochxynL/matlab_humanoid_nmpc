@@ -1,3 +1,4 @@
+#include "extensions/TermRegistry.h"
 #pragma once
 #include <pinocchio/fwd.hpp>
 #include <pinocchio/multibody/model.hpp>
@@ -111,9 +112,9 @@ inline OptimalControlProblem install(OptimalControlProblem p,WBMpcInterface&i,st
  auto adModel=std::make_shared<WBAccelMpcRobotModel<ad_scalar_t>>(i.modelSettings());auto ref=i.getSwitchedModelReferenceManagerPtr();
  std::map<std::string,std::unique_ptr<EndEffectorDynamics<scalar_t>>> deps;
  for(const auto&name:i.modelSettings().contactNames6DoF)deps[name]=std::make_unique<PinocchioEndEffectorDynamicsCppAd>(i.getPinocchioInterface(),*adModel,std::vector<std::string>{name},name,i.modelSettings().modelFolderCppAd,false,false);
- std::vector<std::pair<size_t,std::string>>ordered;for(auto[n,k]:p.equalityConstraintPtr->getTermNameMap())ordered.emplace_back(k,n);std::sort(ordered.begin(),ordered.end());
+ std::vector<std::pair<size_t,std::string>>ordered;for(auto[n,k]:g1::termNames(*p.equalityConstraintPtr))ordered.emplace_back(k,n);std::sort(ordered.begin(),ordered.end());
  auto collection=std::make_unique<StateInputConstraintCollection>();
- for(auto[k,n]:ordered){auto term=p.equalityConstraintPtr->extract(n);bool found=false;for(size_t leg=0;leg<2;++leg){auto&name=i.modelSettings().contactNames6DoF[leg];bool isStance=n==name+"_zeroVelocity",isSwing=n==name+"_normalVelocity";if(isStance||isSwing){term=std::make_unique<GeneratedFootConstraint>(std::move(term),*deps.at(name),isStance,leg,i.modelSettings(),authorityFor(isStance?"TASK5C_STANCE_AUTHORITY":"TASK5C_SWING_AUTHORITY"),isStance?stance:swing,adModel);found=true;break;}}collection->add(n,std::move(term));}
+ for(auto[k,n]:ordered){auto term=p.equalityConstraintPtr->extract(n);bool found=false;for(size_t leg=0;leg<2;++leg){auto&name=i.modelSettings().contactNames6DoF[leg];bool isStance=n==name+"_zeroVelocity",isSwing=n==name+"_normalVelocity";if(isStance||isSwing){term=std::make_unique<GeneratedFootConstraint>(std::move(term),*deps.at(name),isStance,leg,i.modelSettings(),authorityFor(isStance?"TASK5C_STANCE_AUTHORITY":"TASK5C_SWING_AUTHORITY"),isStance?stance:swing,adModel);found=true;break;}}g1::addTerm(*collection,n,std::move(term));}
  p.equalityConstraintPtr=std::move(collection);
  p.preComputationPtr=std::make_unique<GeneratedPreComputation>(i,authorityFor("TASK5C_PRECOMPUTATION_AUTHORITY"),pre);return p;
 }

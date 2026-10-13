@@ -1,3 +1,5 @@
+#include "extensions/ActiveConstraint.h"
+#include "extensions/TermRegistry.h"
 #pragma once
 #include <humanoid_wb_mpc/WBMpcInterface.h>
 #include <ocs2_core/constraint/StateInputConstraintCollection.h>
@@ -16,18 +18,18 @@ struct Evidence {
  void stack(){if(stackWritten.exchange(true))return;void*frames[40];int n=backtrace(frames,40);char**strings=backtrace_symbols(frames,n);std::ofstream o(folder+"/"+prefix+"active_call_stack.txt");for(int i=0;i<n;++i)o<<strings[i]<<'\n';free(strings);}
  ~Evidence(){std::ofstream(folder+"/"+prefix+"authority_calls.json")<<"{\"activation\":"<<activation<<",\"value\":"<<value<<",\"linear\":"<<linear<<",\"generated\":"<<generated<<",\"legacy_evaluations\":"<<legacyEvaluations<<",\"shadow_comparisons\":"<<shadowComparisons<<",\"clones\":"<<clones<<"}\n";}
 };
-class GeneratedZeroWrench final:public StateInputConstraint {
+class GeneratedZeroWrench final:public StateInputConstraint, public g1::ActiveConstraint {
  const SwitchedModelReferenceManager*ref_;size_t contact_;Authority authority_;std::shared_ptr<Evidence>evidence_;std::unique_ptr<StateInputConstraint>legacy_;
  VectorFunctionLinearApproximation candidate(scalar_t t,const vector_t&u,bool&active)const{
   if(u.size()!=35)throw std::runtime_error("ZeroWrench input35 contract");auto flags=ref_->getContactFlags(t);boolean_T f[2]={flags[0],flags[1]};VectorFunctionLinearApproximation a;
-  a.f.resize(6);a.dfdx.resize(6,58);a.dfdu.resize(6,35);bool enabled=legacy_->getActive();
+  a.f.resize(6);a.dfdx.resize(6,58);a.dfdu.resize(6,35);bool enabled=g1::active(*legacy_);
   boolean_T generatedActive;zeroWrench(u.data(),static_cast<unsigned char>(contact_),f,enabled,&generatedActive,a.f.data(),a.dfdx.data(),a.dfdu.data());active=generatedActive;++evidence_->generated;return a;
  }
  public:
  GeneratedZeroWrench(const SwitchedModelReferenceManager&r,size_t c,Authority a,std::shared_ptr<Evidence>e,std::unique_ptr<StateInputConstraint>old):StateInputConstraint(ConstraintOrder::Linear),ref_(&r),contact_(c),authority_(a),evidence_(std::move(e)),legacy_(std::move(old)){}
  GeneratedZeroWrench(const GeneratedZeroWrench&o):StateInputConstraint(o),ref_(o.ref_),contact_(o.contact_),authority_(o.authority_),evidence_(o.evidence_),legacy_(o.legacy_->clone()){++evidence_->clones;}
  GeneratedZeroWrench*clone()const override{return new GeneratedZeroWrench(*this);}
- void setActive(bool v)override{legacy_->setActive(v);}bool getActive()const override{return legacy_->getActive();}
+ void setActive(bool v)override{g1::setActive(*legacy_,v);}bool getActive()const override{return g1::active(*legacy_);}
  size_t getNumConstraints(scalar_t)const override{return 6;}
  bool isActive(scalar_t t)const override{
   ++evidence_->activation;if(authority_==Authority::Legacy)return legacy_->isActive(t);
@@ -45,8 +47,8 @@ class GeneratedZeroWrench final:public StateInputConstraint {
  }
 };
 inline OptimalControlProblem install(WBMpcInterface&i,std::shared_ptr<Evidence>e){
- OptimalControlProblem p=i.getOptimalControlProblem();auto names=p.equalityConstraintPtr->getTermNameMap();std::vector<std::pair<size_t,std::string>>ordered;for(auto&[name,index]:names)ordered.emplace_back(index,name);std::sort(ordered.begin(),ordered.end());
- auto replacement=std::make_unique<StateInputConstraintCollection>();for(auto&[index,name]:ordered){auto term=p.equalityConstraintPtr->extract(name);if(name=="foot_l_contact_zeroWrench"||name=="foot_r_contact_zeroWrench")term=std::make_unique<GeneratedZeroWrench>(*i.getSwitchedModelReferenceManagerPtr(),name=="foot_l_contact_zeroWrench"?0:1,authorityFor("TASK5C_ZERO_AUTHORITY"),e,std::move(term));replacement->add(name,std::move(term));}
+ OptimalControlProblem p=i.getOptimalControlProblem();auto names=g1::termNames(*p.equalityConstraintPtr);std::vector<std::pair<size_t,std::string>>ordered;for(auto&[name,index]:names)ordered.emplace_back(index,name);std::sort(ordered.begin(),ordered.end());
+ auto replacement=std::make_unique<StateInputConstraintCollection>();for(auto&[index,name]:ordered){auto term=p.equalityConstraintPtr->extract(name);if(name=="foot_l_contact_zeroWrench"||name=="foot_r_contact_zeroWrench")term=std::make_unique<GeneratedZeroWrench>(*i.getSwitchedModelReferenceManagerPtr(),name=="foot_l_contact_zeroWrench"?0:1,authorityFor("TASK5C_ZERO_AUTHORITY"),e,std::move(term));g1::addTerm(*replacement,name,std::move(term));}
  p.equalityConstraintPtr=std::move(replacement);return p;
 }
 }

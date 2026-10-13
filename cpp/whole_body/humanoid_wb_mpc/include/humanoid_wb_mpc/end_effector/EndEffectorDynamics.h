@@ -36,13 +36,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ocs2_core/Types.h>
 
-#include <ocs2_robotic_tools/end_effector/EndEffectorKinematics.h>
+#include "extensions/G1EndEffectorKinematics.h"
 
 namespace ocs2 {
 
 /** The Kinematics function which maps state-input pair to the end-effector (position, velocity, orientation error) */
 template <typename SCALAR_T>
-class EndEffectorDynamics : public EndEffectorKinematics<SCALAR_T> {
+class EndEffectorDynamics : public G1EndEffectorKinematics<SCALAR_T> {
  public:
   using vector3_t = Eigen::Matrix<SCALAR_T, 3, 1>;
   using matrix3x_t = Eigen::Matrix<SCALAR_T, 3, Eigen::Dynamic>;

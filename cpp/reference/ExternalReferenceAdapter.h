@@ -1,3 +1,4 @@
+#include "extensions/MeasuredMode.h"
 #pragma once
 #include <memory>
 #include <array>
@@ -57,8 +58,9 @@ inline Packet readBinaryPacket(const std::string&file){
 // raw schedule plus a removable terminal marker. Existing getModeSchedule pops
 // only this marker; no C++ template tiling, gait decision or filter runs.
 // The original terrain adaptation, swing splines and OCP consumers remain.
-class ExternalReferenceAdapter final:public ocs2::ReferenceManagerDecorator {
+class ExternalReferenceAdapter final:public ocs2::ReferenceManagerDecorator, public g1::MeasuredModeReceiver {
  public:
+ void setMeasuredMode(size_t mode) override {ref_->setMeasuredMode(mode);}
  using Provider=std::function<Packet(double)>;
  ExternalReferenceAdapter(std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager>ref,Provider provider,const std::string&folder)
  :ReferenceManagerDecorator(ref),ref_(ref),provider_(std::move(provider)),log_(folder+"/adapter_consumption.csv"){
@@ -66,11 +68,11 @@ class ExternalReferenceAdapter final:public ocs2::ReferenceManagerDecorator {
   ref_->getGaitSchedule()->insertModeSequenceTemplate(empty,0.,0.);
   log_<<std::setprecision(17)<<"session,epoch,sequence,control_tick,canonical_control_time,target_count,event_count,event_mode_max_error,target_max_error,legacy_filter_calls,legacy_gait_decisions\n";
  }
- void preSolverRun(double t,double end,const ocs2::vector_t&x,size_t mode)override{
+ void preSolverRun(double t,double end,const ocs2::vector_t&x)override{
   Packet p=provider_(t);validate(p,t,end);
   auto padded=p.schedule;padded.eventTimes.push_back(p.terminal);padded.modeSequence.push_back(3);
   ref_->getGaitSchedule()->updateModeSchedule(padded);ref_->setTargetTrajectories(p.target);
-  ref_->preSolverRun(t,end,x,mode);
+  ref_->preSolverRun(t,end,x);
   const auto&s=ref_->getModeSchedule();const auto&target=ref_->getTargetTrajectories();
   if(s.eventTimes!=p.schedule.eventTimes||s.modeSequence!=p.schedule.modeSequence)throw std::runtime_error("H: Adapter altered the authoritative raw schedule");
   double error=0;if(target.timeTrajectory!=p.target.timeTrajectory)throw std::runtime_error("H: Adapter changed target knot times");

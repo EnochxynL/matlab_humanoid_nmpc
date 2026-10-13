@@ -1,3 +1,4 @@
+#include "extensions/TermRegistry.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -40,7 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ocs2_core/misc/LoadData.h>
 #include <ocs2_core/misc/Numerics.h>
 #include <ocs2_core/penalties/Penalties.h>
-#include <ocs2_core/soft_constraint/StateInputSoftConstraint.h>
+#include "extensions/G1StateInputSoftConstraint.h"
 #include <ocs2_oc/synchronized_module/SolverSynchronizedModule.h>
 #include <ocs2_pinocchio_interface/PinocchioEndEffectorKinematicsCppAd.h>
 
@@ -144,13 +145,13 @@ void WBMpcInterface::setupOptimalControlProblem() {
   problemPtr_->dynamicsPtr = std::move(dynamicsPtr);
 
   // Cost terms
-  problemPtr_->costPtr->add("stateInputQuadraticCost", factory.getStateInputQuadraticCost());
-  // problemPtr_->costPtr->add("jointTorqueCost", getJointTorqueCost(taskFile_));
-  problemPtr_->finalCostPtr->add("terminalCost", factory.getTerminalCost());
+  g1::addTerm(*problemPtr_->costPtr,"stateInputQuadraticCost", factory.getStateInputQuadraticCost());
+  // g1::addTerm(*problemPtr_->costPtr,"jointTorqueCost", getJointTorqueCost(taskFile_));
+  g1::addTerm(*problemPtr_->finalCostPtr,"terminalCost", factory.getTerminalCost());
 
   // Constraints
-  problemPtr_->stateSoftConstraintPtr->add("jointLimits", factory.getJointLimitsConstraint());
-  problemPtr_->stateSoftConstraintPtr->add("FootCollisionSoftConstraint", factory.getFootCollisionConstraint());
+  g1::addTerm(*problemPtr_->stateSoftConstraintPtr,"jointLimits", factory.getJointLimitsConstraint());
+  g1::addTerm(*problemPtr_->stateSoftConstraintPtr,"FootCollisionSoftConstraint", factory.getFootCollisionConstraint());
   // Constraint terms
 
   EndEffectorDynamicsWeights footTrackingCostWeights =
@@ -159,7 +160,7 @@ void WBMpcInterface::setupOptimalControlProblem() {
   // check for mimic joints
   boost::property_tree::ptree pt;
   boost::property_tree::read_info(taskFile_, pt);
-  bool hasMimicJoints = loadData::containsPtreeValueFind(pt, "mimicJoints");
+  bool hasMimicJoints = (pt.find("mimicJoints") != pt.not_found());
 
   for (size_t i = 0; i < N_CONTACTS; i++) {
     const std::string& footName = modelSettings_.contactNames[i];
@@ -169,20 +170,20 @@ void WBMpcInterface::setupOptimalControlProblem() {
                                                               modelSettings_.modelFolderCppAd, modelSettings_.recompileLibrariesCppAd,
                                                               modelSettings_.verboseCppAd));
 
-    problemPtr_->softConstraintPtr->add(footName + "_frictionForceCone", factory.getFrictionForceConeConstraint(i));
-    problemPtr_->softConstraintPtr->add(footName + "_contactMomentXY",
+    g1::addTerm(*problemPtr_->softConstraintPtr,footName + "_frictionForceCone", factory.getFrictionForceConeConstraint(i));
+    g1::addTerm(*problemPtr_->softConstraintPtr,footName + "_contactMomentXY",
                                         factory.getContactMomentXYConstraint(i, footName + "_contact_moment_XY_constraint"));
-    problemPtr_->equalityConstraintPtr->add(footName + "_zeroWrench", factory.getZeroWrenchConstraint(i));
-    problemPtr_->equalityConstraintPtr->add(footName + "_zeroVelocity", getStanceFootConstraint(*eeDynamicsPtr, i));
-    problemPtr_->equalityConstraintPtr->add(footName + "_normalVelocity", getNormalVelocityConstraint(*eeDynamicsPtr, i));
+    g1::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_zeroWrench", factory.getZeroWrenchConstraint(i));
+    g1::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_zeroVelocity", getStanceFootConstraint(*eeDynamicsPtr, i));
+    g1::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_normalVelocity", getNormalVelocityConstraint(*eeDynamicsPtr, i));
 
     if (hasMimicJoints) {
-      problemPtr_->equalityConstraintPtr->add(footName + "_kneeJointMimic", getJointMimicConstraint(i));
+      g1::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_kneeJointMimic", getJointMimicConstraint(i));
     }
 
     std::string footTrackingCostName = footName + "_TaskSpaceTrackingCost";
 
-    problemPtr_->costPtr->add(footTrackingCostName, std::unique_ptr<StateInputCost>(new EndEffectorDynamicsFootCost(
+    g1::addTerm(*problemPtr_->costPtr,footTrackingCostName, std::unique_ptr<StateInputCost>(new EndEffectorDynamicsFootCost(
                                                         *referenceManagerPtr_, footTrackingCostWeights, *pinocchioInterfacePtr_,
                                                         *eeDynamicsPtr, *mpcRobotModelADPtr_, i, footTrackingCostName, modelSettings_)));
   }

@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ocs2_core/constraint/StateInputConstraint.h>
 
-#include <ocs2_robotic_tools/end_effector/EndEffectorKinematics.h>
+#include "extensions/G1EndEffectorKinematics.h"
 
 namespace ocs2::humanoid {
 
@@ -62,7 +62,7 @@ class EndEffectorKinematicsLinearVelConstraint final : public StateInputConstrai
    * @param [in] numConstraints: The number of constraints {1, 2, 3}
    * @param [in] config: The constraint coefficients, g(xee, vee) = Ax * xee + Av * vee + b
    */
-  EndEffectorKinematicsLinearVelConstraint(const EndEffectorKinematics<scalar_t>& endEffectorKinematics,
+  EndEffectorKinematicsLinearVelConstraint(const G1EndEffectorKinematics<scalar_t>& endEffectorKinematics,
                                            size_t numConstraints,
                                            Config config = Config());
 
@@ -75,7 +75,7 @@ class EndEffectorKinematicsLinearVelConstraint final : public StateInputConstrai
   void configure(const Config& config) { this->configure(Config(config)); }
 
   /** Gets the underlying end-effector kinematics interface. */
-  EndEffectorKinematics<scalar_t>& getEndEffectorKinematics() { return *endEffectorKinematicsPtr_; }
+  G1EndEffectorKinematics<scalar_t>& getEndEffectorKinematics() { return *endEffectorKinematicsPtr_; }
 
   size_t getNumConstraints(scalar_t time) const override { return numConstraints_; }
   vector_t getValue(scalar_t time, const vector_t& state, const vector_t& input, const PreComputation& preComp) const override;
@@ -87,7 +87,7 @@ class EndEffectorKinematicsLinearVelConstraint final : public StateInputConstrai
  private:
   EndEffectorKinematicsLinearVelConstraint(const EndEffectorKinematicsLinearVelConstraint& rhs);
 
-  std::unique_ptr<EndEffectorKinematics<scalar_t>> endEffectorKinematicsPtr_;
+  std::unique_ptr<G1EndEffectorKinematics<scalar_t>> endEffectorKinematicsPtr_;
   const size_t numConstraints_;
   Config config_;
 };
