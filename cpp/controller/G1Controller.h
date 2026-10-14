@@ -37,6 +37,10 @@ public:
   Policy query(const Observation &observation);
 /** @brief 显式阶段接口：准备观测，不求解；更新节点等待必要求解；查询节点只读策略。 */
   PlannerTick prepareObservation(const Observation &observation);
+  // Simulink 已完成坐标转换的观测入口；核心只校验并赋值，不重新计算坐标。
+  PlannerTick prepareOcpObservation(const Observation &raw, const std::array<double, StateDimension>& state);
+  // 保留的 C++ 转换参考后端，用于独立数学对照，不推进 tick 或求解器。
+  std::array<double, StateDimension> convertObservation(const Observation &raw) const;
   PlannerTick updateMpc(const PlannerTick &tick, bool requested);
   Policy queryPrepared(const PlannerTick &tick);
 /**

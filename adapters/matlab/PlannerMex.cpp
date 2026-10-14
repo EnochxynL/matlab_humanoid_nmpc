@@ -214,6 +214,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         throw std::runtime_error("reference requires 428 values");
       const double *values = readDoubles(prhs[1], 428);
       runtime().setReference(decodeReference(values));
+    } else if (command == "prepare_ocp_observation") {
+      if (nrhs != 3 || nlhs != 1) throw std::runtime_error("prepare_ocp_observation requires o74, x58 and one output");
+      const auto raw = decodeObservation(readDoubles(prhs[1], 74));
+      const auto* values = readDoubles(prhs[2], 58);
+      std::array<double, 58> state;
+      std::copy_n(values, 58, state.begin());
+      plhs[0] = encodeTick(runtime().prepareOcpObservation(raw, state));
+    } else if (command == "convert_observation") {
+      if (nrhs != 2 || nlhs != 1) throw std::runtime_error("convert_observation requires o74 and one output");
+      const auto state = runtime().convertObservation(decodeObservation(readDoubles(prhs[1], 74)));
+      plhs[0] = mxCreateDoubleMatrix(58, 1, mxREAL);
+      std::copy(state.begin(), state.end(), mxGetPr(plhs[0]));
     } else if (command == "prepare_observation") {
       if (nrhs != 2 || nlhs != 1) throw std::runtime_error("prepare_observation requires o74 and one output");
       plhs[0] = encodeTick(runtime().prepareObservation(decodeObservation(readDoubles(prhs[1], 74))));

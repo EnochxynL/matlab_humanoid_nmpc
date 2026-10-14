@@ -192,6 +192,22 @@
       "physical_duration_s": 4.8,
       "pre_refactor_cpp_and_physical_outputs": "byte-identical",
       "human_visual": "PASS：除原有偏行外正常"
+    },
+    "observation_dataflow": {
+      "model": "g1_planner/ObservationConversion",
+      "field_selection_and_joint_mapping": "native Simulink Selector",
+      "state_assembly": "native Simulink Mux",
+      "sensitive_kernels": "g1_observation_mex",
+      "kernel_cpp": "cpp/data/observation/ObservationKernels.cpp",
+      "standalone_build": "cpp/data/observation/CMakeLists.txt",
+      "strict_conversion_cases": 2441,
+      "strict_replay_ticks": 2401,
+      "physical_duration_s": 4.8,
+      "physical_logs_byte_identical": true,
+      "evidence": "build/observation_hybrid",
+      "physical_run": "runtime/walking_20261014_195254",
+      "human_visual": "PASS：除原有偏行外正常",
+      "previous_matlab_formula_strict_FAIL_preserved": "build/observation_dataflow"
     }
   },
   "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",

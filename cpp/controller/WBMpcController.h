@@ -90,11 +90,13 @@ class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBas
                                  ::robot::model::RobotJointAction& robotJointAction) override;
 
   void startMpcThread(const ::robot::model::RobotState& initRobotState);
+  void startMpcThread(const SystemObservation& observation);
 
   // 显式阶段：更新资格判断/求解完成之后，才允许查询已准备观测对应的策略。
   // 仅用于校验外部调度决定；不推进 slot，也不触发求解。
   bool mpcUpdateDue(double time) const { return time + 1e-12 >= epoch_ + nextSlot_ * mpcControlPeriod_; }
   void updatePolicy(const ::robot::model::RobotState& state);
+  void updatePolicy(const SystemObservation& observation);
   void queryPolicy(vector_t& x, vector_t& u, size_t& mode);
   // 保留旧组合入口；与上述拆分调用走同一路径。
   void evaluatePolicy(const ::robot::model::RobotState& state, vector_t& x, vector_t& u, size_t& mode);
@@ -112,6 +114,7 @@ class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBas
   void deterministicSolverWorker();
   void waitForRequest(size_t request);
   void deterministicUpdate(const ::robot::model::RobotState& state);
+  void deterministicUpdate(const SystemObservation& observation);
   bool policyQueryPrepared_ = false;
   TimingMode timingMode_ = TimingMode::REALTIME_ASYNCHRONOUS;
   double mpcControlPeriod_;

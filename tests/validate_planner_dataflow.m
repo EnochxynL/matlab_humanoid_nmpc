@@ -1,9 +1,10 @@
-function result = validate_planner_dataflow()
+function result = validate_planner_dataflow(evidenceName)
 %VALIDATE_PLANNER_DATAFLOW Run the actual planner model on saved observations.
 % Checks staged API guards, then the complete 2401-tick/289-update contract.
+if nargin==0,evidenceName='planner_dataflow';end
 root = fileparts(fileparts(mfilename('fullpath')));
 cd(root); g1.initialize();
-folder = fullfile(root,'build','planner_dataflow','model_replay');
+folder = fullfile(root,'build',evidenceName,'model_replay');
 fixture = load(fullfile(root,'build','core_extraction','fixture.mat'));
 keys = {'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};
 old = {getenv(keys{1}),getenv(keys{2})};

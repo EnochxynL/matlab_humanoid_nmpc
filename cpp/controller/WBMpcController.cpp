@@ -98,11 +98,18 @@ WaveBControlTimeWBMpcController::~WaveBControlTimeWBMpcController() {
  * 启动 epoch 使用物理控制时间，不由 wall clock 决定。
  */
 void WaveBControlTimeWBMpcController::startMpcThread(const ::robot::model::RobotState& initRobotState) {
-  updateMpcObservation(currentMpcObservation_, initRobotState);
+  SystemObservation observation;
+  observation.state = vector_t::Zero(mpcRobotModel_.getStateDim());
+  updateMpcObservation(observation, initRobotState);
+  startMpcThread(observation);
+}
+
+void WaveBControlTimeWBMpcController::startMpcThread(const SystemObservation& observation) {
+  currentMpcObservation_ = observation;
   // Set observation to MPC
   setObservation(currentMpcObservation_);
   if (timingMode_ == TimingMode::SIMULATION_TIME_DETERMINISTIC) {
-    epoch_ = ControlTime(initRobotState.getTime()).seconds;
+    epoch_ = ControlTime(observation.time).seconds;
     lastObservationTime_ = epoch_;
     requestObservation_ = currentMpcObservation_;
     requested_ = 1; requestDeadline_ = epoch_;
@@ -300,7 +307,14 @@ void WaveBControlTimeWBMpcController::waitForRequest(size_t request) {
  * deadline 仅决定求解资格，不把观测时间重标为 deadline。
  */
 void WaveBControlTimeWBMpcController::deterministicUpdate(const ::robot::model::RobotState& state) {
-  const double t = ControlTime(state.getTime()).seconds;
+  SystemObservation observation;
+  observation.state = vector_t::Zero(mpcRobotModel_.getStateDim());
+  updateMpcObservation(observation, state);
+  deterministicUpdate(observation);
+}
+
+void WaveBControlTimeWBMpcController::deterministicUpdate(const SystemObservation& observation) {
+  const double t = ControlTime(observation.time).seconds;
   if (t < lastObservationTime_ - 1e-12) throw std::runtime_error("Control time rollback: fresh epoch/process required");
   if (trace_) trace_("observation_arrived", t, epoch_ + nextSlot_ * mpcControlPeriod_, 0);
   lastObservationTime_ = t;
@@ -309,7 +323,7 @@ void WaveBControlTimeWBMpcController::deterministicUpdate(const ::robot::model::
   size_t skipped = 0;
   while (epoch_ + (nextSlot_ + 1) * mpcControlPeriod_ <= t + 1e-12) { ++nextSlot_; ++skipped; }
   ++nextSlot_;
-  updateMpcObservation(currentMpcObservation_, state);
+  currentMpcObservation_ = observation;
   size_t request;
   {
     std::lock_guard<std::mutex> lock(requestMutex_);
@@ -359,11 +373,18 @@ void WaveBControlTimeWBMpcController::deterministicSolverWorker() {
  * 检查策略状态/输入有限性；此函数尚不计算关节力矩。
  */
 void WaveBControlTimeWBMpcController::updatePolicy(const ::robot::model::RobotState& state) {
+  SystemObservation observation;
+  observation.state = vector_t::Zero(mpcRobotModel_.getStateDim());
+  updateMpcObservation(observation, state);
+  updatePolicy(observation);
+}
+
+void WaveBControlTimeWBMpcController::updatePolicy(const SystemObservation& observation) {
   policyQueryPrepared_ = false;
   if (timingMode_ != TimingMode::SIMULATION_TIME_DETERMINISTIC)
     throw std::runtime_error("MEX requires deterministic simulation scheduling");
-  deterministicUpdate(state);
-  updateMpcObservation(currentMpcObservation_, state);
+  deterministicUpdate(observation);
+  currentMpcObservation_ = observation;
   setObservation(currentMpcObservation_);
   if (!mcpMrtInterface_.initialPolicyReceived()) throw std::runtime_error("No publishable OCS2 policy");
   policyQueryPrepared_ = true;

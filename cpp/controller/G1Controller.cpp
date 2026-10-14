@@ -25,12 +25,15 @@ struct G1Controller::Impl {
   std::unique_ptr<robot::model::RobotState> state;
   std::unique_ptr<WaveBControlTimeWBMpcController> controller;
   std::vector<size_t> ids;
+  std::vector<size_t> mpcRawIndices;
   uint64_t lastTick = UINT64_MAX, sequence = 0;
   vector_t lastResult = vector_t::Zero(118);
   vector_t lastPolicy = vector_t::Zero(95);
   bool actionReady = false;
   uint64_t preparedTick = UINT64_MAX;
   bool updateReady = false, expectedUpdate = false;
+  SystemObservation preparedObservation;
+  double preparedTime = 0;
   double lastRawTime = 0;
   std::ofstream sampleLog;
   std::unique_ptr<CanonicalControlTime> canonicalLog;
@@ -45,6 +48,7 @@ struct G1Controller::Impl {
     description.reset();
     context.reset();
     ids.clear();
+    mpcRawIndices.clear();
     lastTick = UINT64_MAX;
     sequence = 0;
     actionReady = false;
@@ -75,6 +79,11 @@ struct G1Controller::Impl {
     auto names = description->getJointNames();
     std::sort(names.begin(), names.end());
     ids = description->getJointIndices(names);
+    for (const auto& joint : context->interface.modelSettings().mpcModelJointNames) {
+      const auto it = std::lower_bound(names.begin(), names.end(), joint);
+      if (it == names.end() || *it != joint) throw std::runtime_error("Unknown MPC joint");
+      mpcRawIndices.push_back(static_cast<size_t>(it - names.begin()));
+    }
     controller = std::make_unique<WaveBControlTimeWBMpcController>(
         *description, context->interface.modelSettings(), context->mpc,
         context->interface.getPinocchioInterface(),
@@ -104,7 +113,7 @@ struct G1Controller::Impl {
  * 高度与倾角门禁检查真实观测，不是优化预测轨迹。
  * 当前路径固定两足观测接触标志为真，未来接触切换仍由参考步态决定。
  */
-  void prepare(const double *a) {
+  void prepare(const double *a, const double* ocpState = nullptr) {
     if (!controller)
       throw std::runtime_error("Initialize MEX first");
     uint64_t tick = static_cast<uint64_t>(std::llround(a[0] / .002));
@@ -127,7 +136,26 @@ struct G1Controller::Impl {
     if (lastTick != UINT64_MAX && tick != lastTick + 1)
       throw std::runtime_error("Nonsequential physical tick");
     double t = canonicalLog->accept(tick, a[0], 1, tick);
-    observation::fillRobotState(*state, a, ids, t);
+    if (ocpState) {
+      robot::quaternion_t q(a[4], a[5], a[6], a[7]);
+      if (std::abs(q.norm()-1) > 1e-6) throw std::runtime_error("Quaternion rejected");
+      for (size_t j = 0; j < 3; ++j)
+        if (ocpState[j] != a[1+j]) throw std::runtime_error("OCP position identity mismatch");
+      for (size_t j = 0; j < mpcRawIndices.size(); ++j)
+        if (ocpState[6+j] != a[14+mpcRawIndices[j]] || ocpState[35+j] != a[43+mpcRawIndices[j]])
+          throw std::runtime_error("OCP joint mapping mismatch");
+      preparedObservation.state = Eigen::Map<const vector_t>(ocpState, 58);
+      preparedObservation.time = t;
+      preparedObservation.input = vector_t::Zero(35);
+      // Accepted measured-mode contract: STANCE, irrespective of future planned modes.
+      preparedObservation.mode = 3;
+    } else {
+      observation::fillRobotState(*state, a, ids, t);
+      const auto joints = description->getJointIndices(context->interface.modelSettings().mpcModelJointNames);
+      preparedObservation.state = vector_t::Zero(58);
+      observation::fillMpcObservation(preparedObservation, *state, context->interface.getMpcRobotModel(), joints);
+    }
+    preparedTime = t;
     preparedTick = tick;
     expectedUpdate = lastTick == UINT64_MAX || controller->mpcUpdateDue(t);
     updateReady = false;
@@ -136,7 +164,7 @@ struct G1Controller::Impl {
   PlannerTick tickIdentity() const {
     if (!state || preparedTick == UINT64_MAX)
       throw std::runtime_error("Prepare observation first");
-    return {preparedTick, state->getTime(), 1.0 / context->interface.mpcSettings().mpcDesiredFrequency_};
+    return {preparedTick, preparedTime, 1.0 / context->interface.mpcSettings().mpcDesiredFrequency_};
   }
   void validateTick(const PlannerTick& token) const {
     const auto current = tickIdentity();
@@ -149,8 +177,8 @@ struct G1Controller::Impl {
       throw std::runtime_error("External MPC eligibility differs from physical deadline contract");
     if (updateReady) return;
     if (lastTick == UINT64_MAX)
-      controller->startMpcThread(*state);
-    controller->updatePolicy(*state);
+      controller->startMpcThread(preparedObservation);
+    controller->updatePolicy(preparedObservation);
     updateReady = true;
   }
   void queryPrepared(const PlannerTick& token) {
@@ -160,7 +188,7 @@ struct G1Controller::Impl {
     vector_t x, u;
     size_t mode;
     controller->queryPolicy(x, u, mode);
-    lastPolicy << x, u, double(mode), state->getTime() + .005;
+    lastPolicy << x, u, double(mode), preparedTime + .005;
     lastTick = preparedTick;
     actionReady = false;
   }
@@ -258,6 +286,26 @@ PlannerTick G1Controller::prepareObservation(const Observation& observation) {
   requireFinite(a.data(), a.size());
   impl_->prepare(a.data());
   return impl_->tickIdentity();
+}
+PlannerTick G1Controller::prepareOcpObservation(const Observation& raw, const std::array<double, StateDimension>& state) {
+  const auto encoded = observation::encodeObservation(raw);
+  requireFinite(encoded.data(), encoded.size());
+  requireFinite(state.data(), state.size());
+  impl_->prepare(encoded.data(), state.data());
+  return impl_->tickIdentity();
+}
+std::array<double, StateDimension> G1Controller::convertObservation(const Observation& raw) const {
+  if (!impl_->context) throw std::runtime_error("Initialize MEX first");
+  const auto encoded = observation::encodeObservation(raw);
+  requireFinite(encoded.data(), encoded.size());
+  robot::model::RobotState temporary(*impl_->description);
+  observation::fillRobotState(temporary, encoded.data(), impl_->ids, raw.rawBackendTime);
+  vector_t converted = vector_t::Zero(StateDimension);
+  const auto joints = impl_->description->getJointIndices(impl_->context->interface.modelSettings().mpcModelJointNames);
+  observation::fillMpcState(converted, temporary, impl_->context->interface.getMpcRobotModel(), joints);
+  std::array<double, StateDimension> result;
+  std::copy_n(converted.data(), StateDimension, result.begin());
+  return result;
 }
 PlannerTick G1Controller::updateMpc(const PlannerTick& tick, bool requested) {
   impl_->update(tick, requested);

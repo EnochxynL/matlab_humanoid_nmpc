@@ -125,3 +125,28 @@ MPC 更新、策略查询和逆动力学。`g1_walking` 通过模型引用接入
 初始化、工作线程、策略缓存和关闭仍由核心管理；旧 `query`、`step` 等协议保留。
 
 独立模型回归入口：`tests/validate_planner_dataflow.m`（使用本机保存的 fixture 与重构前 C++ 输出）。
+
+### 观测数据流与独立数值内核
+
+`g1_planner/ObservationConversion` 使用原生 Selector 完成字段提取和 29→23 关节重排，
+使用 Mux 组装58维 OCP 状态。三个 MATLAB Function 节点调用独立、无状态的
+`g1_observation_mex`：四元数转 Euler ZYX、局部线速度转世界系、局部角速度转 Euler 导数。
+这些敏感计算继续使用已验证的 C++ 数学；不在 MATLAB 中维护另一套公式。
+
+小 MEX 的实现位于 `cpp/data/observation/ObservationKernels.h/.cpp`，适配器为
+`adapters/matlab/ObservationMex.cpp`。它不初始化控制器，不链接 OCS2、Pinocchio 或控制核心。
+仅构建此内核可使用：
+
+```bash
+cmake -S cpp/data/observation -B build/observation \
+  -DMatlab_ROOT_DIR=/usr/local/MATLAB/R2025b \
+  -DCMAKE_BUILD_TYPE=Release '-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG'
+cmake --build build/observation --parallel 1
+```
+
+设置 `-DG1_BUILD_MATLAB=OFF` 可仅构建纯 C++ 静态库，不需要 MATLAB。
+主工程的 `scripts/build_mex.sh` 会同时构建规划器和观测两个 MEX。
+
+新规划链通过 `prepare_ocp_observation(raw74,state58)` 将已转换观测交给核心。
+核心仍执行时间、有限性、安全范围和关节映射检查；不重新计算观测坐标。
+纯 MATLAB 敏感公式候选的严格 FAIL 证据保留在忽略目录 `build/observation_dataflow/`。
