@@ -85,7 +85,7 @@ struct G1Controller::Impl {
       mpcRawIndices.push_back(static_cast<size_t>(it - names.begin()));
     }
     controller = std::make_unique<WaveBControlTimeWBMpcController>(
-        *description, context->interface.modelSettings(), context->mpc,
+        context->interface.modelSettings(), context->mpc,
         context->interface.getPinocchioInterface(),
         context->interface.mpcSettings().mpcDesiredFrequency_,
         context->structure);

@@ -208,6 +208,29 @@
       "physical_run": "runtime/walking_20261014_195254",
       "human_visual": "PASS：除原有偏行外正常",
       "previous_matlab_formula_strict_FAIL_preserved": "build/observation_dataflow"
+    },
+    "observation_cleanup": {
+      "migration_commit": "8e5dc77",
+      "removed": [
+        "unused WBMpcMrtJointController implementation/header",
+        "unused ControlBase",
+        "RobotState overloads and C++ JointAction assembly in active scheduler",
+        "unreachable wall-clock asynchronous scheduler"
+      ],
+      "retained_compatibility": "Legacy MEX observation commands still use ObservationConversion and RobotState; required by unchanged public protocol",
+      "validation": {
+        "passed": true,
+        "ticks": 2401,
+        "mpc_updates": 289,
+        "byte_identical_logs": [
+          "planner_samples.csv",
+          "policy_knots.csv",
+          "gait_queries.csv"
+        ],
+        "evidence": "build/observation_cleanup/acceptance.json",
+        "fresh_process": true,
+        "new_physical_simulation": false
+      }
     }
   },
   "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",

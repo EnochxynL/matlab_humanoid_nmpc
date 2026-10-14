@@ -40,13 +40,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
 #include "data/diagnostics/PolicyObserver.h"
-#include <controller/ControllerBase.h>
 #include "humanoid_common_mpc/reference_manager/ProceduralMpcMotionManager.h"
-#include "data/description/RobotDescription.h"
 
 namespace ocs2::humanoid {
 
-class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBase {
+class WaveBControlTimeWBMpcController final {
  public:
  private:
   void setObservation(const SystemObservation& observation);
@@ -63,8 +61,7 @@ class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBas
    * @param [in] topicPrefix: The robot's name.
    * @param [in] mpcDesiredFrequency: The max frequency to run the mpc at.
    */
-  WaveBControlTimeWBMpcController(const ::robot::model::RobotDescription& robotDescription,
-                          const ModelSettings& modelSettings,
+  WaveBControlTimeWBMpcController(const ModelSettings& modelSettings,
                           MPC_BASE& mpc,
                           PinocchioInterface pinocchioInterface,
                           scalar_t mpcDesiredFrequency = -1,
@@ -75,48 +72,31 @@ class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBas
    */
   ~WaveBControlTimeWBMpcController();
 
-  enum class TimingMode { REALTIME_ASYNCHRONOUS, SIMULATION_TIME_DETERMINISTIC };
+  enum class TimingMode { UNCONFIGURED, SIMULATION_TIME_DETERMINISTIC };
   void enableDeterministicSimulation();
   using TraceCallback=std::function<void(const char*,double,double,double)>;
   void setTraceCallback(TraceCallback callback) { trace_ = std::move(callback); }
   bool ready() const { return mcpMrtInterface_.initialPolicyReceived(); }
 
-  /**
-   * Handles the low level controller loop that updates the mpc observation, reads out the latest policy and sets the joint control action.
-   */
-
-  void computeJointControlAction(scalar_t time,
-                                 const ::robot::model::RobotState& robotState,
-                                 ::robot::model::RobotJointAction& robotJointAction) override;
-
-  void startMpcThread(const ::robot::model::RobotState& initRobotState);
   void startMpcThread(const SystemObservation& observation);
 
   // 显式阶段：更新资格判断/求解完成之后，才允许查询已准备观测对应的策略。
   // 仅用于校验外部调度决定；不推进 slot，也不触发求解。
   bool mpcUpdateDue(double time) const { return time + 1e-12 >= epoch_ + nextSlot_ * mpcControlPeriod_; }
-  void updatePolicy(const ::robot::model::RobotState& state);
   void updatePolicy(const SystemObservation& observation);
   void queryPolicy(vector_t& x, vector_t& u, size_t& mode);
-  // 保留旧组合入口；与上述拆分调用走同一路径。
-  void evaluatePolicy(const ::robot::model::RobotState& state, vector_t& x, vector_t& u, size_t& mode);
   vector_t inverseDynamics(const vector_t& x, const vector_t& u);
-
-  // In-process planner/ID boundary. Joint action assembly belongs to Simulink.
-  void evaluatePlan(const ::robot::model::RobotState& state, vector_t& x, vector_t& u, vector_t& tau, size_t& mode);
 
  private:
   /**
    * Handles the MPC solver thread.
    */
   void solverWorker();
-  void asynchronousSolverWorker();
   void deterministicSolverWorker();
   void waitForRequest(size_t request);
-  void deterministicUpdate(const ::robot::model::RobotState& state);
   void deterministicUpdate(const SystemObservation& observation);
   bool policyQueryPrepared_ = false;
-  TimingMode timingMode_ = TimingMode::REALTIME_ASYNCHRONOUS;
+  TimingMode timingMode_ = TimingMode::UNCONFIGURED;
   double mpcControlPeriod_;
   double epoch_ = 0, lastObservationTime_ = -std::numeric_limits<double>::infinity();
   size_t nextSlot_ = 1, requested_ = 0, completed_ = 0;
@@ -135,18 +115,11 @@ class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBas
    */
   TargetTrajectories currentObservationToResetTrajectory(const SystemObservation& currentMpcObservation);
 
-  void updateMpcObservation(ocs2::SystemObservation& mpcObservation, const ::robot::model::RobotState& robotState);
-
   MPC_MRT_Interface mcpMrtInterface_;
 
   PinocchioInterface pinocchioInterface_;
   ocs2::SystemObservation currentMpcObservation_;
   WBAccelMpcRobotModel<scalar_t> mpcRobotModel_;
-  std::vector<size_t> mpcJointIndices_;
-  std::vector<size_t> otherJointIndices_;
-
-  size_t mpcDeltaTMicroSeconds_;
-  bool realtime_;  // True if MPC is to be run as fast as possible
 
   std::atomic_bool terminateThread_{false};
   std::jthread solver_worker_;

@@ -3,8 +3,7 @@ add_library(g1_controller_core SHARED
   data/observation/ObservationConversion.cpp
   data/reference/ReferenceConversion.cpp
   controller/G1Controller.cpp
-  controller/WBMpcController.cpp
-  controller/WBMpcMrtJointController.cpp)
+  controller/WBMpcController.cpp)
 set_target_properties(g1_controller_core PROPERTIES OUTPUT_NAME g1_controller)
 target_include_directories(g1_controller_core
   PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"

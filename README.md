@@ -150,3 +150,5 @@ cmake --build build/observation --parallel 1
 新规划链通过 `prepare_ocp_observation(raw74,state58)` 将已转换观测交给核心。
 核心仍执行时间、有限性、安全范围和关节映射检查；不重新计算观测坐标。
 纯 MATLAB 敏感公式候选的严格 FAIL 证据保留在忽略目录 `build/observation_dataflow/`。
+
+观测迁移后的删除整理：调度器只接收已装填的 OCS2 观测，不再重复装填 RobotState 或生成 JointAction；未使用的旧 MRT 控制器和墙钟异步循环已移除。旧 MEX 观测入口仍保留必要的 `ObservationConversion` / `RobotState` 兼容实现，因此 `cpp/data/observation` 尚不能整体删除。
