@@ -1,6 +1,6 @@
 # G1 Simulink + MEX 行走工程
 
-使用已验收的 OCS2、Pinocchio、CppAD 控制器，通过同进程 MEX 接入 Simulink。保留 16 个已验收的 MATLAB 数学边界，不使用 MATLAB-native 实验求解器。运行时无需 ROS2 节点或消息通信。
+使用已验收的 OCS2、Pinocchio、CppAD 控制器，通过同进程 MEX 接入 Simulink。OCP 直接使用参考工程的 C++ 业务实现，不再通过 MATLAB Coder 生成数学替代；不使用 MATLAB-native 实验求解器。运行时无需 ROS2 节点或消息通信。
 
 ```text
 Simscape → StatePreparation → Command → ReferenceGait
@@ -37,15 +37,13 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 | `models/g1_data.sldd` | 总线、22 个固定参数和步态转换参数表 |
 | `matlab/+g1/initialize.m` | 设置工程路径 |
 | `matlab/+g1/loadConfiguration.m` | 读取机器人配置及仿真初始条件 |
-| `math/` | 16 个已验收数学函数的 MATLAB 源定义，对应现有生成库 |
 | `tools/+g1log/` | 5 个离线日志工具：收集信号、转换矩阵、导出物理 CSV、写 CSV/JSON |
 | `open_project.m`、`run_walking.m` | 打开工程与仿真编排入口 |
 | `adapters/matlab/` | 六个原 MEX 命令、协议转换和 MATLAB 实例生命周期 |
-| `cpp/include/g1_controller/` | 不暴露 MATLAB/ROS/OCS2 类型的公开 C++ API |
+| `cpp/include/g1_controller/` | 不暴露 MATLAB/ROS/OCS2 类型的公开数据类型 |
 | `cpp/controller/` | 核心实例、状态缓存、求解线程与原调度 |
 | `cpp/whole_body/humanoid_wb_mpc/src/dynamics/` | 原逆动力学辅助计算 |
 | `cpp/reference/`、`time/` | 原参考消费与 canonical time |
-| `cpp/math/`、`generated/` | 已验收数学适配及原样生成源码；独立标量类型支持 |
 | `cpp/diagnostics/` | 原控制链诊断 |
 | `assets/`、`config/`、`data/` | 网格、URDF、任务与物理参数 |
 | `cpp/whole_body/` | 原全身 OCP 数学和 composition root |
@@ -58,7 +56,7 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 
 在线升/降步态判断、步态参数查询、摆足参考、四元数转换和接触 wrench/CoP 计算均已嵌入模型。固定配置与总线由数据字典管理；模型工作区仅保留可覆盖的初始状态、重力和站立开关。模型及数据字典是源文件，不需要外部构图脚本才能打开。
 
-日志导出、路径初始化和配置读取保留为文件，便于维护及批量运行。`math/` 是生成数学库的源定义，不是另一个在线求解器。
+日志导出、路径初始化和配置读取保留为文件，便于维护及批量运行。原 `math/`、`generated/` 和 `cpp/math/` 已移除；原数学源文件和生成包装可从 Git 历史恢复，本机另有 `build/cpp_restoration/before/matlab_math_sources.tar.gz` 归档。CppAD/CppADCodeGen 仍保留，用于参考 C++ 模型的自动微分，与 MATLAB Coder 无关。
 
 ## 验证与归档
 
@@ -91,14 +89,18 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 python3 scripts/verify_dependencies.py
 ```
 
-公开入口为 `g1_controller::G1Controller`：`initialize`、`setReference`、`query`、`inverseDynamics`、`step`、`shutdown`。控制器声明与实现位于 `cpp/controller/G1Controller.h` 和 `G1Controller.cpp`；公用数据类型定义在 `cpp/include/g1_controller/Types.h`，依赖只有标准 C++。保留的数学 authority 环境来自 `config/controller_environment.json`；standalone replay driver 给出了不借 MATLAB 设置该环境的示例。
+公开入口为 `g1_controller::G1Controller`：`initialize`、`setReference`、`query`、`inverseDynamics`、`step`、`shutdown`。控制器声明与实现位于 `cpp/controller/G1Controller.h` 和 `G1Controller.cpp`；公用数据类型定义在 `cpp/include/g1_controller/Types.h`，依赖只有标准 C++。`config/controller_environment.json` 当前为空，不再选择 MATLAB/Shadow/Legacy 数学路径。standalone replay driver 可脱离 MATLAB 调用核心。
 
-核心不包含 MATLAB SDK/MEX API；原生成数学文件未改写，项目独立类型头的标量类型与此前 SDK 通过静态断言核对。模型、协议、solver、权重和时间语义未改变。Pinocchio 等数值包当前仍安装于 `/opt/ros/jazzy`，这是发现安装包的前缀，不是 ROS 构建工具或通信依赖。
+核心不包含 MATLAB SDK/MEX API，也不再编译或链接 MATLAB Coder 数学库。模型、协议、solver、权重和时间语义未改变。Pinocchio 等数值包当前仍安装于 `/opt/ros/jazzy`，这是发现安装包的前缀，不是 ROS 构建工具或通信依赖。
 
-当前 OCS2 仍固定为允许的 fork commit `bf9ae46f3c6dc751348d8002c03aa2f4a7cc17e7`，没有换版本。其 1056 个保存文件均核对同一来源 commit；恢复了此前改动的两个未使用 CMake 元数据文件，所有 OCS2 算法源码保持该来源版本原样。布局映射和文件校验见 `third_party/dependencies.lock.json`。这不等同于已迁移到官方 OCS2。
+当前使用官方 OCS2 固定提交 `26386754b8bf31ab78b503971d0cbf4fdbcd7cb4`，由 Git submodule 管理，上游源码不修改。原工程依赖 fork 特有的业务罚函数、六维足端接口等通过 `cpp/extensions/` 保留，具体边界见 `docs/official_ocs2_transition.md`。
 
 本阶段不进行 Windows 适配或 solver 优化。验收结果见 `docs/core_extraction_acceptance.json`；本机编译、无 MATLAB 配置、fixture 和重放证据位于 `build/core_extraction/`。
 
 依赖初始化：`git submodule update --init --recursive`。第三方源码由 submodule 管理，版本见 `third_party/dependencies.lock.json`。
 
 官方 OCS2 接入方式和验收见 `docs/official_ocs2_transition.md`。
+
+## 恢复参考 C++ OCP
+
+本次恢复范围、旧严格回放差异与新物理测试结果见 [恢复报告](docs/cpp_ocp_restoration.md)。上面的历史验证记录对应当时版本，不构成本次新路径逐位等价声明。

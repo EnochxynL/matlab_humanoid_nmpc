@@ -2,7 +2,7 @@
   "baseline_tag": "pre-rewrite-baseline",
   "baseline_commit": "7565b42006be8b0f8c7b21f441f50c7b773431d9",
   "accepted_stable_source": "8123d4f5b15ee4b1056e90ff2415ea362c493d37",
-  "source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",
+  "source_route": "Reference C++ whole-body OCP + official OCS2 + Pinocchio + CppAD; no MATLAB Coder mathematical replacement",
   "historical_visual": "PASS: gait essentially unchanged, normal; original lateral/yaw drift retained",
   "historical_duration": 4.8,
   "extracted_on": "2026-10-10",
@@ -14,7 +14,6 @@
   "preserved_contract": [
     "PhysicalPlant and JointDrive topology/parameters",
     "Reference/Gait and command",
-    "accepted 16 mathematical boundaries",
     "60 Hz MPC, 500 Hz policy query, canonical 2 ms physical tick, 5 ms lead"
   ],
   "verification": {
@@ -90,7 +89,7 @@
   "source_layout": {
     "whole_body": "cpp/whole_body",
     "robot": "cpp/robot",
-    "ocs2_snapshot": "third_party/ocs2_ros2",
+    "ocs2_snapshot": "third_party/ocs2",
     "build_adapter": "cmake/NumericalLibraries.cmake",
     "runtime_artifacts": "build/standalone/lib"
   },
@@ -154,5 +153,32 @@
     "model_and_generated_math": "byte unchanged",
     "physical_simulation": "not repeated",
     "windows": "not implemented"
-  }
+  },
+  "current_runtime": {
+    "route": "reference C++ OCP -> official OCS2 SQP; Pinocchio + CppAD",
+    "matlab_coder_math": false,
+    "removed_source_directories": [
+      "math",
+      "generated",
+      "cpp/math"
+    ],
+    "restoration_report": "docs/cpp_ocp_restoration.md",
+    "historical_verification_notice": "Earlier MATLAB-authored boundary verification fields describe historical versions, not the current runtime.",
+    "verification": {
+      "build": "PASS",
+      "standalone_and_mex_replay": "2401 ticks / 289 MPC updates; interface guards pass; nonzero numeric differences recorded",
+      "historical_bit_exact_gate": "FAIL, preserved",
+      "real_physics": "PASS: 4.8s, action mapping max error zero",
+      "human_visual": "PENDING",
+      "acceptance": "docs/cpp_ocp_restoration_acceptance.json",
+      "run_folder": "runtime/walking_20261014_142343"
+    }
+  },
+  "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",
+  "historical_preserved_contract": [
+    "PhysicalPlant and JointDrive topology/parameters",
+    "Reference/Gait and command",
+    "accepted 16 mathematical boundaries",
+    "60 Hz MPC, 500 Hz policy query, canonical 2 ms physical tick, 5 ms lead"
+  ]
 }

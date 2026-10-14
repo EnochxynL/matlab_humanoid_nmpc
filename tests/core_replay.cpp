@@ -8,6 +8,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <stdexcept>
 using namespace g1_controller;
 
@@ -53,9 +54,9 @@ std::array<double, 118> result(const ControlResult &r) {
 }
 int main(int argc, char **argv) {
   try {
-    if (argc != 5)
+    if (argc != 5 && argc != 6)
       throw std::runtime_error(
-          "core_replay root fixture log_folder split|step");
+          "core_replay root fixture log_folder split|step [measure]");
     const std::string root = argv[1], folder = argv[3], mode = argv[4];
     boost::property_tree::ptree env;
     boost::property_tree::read_json(
@@ -64,9 +65,6 @@ int main(int argc, char **argv) {
       setenv(x.first.c_str(), x.second.get_value<std::string>().c_str(), 1);
     setenv("TASK5A_AUTHORITY", "SIMULINK_REFERENCE", 1);
     setenv("TASK5A_PACKET_FILE", "IN_PROCESS_ONLY", 1);
-    setenv("TASK5C_GEOMETRY_CACHE", (root + "/build/moment_ad").c_str(), 1);
-    setenv("TASK5C_COLLISION_CACHE", (root + "/build/collision_ad").c_str(), 1);
-    setenv("TASK5C_FOOT_COST_CACHE", (root + "/build/foot_cost_ad").c_str(), 1);
     std::ifstream input(argv[2], std::ios::binary);
     std::uint64_t rows = 0;
     input.read(reinterpret_cast<char *>(&rows), 8);
@@ -74,6 +72,9 @@ int main(int argc, char **argv) {
       throw std::runtime_error("Expected complete 2401-tick fixture");
     G1Controller core;
     core.initialize({root, folder});
+    const bool measure = argc == 6 && std::string(argv[5]) == "measure";
+    std::array<double, 118> maxima{};
+    std::array<std::uint64_t, 118> maximumTicks{};
     double maximum = 0;
     std::size_t nonidenticalBits = 0;
     for (std::uint64_t k = 0; k < rows; ++k) {
@@ -119,22 +120,31 @@ int main(int argc, char **argv) {
       for (std::size_t j = 0; j < 118; ++j) {
         if (!std::isfinite(actual[j]))
           throw std::runtime_error("Nonfinite result");
-        maximum = std::max(maximum, std::abs(actual[j] - expected[j]));
+        const double difference = std::abs(actual[j] - expected[j]);
+        if (difference > maxima[j]) { maxima[j] = difference; maximumTicks[j] = k; }
+        maximum = std::max(maximum, difference);
         if (std::memcmp(&actual[j], &expected[j], sizeof(double)))
           ++nonidenticalBits;
       }
       if (actual[116] != expected[116] || actual[117] != expected[117])
         throw std::runtime_error("Mode/time identity changed");
-      if (maximum != 0)
+      if (!measure && maximum != 0)
         throw std::runtime_error("Nonzero control difference at tick " +
                                  std::to_string(k));
     }
     core.shutdown();
-    std::ofstream out(folder + "/acceptance.json");
-    out << "{\"passed\":true,\"ticks\":2401,\"mode\":\"" << mode
-        << "\",\"maximum_absolute_error\":0,\"different_double_bit_patterns\":"
-        << nonidenticalBits << ",\"physical_simulation\":false}\n";
-    std::cout << "CORE_REPLAY_PASS ticks=2401 max_abs=0 different_bits="
+    std::ofstream out(folder + (measure ? "/comparison.json" : "/acceptance.json"));
+    out << "{\"completed\":true,\"ticks\":2401,\"mode\":\"" << mode
+        << "\",\"exact_equal\":" << (maximum == 0 ? "true" : "false")
+        << ",\"maximum_absolute_error\":" << std::setprecision(17) << maximum
+        << ",\"different_double_bit_patterns\":" << nonidenticalBits
+        << ",\"physical_simulation\":false,\"field_maxima\":[";
+    for (std::size_t j=0;j<118;++j) { if(j) out << ','; out << maxima[j]; }
+    out << "],\"field_maximum_ticks\":[";
+    for (std::size_t j=0;j<118;++j) { if(j) out << ','; out << maximumTicks[j]; }
+    out << "]}\n";
+    std::cout << (measure ? "CORE_REPLAY_MEASURE_COMPLETE" : "CORE_REPLAY_PASS")
+              << " ticks=2401 max_abs=" << maximum << " different_bits="
               << nonidenticalBits << '\n';
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';

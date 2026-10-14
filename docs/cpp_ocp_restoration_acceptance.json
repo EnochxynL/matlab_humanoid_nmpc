@@ -1,0 +1,165 @@
+{
+  "baseline_head": "14aea7472c98fa7973685594d5028e96fc584705",
+  "reference_head": "44c7bd8fbd75075cb2c78a61b7fcbb3edcbc86ef",
+  "build_passed": true,
+  "strict_historical_replay": "FAIL: first nonzero output at tick 650 / 1.300 s; preserved, not relabeled",
+  "measurement_ticks": 2401,
+  "mpc_updates": 289,
+  "policy_mode_and_query_time": "exact equality at every tick",
+  "comparison": {
+    "joint_position_target_rad": {
+      "maximum_absolute": 3.028298278806574e-08,
+      "physical_time_s": 3.598,
+      "field_index_zero_based": 9
+    },
+    "joint_velocity_target_rad_s": {
+      "maximum_absolute": 1.7304561585468337e-06,
+      "physical_time_s": 3.598,
+      "field_index_zero_based": 38
+    },
+    "contact_wrench": {
+      "maximum_absolute": 0.00010124059599547763,
+      "physical_time_s": 3.584,
+      "field_index_zero_based": 60
+    },
+    "joint_acceleration": {
+      "maximum_absolute": 8.520641631903914e-05,
+      "physical_time_s": 3.584,
+      "field_index_zero_based": 73
+    },
+    "feedforward_torque_Nm": {
+      "maximum_absolute": 2.7200089004253414e-05,
+      "physical_time_s": 3.432,
+      "field_index_zero_based": 93
+    }
+  },
+  "simulation_status": "NUMERICAL_PASS_VISUAL_PENDING",
+  "report": "docs/cpp_ocp_restoration.md",
+  "real_physics": {
+    "passed": true,
+    "duration_s": 4.8,
+    "samples": 9601,
+    "action_mapping_max_error": 0,
+    "position_start": [
+      0,
+      0,
+      0.8
+    ],
+    "position_end": [
+      0.3790837003719529,
+      0.07625768726633882,
+      0.7692536536445935
+    ],
+    "displacement_m": [
+      0.3790837003719529,
+      0.07625768726633882,
+      -0.030746346355406518
+    ],
+    "height_range_m": [
+      0.7366087813079591,
+      0.8
+    ],
+    "max_abs_pitch_deg": 0.5996269131985318,
+    "mpc_updates": 289,
+    "control_ticks": 2401,
+    "raw_minus_canonical_max_s": 8.881784197001252e-16,
+    "startup_wall_s": 1.583493,
+    "execution_wall_s": 612.981334,
+    "human_visual": "PENDING"
+  },
+  "physics_folder": "runtime/walking_20261014_142343",
+  "physics_comparison": {
+    "p_x": {
+      "maximum_absolute_difference": 6.298901333856577e-08,
+      "rms_difference": 2.7083629540060025e-08,
+      "maximum_time_s": 4.393
+    },
+    "p_y": {
+      "maximum_absolute_difference": 8.747035679101955e-09,
+      "rms_difference": 2.776942104949826e-09,
+      "maximum_time_s": 4.148
+    },
+    "p_z": {
+      "maximum_absolute_difference": 1.5631450578368344e-08,
+      "rms_difference": 4.654848171514505e-09,
+      "maximum_time_s": 3.6305
+    },
+    "v_x": {
+      "maximum_absolute_difference": 1.7768504281812092e-07,
+      "rms_difference": 2.837986161558936e-08,
+      "maximum_time_s": 3.5935
+    },
+    "v_y": {
+      "maximum_absolute_difference": 2.12881242800389e-07,
+      "rms_difference": 2.1460674451003356e-08,
+      "maximum_time_s": 3.8545000000000003
+    },
+    "v_z": {
+      "maximum_absolute_difference": 2.56243954194213e-07,
+      "rms_difference": 2.688246786124063e-08,
+      "maximum_time_s": 3.4765
+    },
+    "left_Fz": {
+      "maximum_absolute_difference": 0.00036133700382379175,
+      "rms_difference": 3.546272013181632e-05,
+      "maximum_time_s": 3.4505
+    },
+    "right_Fz": {
+      "maximum_absolute_difference": 0.0014324555413622875,
+      "rms_difference": 3.051791196116611e-05,
+      "maximum_time_s": 3.8615
+    },
+    "pitch_deg": {
+      "maximum_absolute_difference": 7.998670441475286e-07,
+      "rms_difference": 1.3098818671732718e-07
+    },
+    "policy_mode_sequence_equal": true,
+    "query_time_sequence_equal": true,
+    "baseline": "/media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/runtime/inprocess_walking_20261010_163754",
+    "current": "/media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/runtime/walking_20261014_142343",
+    "new_samples": 9601,
+    "all_physics_finite": true,
+    "saturation_samples": 965,
+    "baseline_saturation_samples": 965,
+    "actual_contact_flags_equal": true
+  },
+  "resources": {
+    "sample_count": 107,
+    "first_recorded_physical_time_s": 0.772,
+    "minimum_sampled_available_GiB": 3.659687042236328,
+    "maximum_sampled_matlab_rss_GiB": 5.7258758544921875,
+    "maximum_sampled_swap_used_GiB": 3.5151710510253906,
+    "scope": "sampling covers only the recorded window, not all compilation/startup"
+  },
+  "mex_interface": {
+    "interface_passed": true,
+    "exact_equal": false,
+    "ticks": 2401,
+    "mpc_updates": 289,
+    "maximum_absolute_error": 0.00010124059599547763,
+    "different_double_bit_patterns": 195928,
+    "split_step_equal": true,
+    "identity_guards_passed": true,
+    "physical_simulation": false,
+    "mex_path": "/media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/g1_ocp_mex.mexa64"
+  },
+  "official_dependencies_unchanged": true,
+  "model_and_task_config_sha_unchanged": true,
+  "linkage": {
+    "libg1_controller.so": {
+      "no_task5c_library": true,
+      "no_unresolved_library": true,
+      "dependencies": "\tlinux-vdso.so.1 (0x00007e1597149000)\n\tlibhumanoid_wb_mpc.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libhumanoid_wb_mpc.so (0x00007e1596c00000)\n\tlibhumanoid_common_mpc.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libhumanoid_common_mpc.so (0x00007e1596800000)\n\tlibg1_ocp_extensions.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libg1_ocp_extensions.so (0x00007e15970d7000)\n\tlibrobot_model.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/librobot_model.so (0x00007e15970ca000)\n\tlibocs2_sqp.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_sqp.so (0x00007e1597090000)\n\tlibocs2_mpc.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_mpc.so (0x00007e159706c000)\n\tlibocs2_pinocchio_interface.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_pinocchio_interface.so (0x00007e1596640000)\n\tlibpinocchio_default.so.4.1.0 => /opt/ros/jazzy/lib/x86_64-linux-gnu/libpinocchio_default.so.4.1.0 (0x00007e1596000000)\n\tlibocs2_oc.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_oc.so (0x00007e1596feb000)\n\tlibocs2_core.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_core.so (0x00007e1595c00000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007e1595800000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007e1596557000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007e1596f87000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007e1595400000)\n\tlibocs2_ddp.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_ddp.so (0x00007e1596b50000)\n\tliburdfdom_world.so.4.0 => /opt/ros/jazzy/lib/x86_64-linux-gnu/liburdfdom_world.so.4.0 (0x00007e1596f6b000)\n\tlibboost_filesystem.so.1.83.0 => /lib/x86_64-linux-gnu/libboost_filesystem.so.1.83.0 (0x00007e1596f48000)\n\tlibgomp.so.1 => /lib/x86_64-linux-gnu/libgomp.so.1 (0x00007e1595faa000)\n\tlibpinocchio_parsers.so.4.1.0 => /opt/ros/jazzy/lib/x86_64-linux-gnu/libpinocchio_parsers.so.4.1.0 (0x00007e1595b3f000)\n\tliburdfdom_model.so.4.0 => /opt/ros/jazzy/lib/x86_64-linux-gnu/liburdfdom_model.so.4.0 (0x00007e1596b34000)\n\tlibabsl_hash.so.20220623 => /lib/x86_64-linux-gnu/libabsl_hash.so.20220623 (0x00007e1596f41000)\n\tlibabsl_raw_hash_set.so.20220623 => /lib/x86_64-linux-gnu/libabsl_raw_hash_set.so.20220623 (0x00007e1596f3c000)\n\tlibabsl_throw_delegate.so.20220623 => /lib/x86_64-linux-gnu/libabsl_throw_delegate.so.20220623 (0x00007e1596550000)\n\tlibhpipm_catkin.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libhpipm_catkin.so (0x00007e1595b1d000)\n\tlibocs2_robotic_tools.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_robotic_tools.so (0x00007e1595b01000)\n\tlibboost_log.so.1.83.0 => /lib/x86_64-linux-gnu/libboost_log.so.1.83.0 (0x00007e159574e000)\n\tlibboost_thread.so.1.83.0 => /lib/x86_64-linux-gnu/libboost_thread.so.1.83.0 (0x00007e1595ae0000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007e159714b000)\n\tlibconsole_bridge.so.1.0 => /lib/x86_64-linux-gnu/libconsole_bridge.so.1.0 (0x00007e1596b2e000)\n\tlibtinyxml2.so.10 => /lib/x86_64-linux-gnu/libtinyxml2.so.10 (0x00007e1595ac9000)\n\tlibcoal.so.3.0.3 => /opt/ros/jazzy/lib/x86_64-linux-gnu/libcoal.so.3.0.3 (0x00007e1594e00000)\n\tlibabsl_city.so.20220623 => /lib/x86_64-linux-gnu/libabsl_city.so.20220623 (0x00007e159654b000)\n\tlibabsl_low_level_hash.so.20220623 => /lib/x86_64-linux-gnu/libabsl_low_level_hash.so.20220623 (0x00007e1596546000)\n\tlibhpipm.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libhpipm.so (0x00007e1594ca5000)\n\tlibassimp.so.5 => /lib/x86_64-linux-gnu/libassimp.so.5 (0x00007e1594400000)\n\tlibboost_serialization.so.1.83.0 => /lib/x86_64-linux-gnu/libboost_serialization.so.1.83.0 (0x00007e1595a86000)\n\tliboctomap.so.1.9 => /lib/x86_64-linux-gnu/liboctomap.so.1.9 (0x00007e159570e000)\n\tliboctomath.so.1.9 => /lib/x86_64-linux-gnu/liboctomath.so.1.9 (0x00007e1595fa3000)\n\tlibblasfeo.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libblasfeo.so (0x00007e1594287000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007e15956f2000)\n\tlibdraco.so.8 => /lib/x86_64-linux-gnu/libdraco.so.8 (0x00007e1593e00000)\n\tlibminizip.so.1 => /lib/x86_64-linux-gnu/libminizip.so.1 (0x00007e15956e5000)\n\tlibpugixml.so.1 => /lib/x86_64-linux-gnu/libpugixml.so.1 (0x00007e15956a9000)\n"
+    },
+    "g1_ocp_mex.mexa64": {
+      "no_task5c_library": true,
+      "no_unresolved_library": true,
+      "dependencies": "\tlinux-vdso.so.1 (0x0000795285536000)\n\tlibmex.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmex.so (0x00007952853de000)\n\tlibmx.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmx.so (0x0000795285000000)\n\tlibg1_controller.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libg1_controller.so (0x000079528538d000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x0000795284c00000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x0000795284f9e000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x0000795284800000)\n\tlibmwfl.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfl.so (0x0000795284eb8000)\n\tlibut.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libut.so (0x0000795284b55000)\n\tlibmwservices.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwservices.so (0x0000795284200000)\n\tlibmwfoundation_matlabdata_matlab.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_matlabdata_matlab.so (0x0000795284a48000)\n\tlibmwfoundation_matlabdata.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_matlabdata.so (0x0000795284691000)\n\tlibmwmvm.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmvm.so (0x0000795283c00000)\n\tlibmwm_dispatcher_interfaces.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwm_dispatcher_interfaces.so (0x000079528537f000)\n\tlibmwm_dispatcher.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwm_dispatcher.so (0x0000795283800000)\n\tlibmwmtask_constraints.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmtask_constraints.so (0x0000795285376000)\n\tlibmwi18n.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwi18n.so (0x0000795284080000)\n\tlibmwfoundation_filesystem.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_filesystem.so (0x0000795284037000)\n\tlibmwmlutil.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmlutil.so (0x0000795282a00000)\n\tlibmwfoundation_usm.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_usm.so (0x0000795284e87000)\n\tlibmwgenerate_diag_message.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwgenerate_diag_message.so (0x0000795284e7f000)\n\tlibmwmcos.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmcos.so (0x0000795283b3e000)\n\tlibmwfoundation_log.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_log.so (0x00007952836d7000)\n\tlibmwcppmicroservices.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwcppmicroservices.so (0x0000795283a91000)\n\tlibmwcpp11compat.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwcpp11compat.so (0x0000795284a21000)\n\tlibmwboost_filesystem.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_filesystem.so.1.81.0 (0x0000795283a6c000)\n\tlibmwboost_log.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_log.so.1.81.0 (0x000079528292d000)\n\tlibmwboost_thread.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_thread.so.1.81.0 (0x0000795284675000)\n\tlibCppMicroServices.so.3.8.4 => /usr/local/MATLAB/R2025b/bin/glnxa64/libCppMicroServices.so.3.8.4 (0x000079528281e000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x0000795284a1a000)\n\tlibmwmfl_permute.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmfl_permute.so (0x0000795283a4c000)\n\tlibmwfoundation_feature.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_feature.so (0x00007952827ba000)\n\tlibmwload_context.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwload_context.so (0x0000795284a13000)\n\tlibmwindexingapimethods.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwindexingapimethods.so (0x0000795283a37000)\n\tlibicuuc.so.74 => /usr/local/MATLAB/R2025b/bin/glnxa64/libicuuc.so.74 (0x0000795282400000)\n\tlibtbb.so.12 => /usr/local/MATLAB/R2025b/bin/glnxa64/libtbb.so.12 (0x0000795282000000)\n\tlibtbbmalloc.so.2 => /usr/local/MATLAB/R2025b/bin/glnxa64/libtbbmalloc.so.2 (0x0000795281c00000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x000079528279e000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007952826b5000)\n\t/lib64/ld-linux-x86-64.so.2 (0x0000795285538000)\n\tlibhumanoid_wb_mpc.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libhumanoid_wb_mpc.so (0x0000795281800000)\n\tlibhumanoid_common_mpc.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libhumanoid_common_mpc.so (0x0000795281400000)\n\tlibg1_ocp_extensions.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libg1_ocp_extensions.so (0x000079528269c000)\n\tlibrobot_model.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/librobot_model.so (0x000079528402a000)\n\tlibocs2_sqp.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_sqp.so (0x0000795282662000)\n\tlibocs2_mpc.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_mpc.so (0x000079528263e000)\n\tlibocs2_pinocchio_interface.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_pinocchio_interface.so (0x0000795281240000)\n\tlibpinocchio_default.so.4.1.0 => /opt/ros/jazzy/lib/x86_64-linux-gnu/libpinocchio_default.so.4.1.0 (0x0000795280c00000)\n\tlibocs2_oc.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_oc.so (0x0000795282381000)\n\tlibocs2_core.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_core.so (0x0000795280800000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x0000795283a32000)\n\tlibpam.so.0 => /lib/x86_64-linux-gnu/libpam.so.0 (0x000079528262d000)\n\tlibmwfoundation_conc_common.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_conc_common.so (0x0000795283a28000)\n\tlibunwind.so.8 => /usr/local/MATLAB/R2025b/bin/glnxa64/libunwind.so.8 (0x000079528260d000)\n\tlibmwsafe_env.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsafe_env.so (0x00007952836d1000)\n\tlibrt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007952836cc000)\n\tlibmwfpu.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfpu.so (0x000079528237d000)\n\tlibmwflstrings.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflstrings.so (0x0000795282375000)\n\tlibicuio.so.74 => /usr/local/MATLAB/R2025b/bin/glnxa64/libicuio.so.74 (0x0000795282366000)\n\tlibmwbuiltin.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwbuiltin.so (0x0000795280400000)\n\tlibmwcapabilities.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwcapabilities.so (0x000079528235b000)\n\tlibmwcwf_interface.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwcwf_interface.so (0x00007952822da000)\n\tlibmwflstorageprovider.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflstorageprovider.so (0x0000795281f89000)\n\tlibmwflstorageutility.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflstorageutility.so (0x00007952822ce000)\n\tlibmwflstoragevfs.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflstoragevfs.so (0x00007952802cc000)\n\tlibmwfoundation_crash_handling.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_crash_handling.so (0x000079528229c000)\n\tlibmwfoundation_mwidentityverifier.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_mwidentityverifier.so (0x000079528228b000)\n\tlibmwfoundation_paths.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_paths.so (0x0000795281f74000)\n\tlibmwlivecode.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwlivecode.so (0x0000795281f20000)\n\tlibmwmatlabstoragesystem.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmatlabstoragesystem.so (0x0000795282288000)\n\tlibmwms.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwms.so (0x000079527fe00000)\n\tlibmwrelease_info.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwrelease_info.so (0x0000795281edc000)\n\tlibmwsearch_path_utilities.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsearch_path_utilities.so (0x0000795281e7d000)\n\tlibmwsettings_in_matlab.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsettings_in_matlab.so (0x0000795281bc7000)\n\tlibmwopccore.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwopccore.so (0x0000795281b62000)\n\tlibmwopcmodel.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwopcmodel.so (0x000079527fcd1000)\n\tlibmwopczippackage.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwopczippackage.so (0x0000795281e65000)\n\tlibmwsettingscore.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsettingscore.so (0x000079527f800000)\n\tlibmwstring_matrix.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwstring_matrix.so (0x00007952817ad000)\n\tlibmwkeybrd.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwkeybrd.so (0x000079528227e000)\n\tlibmwboost_chrono.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_chrono.so.1.81.0 (0x0000795281b58000)\n\tlibmwboost_iostreams.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_iostreams.so.1.81.0 (0x0000795281b46000)\n\tlibmwboost_serialization.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_serialization.so.1.81.0 (0x0000795281767000)\n\tlibicui18n.so.74 => /usr/local/MATLAB/R2025b/bin/glnxa64/libicui18n.so.74 (0x000079527f400000)\n\tlibmwfoundation_matlabdata_standalone.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_matlabdata_standalone.so (0x0000795281167000)\n\tlibmwmcom.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmcom.so (0x0000795280bb5000)\n\tlibmwmcrr.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmcrr.so (0x000079527f000000)\n\tlibmwmst.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmst.so (0x000079527f269000)\n\tlibmwthreadpool.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwthreadpool.so (0x0000795281739000)\n\tlibmwregistry_util.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwregistry_util.so (0x00007952807d7000)\n\tlibmwnativedisplay.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwnativedisplay.so (0x0000795281b35000)\n\tlibmwstartupplugin.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwstartupplugin.so (0x0000795281153000)\n\tlibmwstartup_plugin_initializer.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwstartup_plugin_initializer.so (0x0000795280746000)\n\tlibmwfoundation_threadpool.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_threadpool.so (0x0000795280705000)\n\tlibmvmtransportapi.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmvmtransportapi.so (0x0000795280b9c000)\n\tlibmwmatlab_toolbox_events_base.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmatlab_toolbox_events_base.so (0x000079527ee6b000)\n\tlibmwexecution_events.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwexecution_events.so (0x000079527e800000)\n\tlibmwfoundation_tracelogger.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_tracelogger.so (0x00007952802bd000)\n\tlibmwstoragefilefolderobserver.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwstoragefilefolderobserver.so (0x000079527fc52000)\n\tlibmwcwf_implementation.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwcwf_implementation.so (0x00007952802a2000)\n\tlibmwmatlab_modules_events.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmatlab_modules_events.so (0x000079528028e000)\n\tlibmwmatlab_modules_implementation.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmatlab_modules_implementation.so (0x000079527fbf3000)\n\tlibmwmatlab_modules_interfaces.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmatlab_modules_interfaces.so (0x000079528172e000)\n\tlibmwmodule_descriptor_implementation.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmodule_descriptor_implementation.so (0x000079527f798000)\n\tlibmwmodule_descriptor_interfaces.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmodule_descriptor_interfaces.so (0x000079527ed53000)\n\tlibmwmodule_feature.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmodule_feature.so (0x0000795280270000)\n\tlibmwmodule_atfolderfeature.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmodule_atfolderfeature.so (0x000079528114e000)\n\tlibmwpackage_registry_interfaces.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwpackage_registry_interfaces.so (0x000079528025e000)\n\tlibmwpackage_registry_implementation.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwpackage_registry_implementation.so (0x000079527e73e000)\n\tlibmwpackage_registry_utilities.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwpackage_registry_utilities.so (0x000079527f776000)\n\tlibmwsearch_path_events.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsearch_path_events.so (0x000079527e65b000)\n\tlibmwsearch_path_impl.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsearch_path_impl.so (0x000079527e554000)\n\tlibmwsearch_path_interfaces.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsearch_path_interfaces.so (0x000079527f761000)\n\tlibmwsearch_space_implementation.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsearch_space_implementation.so (0x000079527f22e000)\n\tlibmwsearch_space_utilities.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsearch_space_utilities.so (0x0000795281148000)\n\tlibmwddux.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwddux.so (0x000079527ed19000)\n\tlibmwddux_loggingapi.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwddux_loggingapi.so (0x000079527e3ff000)\n\tlibmwstring_core.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwstring_core.so (0x00007952806fc000)\n\tlibmwlf_import.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwlf_import.so (0x000079527e3ca000)\n\tlibmwresource_core.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwresource_core.so (0x000079528025a000)\n\tlibexpat.so.1 => /usr/local/MATLAB/R2025b/bin/glnxa64/libexpat.so.1 (0x000079527f203000)\n\tlibmwlocale.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwlocale.so (0x0000795280255000)\n\tlibmwfoundation_json.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_json.so (0x000079527f753000)\n\tlibmwmatlabdata_boost_serialization.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmatlabdata_boost_serialization.so (0x000079527fbec000)\n\tlibmwflcertificates.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflcertificates.so (0x000079527e31e000)\n\tlibmwflcodesigning_verifier.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflcodesigning_verifier.so (0x000079527e2e1000)\n\tlibusAsyncWorkService.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libusAsyncWorkService.so (0x000079527fbe7000)\n\tlibmwboost_atomic.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_atomic.so.1.81.0 (0x000079527f749000)\n\tlibicudata.so.74 => /usr/local/MATLAB/R2025b/bin/glnxa64/libicudata.so.74 (0x000079527c400000)\n\tlibocs2_ddp.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_ddp.so (0x000079527e231000)\n\tliburdfdom_world.so.4.0 => /opt/ros/jazzy/lib/x86_64-linux-gnu/liburdfdom_world.so.4.0 (0x000079527e215000)\n\tlibboost_filesystem.so.1.83.0 => /lib/x86_64-linux-gnu/libboost_filesystem.so.1.83.0 (0x000079527e1f2000)\n\tlibgomp.so.1 => /lib/x86_64-linux-gnu/libgomp.so.1 (0x000079527e19c000)\n\tlibpinocchio_parsers.so.4.1.0 => /opt/ros/jazzy/lib/x86_64-linux-gnu/libpinocchio_parsers.so.4.1.0 (0x000079527c33f000)\n\tliburdfdom_model.so.4.0 => /opt/ros/jazzy/lib/x86_64-linux-gnu/liburdfdom_model.so.4.0 (0x000079527e180000)\n\tlibabsl_hash.so.20220623 => /lib/x86_64-linux-gnu/libabsl_hash.so.20220623 (0x000079527ed14000)\n\tlibabsl_raw_hash_set.so.20220623 => /lib/x86_64-linux-gnu/libabsl_raw_hash_set.so.20220623 (0x000079527ed0f000)\n\tlibabsl_throw_delegate.so.20220623 => /lib/x86_64-linux-gnu/libabsl_throw_delegate.so.20220623 (0x000079527ed08000)\n\tlibhpipm_catkin.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libhpipm_catkin.so (0x000079527e15e000)\n\tlibocs2_robotic_tools.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libocs2_robotic_tools.so (0x000079527c323000)\n\tlibboost_log.so.1.83.0 => /lib/x86_64-linux-gnu/libboost_log.so.1.83.0 (0x000079527c271000)\n\tlibboost_thread.so.1.83.0 => /lib/x86_64-linux-gnu/libboost_thread.so.1.83.0 (0x000079527c250000)\n\tlibaudit.so.1 => /lib/x86_64-linux-gnu/libaudit.so.1 (0x000079527c222000)\n\tlibmwflnetwork.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflnetwork.so (0x000079527c132000)\n\tlibmwflstorageevents.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflstorageevents.so (0x000079527c113000)\n\tlibmwboost_json.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_json.so.1.81.0 (0x000079527c0cf000)\n\tlibmwboost_program_options.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_program_options.so.1.81.0 (0x000079527c066000)\n\tlibmwflcrypto.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflcrypto.so (0x000079527c005000)\n\tlibmwflcryptoutils.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflcryptoutils.so (0x000079527bfc4000)\n\tlibmwflcryptocryptopp.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwflcryptocryptopp.so (0x000079527bc00000)\n\tlibmwopcmwservices.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwopcmwservices.so (0x000079527bb21000)\n\tlibxerces-c-3.2.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libxerces-c-3.2.so (0x000079527b600000)\n\tlibmwstoragemicroservicestoragesystem.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwstoragemicroservicestoragesystem.so (0x000079527bfb2000)\n\tlibmwfoundation_memmgr.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_memmgr.so (0x000079527bf9b000)\n\tlibminizip-ng.so.1 => /usr/local/MATLAB/R2025b/bin/glnxa64/libminizip-ng.so.1 (0x000079527bf7e000)\n\tlibmwfoundation_matlabdata_json.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_matlabdata_json.so (0x000079527b9e5000)\n\tlibmwagentinterprocessmutex.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwagentinterprocessmutex.so (0x000079527b5de000)\n\tlibmwopcmwpackaging.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwopcmwpackaging.so (0x000079527b5a1000)\n\tlibmwagentspfcore.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwagentspfcore.so (0x000079527b56b000)\n\tlibmwagentspfcppmsclientutils.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwagentspfcppmsclientutils.so (0x000079527b525000)\n\tlibmwagentspfframeworksetup.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwagentspfframeworksetup.so (0x000079527b4f2000)\n\tlibmwfactory_settings_loader.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfactory_settings_loader.so (0x000079527bf76000)\n\tlibssl-mw.so.3 => /usr/local/MATLAB/R2025b/bin/glnxa64/libssl-mw.so.3 (0x000079527b44d000)\n\tlibcrypto-mw.so.3 => /usr/local/MATLAB/R2025b/bin/glnxa64/libcrypto-mw.so.3 (0x000079527ae00000)\n\tlibmwagentspfendpointregistry.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwagentspfendpointregistry.so (0x000079527b419000)\n\tlibmwrcf_framework.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwrcf_framework.so (0x000079527b39b000)\n\tlibmwruntime_registry.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwruntime_registry.so (0x000079527b9de000)\n\tlibmwpackage_registry_events.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwpackage_registry_events.so (0x000079527b9d3000)\n\tlibmwmpm_package_definition_parser.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmpm_package_definition_parser.so (0x000079527b2e8000)\n\tlibmwmpm_semver.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmpm_semver.so (0x000079527b28a000)\n\tlibmwlang_foundation_utilities.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwlang_foundation_utilities.so (0x000079527b284000)\n\tlibmwmpm_features_dev_mode.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwmpm_features_dev_mode.so (0x000079527b280000)\n\tlibmwsearch_space_interfaces.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwsearch_space_interfaces.so (0x000079527b276000)\n\tlibmwlf_util.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwlf_util.so (0x000079527b25c000)\n\tlibmwlf_features.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwlf_features.so (0x000079527ade5000)\n\tlibmwdtoa.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwdtoa.so (0x000079527adc9000)\n\tlibconsole_bridge.so.1.0 => /lib/x86_64-linux-gnu/libconsole_bridge.so.1.0 (0x000079527adc3000)\n\tlibtinyxml2.so.10 => /lib/x86_64-linux-gnu/libtinyxml2.so.10 (0x000079527adac000)\n\tlibcoal.so.3.0.3 => /opt/ros/jazzy/lib/x86_64-linux-gnu/libcoal.so.3.0.3 (0x000079527a800000)\n\tlibabsl_city.so.20220623 => /lib/x86_64-linux-gnu/libabsl_city.so.20220623 (0x000079527ada5000)\n\tlibabsl_low_level_hash.so.20220623 => /lib/x86_64-linux-gnu/libabsl_low_level_hash.so.20220623 (0x000079527ada0000)\n\tlibhpipm.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libhpipm.so (0x000079527a6a5000)\n\tlibcap-ng.so.0 => /lib/x86_64-linux-gnu/libcap-ng.so.0 (0x000079527ad98000)\n\tlibmwboost_container.so.1.81.0 => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwboost_container.so.1.81.0 (0x000079527ad82000)\n\tlibzstd.so.1 => /usr/local/MATLAB/R2025b/bin/glnxa64/libzstd.so.1 (0x000079527a5ca000)\n\tlibmwfoundation_matlabjson_frontend.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwfoundation_matlabjson_frontend.so (0x000079527ad77000)\n\tlibmwagentspfutils.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwagentspfutils.so (0x000079527a200000)\n\tlibmwagentspfsharedmemory.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwagentspfsharedmemory.so (0x000079527ad4d000)\n\tlibmwlf_astapi.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwlf_astapi.so (0x000079527a523000)\n\tlibmwlf_tracer.so => /usr/local/MATLAB/R2025b/bin/glnxa64/libmwlf_tracer.so (0x000079527a4cd000)\n\tlibassimp.so.5 => /lib/x86_64-linux-gnu/libassimp.so.5 (0x0000795279a00000)\n\tlibboost_serialization.so.1.83.0 => /lib/x86_64-linux-gnu/libboost_serialization.so.1.83.0 (0x000079527a48a000)\n\tliboctomap.so.1.9 => /lib/x86_64-linux-gnu/liboctomap.so.1.9 (0x000079527a1c0000)\n\tliboctomath.so.1.9 => /lib/x86_64-linux-gnu/liboctomath.so.1.9 (0x000079527ad44000)\n\tlibblasfeo.so => /media/enoch/DISK/MY_WORK/contribute/matlab_humanoid_nmpc_1/build/standalone/lib/libblasfeo.so (0x0000795279887000)\n\tlibdraco.so.8 => /lib/x86_64-linux-gnu/libdraco.so.8 (0x0000795279400000)\n\tlibminizip.so.1 => /lib/x86_64-linux-gnu/libminizip.so.1 (0x000079527ad35000)\n\tlibpugixml.so.1 => /lib/x86_64-linux-gnu/libpugixml.so.1 (0x000079527a184000)\n"
+    }
+  },
+  "tool_transport_note": "MATLAB MCP request timed out after 600s; execution completed normally at 4.8s; result files and subsequent SimulationStatus=stopped confirmed; no rerun.",
+  "built_artifacts": {
+    "libg1_controller.so": "32a9bdfa47c0d4be9945519c6a0ddafbb078759290d0df6ba2e19e648d66d108",
+    "g1_ocp_mex.mexa64": "1e08f7ed35e382810af8eb9d9128ba09e1a37543fb5092997eda4f14365691c2"
+  }
+}

@@ -11,8 +11,8 @@ The public controller API does not expose these classes.
 - `G1RelaxedBarrierPenalty`: preserved scalar formula and configuration metadata.
 - `G1MultidimensionalPenalty`, `G1StateSoftConstraint`,
   `G1StateInputSoftConstraint`: application owning-cost implementations, retaining
-  the previous reduction and chain rule while permitting generated mathematics
-  to be installed. They implement official cost interfaces.
+  the original reduction and chain rule. They implement official cost interfaces;
+  MATLAB-generated replacement wrappers have been removed.
 - `G1QuadraticStateCost`, `G1QuadraticStateInputCost`: metadata-only subclasses;
   values and derivatives are evaluated by the official quadratic cost methods.
 - `ActiveConstraint`: application activation interface. Its default behavior for

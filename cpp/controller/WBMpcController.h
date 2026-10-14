@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <mutex>
 #include <limits>
 #include "time/ControlTime.h"
-namespace task5c {struct Evidence;}
 #include <ocs2_mpc/MPC_MRT_Interface.h>
 
 #include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
@@ -49,7 +48,6 @@ namespace ocs2::humanoid {
 
 class WaveBControlTimeWBMpcController final : public ::robot::model::ControlBase {
  public:
-  void setMathematicsEvidence(std::shared_ptr<task5c::Evidence> state,std::shared_ptr<task5c::Evidence> nominal) {stateEvidence_=std::move(state);nominalInputEvidence_=std::move(nominal);}
  private:
   void setObservation(const SystemObservation& observation);
   SystemObservation latestObservation();
@@ -57,7 +55,6 @@ class WaveBControlTimeWBMpcController final : public ::robot::model::ControlBase
   std::mutex observationCopyMutex_;
   SystemObservation observationCopy_;
 
-  std::shared_ptr<task5c::Evidence> stateEvidence_,nominalInputEvidence_;
  public:
   /**
    * Constructor.

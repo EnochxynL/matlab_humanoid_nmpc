@@ -1,0 +1,904 @@
+{
+  "source_root": "/media/enoch/DISK/MY_WORK/clone/wb_humanoid_mpc",
+  "source_head": "44c7bd8fbd75075cb2c78a61b7fcbb3edcbc86ef",
+  "current_head": "14aea7472c98fa7973685594d5028e96fc584705",
+  "comparison": "filesystem snapshot; current uncommitted changes included; missing means absent at mapped path, not proven historical deletion",
+  "files": [
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/CMakeLists.txt",
+      "current": "cpp/whole_body/humanoid_wb_mpc/CMakeLists.txt",
+      "status": "missing",
+      "source_sha256": "486487aaea3b7102c70a2f31e189b90552f80bf24c85e299a960c9e705ae5f02",
+      "current_sha256": null
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/WBMpcInterface.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/WBMpcInterface.h",
+      "status": "line_endings_only",
+      "source_sha256": "637dbb94e0288a726358b5b0edbe3dcdc241544b37143dcf6526295e151cc739",
+      "current_sha256": "e3ad98fc7d815cb9f4033a8b6f2db15855ee41a8d9b2a8617281a3477ed92f8c"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/WBMpcPreComputation.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/WBMpcPreComputation.h",
+      "status": "line_endings_only",
+      "source_sha256": "2a0bdbea143659b23e639530f3f46dfa211a9072a2a8de88bdfda39af1b00bfd",
+      "current_sha256": "94a4d5e464a9fb88bbc616a327543f8a8ecf4806dcafe774f1c9ea5b26133e69"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/command/WBMpcTargetTrajectoriesCalculator.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/command/WBMpcTargetTrajectoriesCalculator.h",
+      "status": "line_endings_only",
+      "source_sha256": "821fb72857e35bdcffaf3bf86266a2bd087ec16f8108d5966f1f110b3451d897",
+      "current_sha256": "83b14b48c10d8bcf060072a746ba2144f932d2643cde23d84cdc53d0a1e4060f"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/common/WBAccelMpcRobotModel.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/common/WBAccelMpcRobotModel.h",
+      "status": "line_endings_only",
+      "source_sha256": "d3208fa5ba3b0c2d8db120c6fce285c4ec81318ec92809778f8da3b59034cd1a",
+      "current_sha256": "e9ab37e3546e690579077e6b09668d780e0576c182e5eb680e3a922c1e12f6b6"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/common/WBAccelPinocchioStateInputMapping.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/common/WBAccelPinocchioStateInputMapping.h",
+      "status": "line_endings_only",
+      "source_sha256": "243b56ab212ee28bd1bac12be1b23ff49e1707f926ec0bf3dc98d875f546940f",
+      "current_sha256": "976a5e96a44dfa9adca9fc2a15d7881c233a9bb3dd1e44bda70675164eadb738"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/EndEffectorDynamicsAccelerationsConstraint.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/EndEffectorDynamicsAccelerationsConstraint.h",
+      "status": "line_endings_only",
+      "source_sha256": "c8e4e7cf4c7eed13f58043472402012528a78cd608fcfa12f852654e37f2a4df",
+      "current_sha256": "97ad2acbf915cf28dcbb07461cf33222b516e04f88167d11b4092f7acd3f34f2"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/EndEffectorDynamicsLinearAccConstraint.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/EndEffectorDynamicsLinearAccConstraint.h",
+      "status": "line_endings_only",
+      "source_sha256": "94309cc73e44525efc7f29cf18e48af21c8908a6ba0fb3e6250a5c8f5047fd7f",
+      "current_sha256": "999e0e8a90798e85054d180eff5bba0f1f3fe1d6b4bb9a33cfb32a9ad009c2d3"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/JointMimicDynamicsConstraint.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/JointMimicDynamicsConstraint.h",
+      "status": "modified",
+      "source_sha256": "31875b7ac0397d6a708e111a73205de2d56e13337e853523b25989cf72ddd581",
+      "current_sha256": "b74018537653c91f046410c08c7fe3824180c35c19a80170f57419f201b41879"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/SwingLegVerticalConstraintCppAd.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/SwingLegVerticalConstraintCppAd.h",
+      "status": "line_endings_only",
+      "source_sha256": "9e88ef982e2163e01a2c7866e42e14f7535259053dff4c478423fe1edd9413c2",
+      "current_sha256": "a75fff4d36a8b73a3aa000dd63435fd5f371a5ea1e0b7188a70b52ec06558e74"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/ZeroAccelerationConstraintCppAd.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/constraint/ZeroAccelerationConstraintCppAd.h",
+      "status": "line_endings_only",
+      "source_sha256": "1ea1c0fca1c2e265e3dfb1bd707e8759fbb736207dd3109a4efc4232024b1b6e",
+      "current_sha256": "dd930067cca6138765bf3da8e389970b84f50c8e97009e835195d19ecc309096"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/cost/EndEffectorDynamicsCostHelpers.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/cost/EndEffectorDynamicsCostHelpers.h",
+      "status": "line_endings_only",
+      "source_sha256": "079dedd8d9102bcb796f92c4b8f22fa99858184b1cb6e7d62b7b9bf56888da83",
+      "current_sha256": "43885b69ec914e48c78641bdaf1a09f71fcbe965b37681eb467403f4791ed7f6"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/cost/EndEffectorDynamicsFootCost.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/cost/EndEffectorDynamicsFootCost.h",
+      "status": "modified",
+      "source_sha256": "16c950d7952181e41f11ed8995e6293b8062f4c9b21ffc9d2e21e26656fc1338",
+      "current_sha256": "b11369fbbe469c670bccc40cbdd87694759b0070794d671a04198af922f7304d"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/cost/EndEffectorDynamicsQuadraticCost.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/cost/EndEffectorDynamicsQuadraticCost.h",
+      "status": "modified",
+      "source_sha256": "5c93ee4518a356d3df6601e58450ab01f90496ef44affc3fc3291dd8c06a635d",
+      "current_sha256": "b30c7ee52422f108c81c940c6b82d96d5931b0013f9b762e60ec8c47f7934448"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/cost/JointTorqueCostCppAd.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/cost/JointTorqueCostCppAd.h",
+      "status": "modified",
+      "source_sha256": "0f7c7a6bc51909caf44b3fb4d6331281789c47dc6113d4b12a80dc635376ee7e",
+      "current_sha256": "815a4c5c0d5f4de3d29fdacfc3525d2dd2bf78084a7e7383de82d7c096697efc"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/dynamics/DynamicsHelperFunctions.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/dynamics/DynamicsHelperFunctions.h",
+      "status": "line_endings_only",
+      "source_sha256": "2da350af0243a955b5414a5939c34d881144cf7d119fd0a8d87743aa71f2ce61",
+      "current_sha256": "d5a2c828a8fef08014db97022fe7d647dbbb73ee55b866a00468735721f2402b"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/dynamics/WBAccelDynamicsAD.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/dynamics/WBAccelDynamicsAD.h",
+      "status": "line_endings_only",
+      "source_sha256": "43e53d575a9ec8f5f0950f1de3af199b9f29d8c5b20a32539d2f5ede7ae64763",
+      "current_sha256": "5e29d7d78a7c1f3e6b0c825187108921ea3cb0995653181d2e1fec95f6163762"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/end_effector/EndEffectorDynamics.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/end_effector/EndEffectorDynamics.h",
+      "status": "modified",
+      "source_sha256": "082b177036c79a765a104b36f669e1e52575e85721574609075666417441c01e",
+      "current_sha256": "b0492d64f61c6933db04946f254fa16ad89108dfec0aad13ca8a8b75a88502d7"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/end_effector/PinocchioEndEffectorDynamicsCppAd.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/end_effector/PinocchioEndEffectorDynamicsCppAd.h",
+      "status": "modified",
+      "source_sha256": "81c34dd2c1dabddd8caf8f4e668ad4c5cf17719f02f18f10a4ff424acd026d40",
+      "current_sha256": "5a9533cb0015114dcbe4b6daa2494b89f46cbb32954c3b8dc0f279d1ac5d6456"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/include/humanoid_wb_mpc/mrt/WBMpcMrtJointController.h",
+      "current": "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/mrt/WBMpcMrtJointController.h",
+      "status": "modified",
+      "source_sha256": "b1b2f2a7d3922f5244c2ac39d3b9ada75de4dbcc503eb04ab80faf1ad8f496c0",
+      "current_sha256": "32472bf9b3f890b452ce60914f8d69d26b3251a1c6a1e0437bd0ecb94f119da6"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/package.xml",
+      "current": "cpp/whole_body/humanoid_wb_mpc/package.xml",
+      "status": "missing",
+      "source_sha256": "ee109f7a432f5fcf7e2adc53ead668522c4c387ef9b2a917dfbe800ac92c4ace",
+      "current_sha256": null
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/WBMpcInterface.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/WBMpcInterface.cpp",
+      "status": "modified",
+      "source_sha256": "5c63a906dda36680c40af9b9e88165026a596c4b94602a03a53e8022e4985b67",
+      "current_sha256": "b3e2c699a89f8c80920015b7ba13be0e83aca9df00cc77e956e31bb027f9b8f9"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/WBMpcPreComputation.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/WBMpcPreComputation.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "38aca42a490a9e1bfff99725f958bff6a40545973f77a2bb916893d104df7c66",
+      "current_sha256": "1e02769c6c1d51a0b80fb015757e3d0bbfcca0ab1a2230643fc668c887b336c2"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/command/WBMpcTargetTrajectoriesCalculator.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/command/WBMpcTargetTrajectoriesCalculator.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "959f052a131b4794e74d1476c005367b41bfd793461f137cf4ef6c1eb5277a4c",
+      "current_sha256": "10090a8123da4387ba0c37aa440952c53869dbb61a8845945e3f79869bbea919"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/constraint/EndEffectorDynamicsAccelerationsConstraint.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/constraint/EndEffectorDynamicsAccelerationsConstraint.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "2f097caa92b2523a9d05a423ca1a8a5c8d70f23b33af20642695225724b3e682",
+      "current_sha256": "894b8dcdad8d2b1fcbeb381e3970aaf5ea182eb82988c26ec1353dc5c87569f8"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/constraint/EndEffectorDynamicsLinearAccConstraint.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/constraint/EndEffectorDynamicsLinearAccConstraint.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "81ce675016993a00277c6863e8b0b2d3aa5da8eb1eb91945e1de88406fdcd55d",
+      "current_sha256": "a4feac4f2d3522861733010f57b24e6abca21616241bd663791cf1fbed71fdf2"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/constraint/JointMimicDynamicsConstraint.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/constraint/JointMimicDynamicsConstraint.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "a5fc81714e880eb42e7f7d29c012856899bed4b9c71be68f87beeb68b5708dc6",
+      "current_sha256": "a67cde37a23d2cb1ee4949d4b97062c498eb679def2bf12603fea8d0bc953c3f"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/constraint/SwingLegVerticalConstraintCppAd.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/constraint/SwingLegVerticalConstraintCppAd.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "bf548a7a656ec954d59208bc9a884ff27c73dfbff05b3d43c603e389dec9fd5e",
+      "current_sha256": "a796fbf2737e3a127276a07180abb3a1ed1f074e236a3fc5f90c2f7eeb345735"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/constraint/ZeroAccelerationConstraintCppAd.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/constraint/ZeroAccelerationConstraintCppAd.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "abe8d064a76d297f0fa359f75365a3a9d4db4ca824b93414eaee9eb13c7b9d1a",
+      "current_sha256": "9cc706ba4609d4c15c80f1e5a518d0482004c4d6ccd5e5d9affc8117a43c0109"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/cost/EndEffectorDynamicsCostHelpers.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/cost/EndEffectorDynamicsCostHelpers.cpp",
+      "status": "modified",
+      "source_sha256": "e2785b54d0229eed39d45a5c879c390c931c077ba04c736abf020413f28a448b",
+      "current_sha256": "e63c8be1c45ee66b50a79bf43607f563ab43f09da2e115f8439eb5fed99e6325"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/cost/EndEffectorDynamicsFootCost.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/cost/EndEffectorDynamicsFootCost.cpp",
+      "status": "modified",
+      "source_sha256": "58fe5be6af9629ab4b468ea80533b413e16b020ad66ef8720939ce8cf2c0d35f",
+      "current_sha256": "ac3c0fb18ad083a2a495c0c23bfc0ad58a5e86b38fcad9b2779bfd466b7f886f"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/cost/EndEffectorDynamicsQuadraticCost.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/cost/EndEffectorDynamicsQuadraticCost.cpp",
+      "status": "modified",
+      "source_sha256": "b2745ad250c7196b17a5c5e17a118f40f8a5d732454708d247a2362cf00587b2",
+      "current_sha256": "7da71e1dbae339197759ea104c28d33ec4d6d9fcbb908cce761f24daa0d27d56"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/cost/JointTorqueCostCppAd.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/cost/JointTorqueCostCppAd.cpp",
+      "status": "modified",
+      "source_sha256": "118274e1bef22d159f91fdf3ea3248e342c42354458766011f236f9f32b465b8",
+      "current_sha256": "cb93ec31cbab4b0cf3488b2397b930257d940e0e5ff986e76e3f7792e01fdb74"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/dynamics/DynamicsHelperFunctions.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/dynamics/DynamicsHelperFunctions.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "ee2f512c4236f035f6d26ebc3be06a66bca5a8c22e49b4b14d9333804fbaff64",
+      "current_sha256": "7816d3b9ecae20a67f6c7adaf5f8b25b5cb0d3d895c2519bf6b5c17c0e9285b4"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/dynamics/WBAccelDynamicsAD.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/dynamics/WBAccelDynamicsAD.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "b99bb65f54b455df038855b0f73851ef7b66f254bbdfc96017659f139a66b174",
+      "current_sha256": "975a3a6e101dfba1c430c17b4dde6ed45ae694d1fcb572164e2c75af741bda96"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/end_effector/PinocchioEndEffectorDynamicsCppAd.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/end_effector/PinocchioEndEffectorDynamicsCppAd.cpp",
+      "status": "modified",
+      "source_sha256": "d801f1f041f8a77b3feac5c39db97934a9381ba29ce953be2507d0363e54825e",
+      "current_sha256": "74147e7c0bd3070b703377d2e377363ba3b722e807be250e009df474730f07f6"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_wb_mpc/src/mrt/WBMpcMrtJointController.cpp",
+      "current": "cpp/whole_body/humanoid_wb_mpc/src/mrt/WBMpcMrtJointController.cpp",
+      "status": "modified",
+      "source_sha256": "7c255b37fe4d1f6215ee41f65397d34424a027606b4ce4bf9e0ca26936dd697f",
+      "current_sha256": "682a68a6cc7d7f38aa14c200f00f7fc81285466638d234e0eca1899f938e2503"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/CMakeLists.txt",
+      "current": "cpp/whole_body/humanoid_common_mpc/CMakeLists.txt",
+      "status": "missing",
+      "source_sha256": "898b5d9564cab134af5fdc2eb02b5790f11c851495028971f756509664e898d6",
+      "current_sha256": null
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/config/command/gait.info",
+      "current": "cpp/whole_body/humanoid_common_mpc/config/command/gait.info",
+      "status": "line_endings_only",
+      "source_sha256": "a0534fcc1525e97c00b94b17b9440124ec4fc4baebd7e3ec82390942076d0ee0",
+      "current_sha256": "4bfd6ed50377f4686b1210dd1b2b6336bc906f0d4289ea168c7bf32bc69b2645"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/HumanoidCostConstraintFactory.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/HumanoidCostConstraintFactory.h",
+      "status": "modified",
+      "source_sha256": "8d75ca4a53c336e57b3c042c23ca26d92b3e54b8f1a09a8e9e2d3c8cb3264b63",
+      "current_sha256": "b4fbd082eaba048b91f1c67e38fb2a6f9c35a810fee08b8604dcf0d056533791"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/HumanoidPreComputation.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/HumanoidPreComputation.h",
+      "status": "line_endings_only",
+      "source_sha256": "8b32d423df1dcdb71c258fc20d3649bbe9383872a35387d4253e17358c479ae4",
+      "current_sha256": "ef65abafc551155e790ef5bde1ab11ff55842adae56490c30cc4d0525fe2fbda"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/command/TargetTrajectoriesCalculatorBase.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/command/TargetTrajectoriesCalculatorBase.h",
+      "status": "line_endings_only",
+      "source_sha256": "e42e2bcf1732207eec5b5fd5fb4885b74dcdd93b886e8356f9f754633488119c",
+      "current_sha256": "d9a445e8fa588685ae0c4f39546604546ac5e3deea91c0334f040ba3c286c0c0"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/command/WalkingVelocityCommand.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/command/WalkingVelocityCommand.h",
+      "status": "modified",
+      "source_sha256": "cdcb27a57e045e2dd183138b5fe000e7930138cf90c608a474248b1cb07de3d0",
+      "current_sha256": "b5d42f9cb4951fb3eeba35c63195583ad19e9319ce435584e3df7b0a7b564af1"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/common/ModelSettings.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/common/ModelSettings.h",
+      "status": "line_endings_only",
+      "source_sha256": "5e00c17e3a568cb9bfe149f126b4adb06e536850f8cd1d4d933953628201fc1d",
+      "current_sha256": "c8f1c501f5530ee297680abce3a677f85b53e3395a231f15b768ae009c4929bd"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/common/MpcRobotModelBase.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/common/MpcRobotModelBase.h",
+      "status": "line_endings_only",
+      "source_sha256": "f09d56b0a953a9130bf80bf68e0aa3bdf5edb92790ff87e97548ee53ea744040",
+      "current_sha256": "1ac192d68daff920567bbf62c848a3b22c7b1ab6505e6548f226fdefa8e79eaf"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/common/Types.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/common/Types.h",
+      "status": "line_endings_only",
+      "source_sha256": "b39a74a446d0c8d78ab46d7025606896a6beb7c54b2420112fd8b68c4ded63cf",
+      "current_sha256": "96629977750a990d66a53679921b6cbb25f281a312917c2e4af2281f8fa7e047"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/constraint/ContactMomentXYConstraintCppAd.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/constraint/ContactMomentXYConstraintCppAd.h",
+      "status": "modified",
+      "source_sha256": "f3943e6d1cb600c4fae7a130f3e2fcfc6ac19fc19d9d43397e48b62af8e208b1",
+      "current_sha256": "a242a4b0b18dc105218d8af2e1655bffbae54c04d168c7940a51dce372484bc4"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/constraint/EndEffectorKinematicsLinearVelConstraint.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/constraint/EndEffectorKinematicsLinearVelConstraint.h",
+      "status": "modified",
+      "source_sha256": "088664865e58fe53e5b2a5ea7b1844114dc60eebee6d649da6ce6f4c21be01ed",
+      "current_sha256": "2b9de436c0941d232b89bbd3ad7c09a22c69e9b9a9602a69b802b081c7f7bc46"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/constraint/EndEffectorKinematicsTwistConstraint.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/constraint/EndEffectorKinematicsTwistConstraint.h",
+      "status": "modified",
+      "source_sha256": "44eb670c71d315f68db2b4c655d2ce5e4f14ed998384225d7f7e5fb1251e22ea",
+      "current_sha256": "929dfb892759dc50025e2c70b34d4742c5ba6772d12c5c15af1269e42719fd88"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/constraint/FootCollisionConstraint.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/constraint/FootCollisionConstraint.h",
+      "status": "line_endings_only",
+      "source_sha256": "f58f5a3c472b0f45a1ed904a13f5aa14d79532cdfa46d467eb9cb33d69edec62",
+      "current_sha256": "634753cf62f2809452e7ec6596fc1b05526c3bde9a7d61b8031281f620e259db"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/constraint/FrictionForceConeConstraint.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/constraint/FrictionForceConeConstraint.h",
+      "status": "modified",
+      "source_sha256": "37bf00b5b1597784196f4b9897822ee1660b59d249bd0c9d13a6b8bcbc4ddd12",
+      "current_sha256": "f865c94d955b74c4fbb65075959d4c0819afa98307f87e81fd07f5cc350dbdb4"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/constraint/JointLimitsSoftConstraint.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/constraint/JointLimitsSoftConstraint.h",
+      "status": "modified",
+      "source_sha256": "cbd7c1eb04d6c51f8c8d7d9415510be3db217d98b97d434e66cec5a7c41a141c",
+      "current_sha256": "f0cc9a22eb1aaa6744f67461dd5db1417c2407255915bd17f7f6e8b57307b7d3"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/constraint/ZeroWrenchConstraint.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/constraint/ZeroWrenchConstraint.h",
+      "status": "modified",
+      "source_sha256": "7e74f777a20ca81312b9566c8f2205088fb9e155b734b4bc1889801aa719fb6f",
+      "current_sha256": "c94fd13e346dbd148286d768a95737ec2027126ec891769b914eb6bd6adc11fe"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/contact/ContactCenterPoint.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/contact/ContactCenterPoint.h",
+      "status": "line_endings_only",
+      "source_sha256": "4915054e26bb72ab1bc770b984532842ae5476a014bc70876592cd42cf4fe4f7",
+      "current_sha256": "6edd48a32e59eff6d9a25ac032bd0a977b5e333edef28975d7c5e7fab0a634ee"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/contact/ContactPolygon.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/contact/ContactPolygon.h",
+      "status": "line_endings_only",
+      "source_sha256": "2f06d1300ae91d880d86be35247bc623f3c6310cc610d03c01effa441d115887",
+      "current_sha256": "8cd196277a2d9968680d4df6d5eadcf96d8590a73268316220b8dcc39bfbfd5b"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/contact/ContactRectangle.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/contact/ContactRectangle.h",
+      "status": "line_endings_only",
+      "source_sha256": "d7d31271c518886cdd7bb3f3389c146ca75f35f5ffed498a6c287de20f42075b",
+      "current_sha256": "37867c9916403f33ce68428e5a37999b30fb169c3e17de8ab068921978fca448"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/contact/ContactWrenchMapper.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/contact/ContactWrenchMapper.h",
+      "status": "line_endings_only",
+      "source_sha256": "934f9110ba7322395be01691587369aa788243ab7446d17a196c1bda9f8799a0",
+      "current_sha256": "b2c11c4723ab28b2d80b80c650a9253f412069eb3d69b2ca29d9dbdfff8bd9ba"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/cost/EndEffectorKinematicCostHelpers.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/cost/EndEffectorKinematicCostHelpers.h",
+      "status": "line_endings_only",
+      "source_sha256": "e226c9f127380d48d86a36b8f38cb63d1f1edac0d0ae38f0207179fef4706108",
+      "current_sha256": "63d1f4c6d3a4f1c46fc630ff9e52353b6d531566856f0f8febfb34428342dfc6"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/cost/EndEffectorKinematicsQuadraticCost.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/cost/EndEffectorKinematicsQuadraticCost.h",
+      "status": "modified",
+      "source_sha256": "a359e77f52f4688ba4e7c39669422de07915fc895a144d09c585fa4a7f945b3a",
+      "current_sha256": "0c3fb0b088322608d9ebadb2fd13c2580cc04b3b5372067f1d7fe2c51c05f386"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/cost/ExternalTorqueQuadraticCostAD.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/cost/ExternalTorqueQuadraticCostAD.h",
+      "status": "modified",
+      "source_sha256": "02b4dbbb840f2e3ec405190a50c2cfd2f4ad5d3beb9e34830e20db6dc3431b85",
+      "current_sha256": "cc381fc35a7b7f1c0144351d9b4c4f66f5bd365b7866571769f07dcba2bfa6fd"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/cost/StateInputQuadraticCost.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/cost/StateInputQuadraticCost.h",
+      "status": "modified",
+      "source_sha256": "02e6be28b9933bf08eb0926f1f00c31d8e75551b0262cdb07a407005ad421ccf",
+      "current_sha256": "f557bf190fe0e465c0b757b7003e8f03034fa8875ed20bce09432b15520e4e96"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/gait/Gait.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/gait/Gait.h",
+      "status": "line_endings_only",
+      "source_sha256": "b8408eafb96fafec4a59008cc3d0e70377daa998b2b783601b0a0beb94c94788",
+      "current_sha256": "65e7917a7ba0680e15c36a2d24887fffd12a054911f5454f3edfb83a802181f9"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/gait/GaitSchedule.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/gait/GaitSchedule.h",
+      "status": "line_endings_only",
+      "source_sha256": "08178148dc106b304397ea5f0115aee3f73eb6bf0cbc5208046c26c5ba537409",
+      "current_sha256": "a69569cfa26b32bd75779130b26a87e86d02db48329f663b3bf426e6c91e8a13"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/gait/GaitScheduleUpdater.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/gait/GaitScheduleUpdater.h",
+      "status": "modified",
+      "source_sha256": "02828b7784c68de690e84f42a53f169e26fc6193ce01be556f0bca2e5c751288",
+      "current_sha256": "46225b9b55ca253e3975bcb1f9b7c6046cd11ee7485dff32b382f0acf66ee4a4"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/gait/ModeSequenceTemplate.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/gait/ModeSequenceTemplate.h",
+      "status": "line_endings_only",
+      "source_sha256": "7c45983b9912c321fea732682e476cda35775ad73a2cec755b083603f2d47eb5",
+      "current_sha256": "6ae157e7fc5fa3e57f7cff85730c780eca2dd52b8831b1f3be4e1950fe8c7e41"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/gait/MotionPhaseDefinition.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/gait/MotionPhaseDefinition.h",
+      "status": "line_endings_only",
+      "source_sha256": "f9247f0356d922d9347684ce66fd57ee3d29337a123f07851fe1db0f85c0fa01",
+      "current_sha256": "4ce05a34cf21f036c2eaffdb5d4b8c81c0701a512d05632cd5f3e225b7b239db"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/initialization/WeightCompInitializer.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/initialization/WeightCompInitializer.h",
+      "status": "line_endings_only",
+      "source_sha256": "24604e62434de51364a5d47856f614e41bcf94582c7211e320ed85cddc78d033",
+      "current_sha256": "e577cb3bef30898493c434e175cc76d1284cbd769db409128b502a3d76918feb"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/pinocchio_model/DynamicsHelperFunctions.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/pinocchio_model/DynamicsHelperFunctions.h",
+      "status": "modified",
+      "source_sha256": "59f81b2b26a18fb3ae746558a2b15595c4df433e84fa0c04ba7f907d232d9e52",
+      "current_sha256": "4b5b51eea63dcca20766375be1145e1e667a05ad1e6461c9cb7e6e0f2b43c1d3"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/pinocchio_model/PinocchioFrameConversions.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/pinocchio_model/PinocchioFrameConversions.h",
+      "status": "line_endings_only",
+      "source_sha256": "d8e3f8226ac8c95036a8b640fe3f2c7e7a4d1226fedf38560226483164fc210a",
+      "current_sha256": "72fad8d93479e06acf56304ebeefeb6f1ea72017459ea5cff9b5ee2784b5d888"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/pinocchio_model/createPinocchioModel.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/pinocchio_model/createPinocchioModel.h",
+      "status": "line_endings_only",
+      "source_sha256": "c8cff7d80eeb50aaf9c1716487eac85f92dadb06ea169f9d909a1d5d4802ee14",
+      "current_sha256": "d2cbbf67af0426ad2bd16284fa2623f7d95795806d0e980b93dfacce371d0839"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/pinocchio_model/pinocchioUtils.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/pinocchio_model/pinocchioUtils.h",
+      "status": "line_endings_only",
+      "source_sha256": "042012e68b249717b60b0fb1028139552f0b90ab934822d7e5b25bb43928794d",
+      "current_sha256": "d791bec1e75aa18e6853c8ab1f4b3c57c3cfca26c1cf4509c438e4e14ac5cbec"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/reference_manager/BreakFrequencyAlphaFilter.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/reference_manager/BreakFrequencyAlphaFilter.h",
+      "status": "line_endings_only",
+      "source_sha256": "65f2687e60781a6e840e0f97e4663666a2a35c0385e32089faa77eb07cbc1ce5",
+      "current_sha256": "339071ba5fb786d6f25850ef48ae8c01660dd68b0b9ff09ded936427c409c7bd"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/reference_manager/ProceduralMpcMotionManager.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/reference_manager/ProceduralMpcMotionManager.h",
+      "status": "line_endings_only",
+      "source_sha256": "c3b38a4dd446faa15a576fd83c17b8baabcf55688b12cf7ddebe9ed999bfe260",
+      "current_sha256": "a6c3bb31420d060166b059f4546448b9d63a95ed98d95698c6860580d004b40c"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/reference_manager/SwitchedModelReferenceManager.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/reference_manager/SwitchedModelReferenceManager.h",
+      "status": "modified",
+      "source_sha256": "17b7bf520d87281a62d7c45fc43422c27465a387c3796fa0a7ad234d069b83fc",
+      "current_sha256": "07f2eeaad96f9f02655591b9f9023ab5fa2b4f54ad2a6dbd62d26bd465c6266d"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/swing_foot_planner/CubicSpline.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/swing_foot_planner/CubicSpline.h",
+      "status": "line_endings_only",
+      "source_sha256": "7e598df6e3b33e3bffcdccec550f87191039dc9dd4ef4ffd74a8d9480769062a",
+      "current_sha256": "5cc5f08268d33d3925ac92bbfd1d6c7b1fbeba35b12618845bc322d5a623b548"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/swing_foot_planner/ImpactProximityFactorBase.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/swing_foot_planner/ImpactProximityFactorBase.h",
+      "status": "line_endings_only",
+      "source_sha256": "e9e60e484ccda3f652ed34c6c655959a2d8d1660e467d493526b2ef474fda962",
+      "current_sha256": "7984d865c37a620f5d718d632da7df909c1fcac5a7774d7a980f0a814b825c00"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/swing_foot_planner/SplineCpg.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/swing_foot_planner/SplineCpg.h",
+      "status": "line_endings_only",
+      "source_sha256": "d3885bddd51c9f6de6cac63333cfb4ea6f10017dc884b66ba4825f6ee15817d4",
+      "current_sha256": "8d09a1ab566a67e39643a9c12ebbea5f5d039f3bbe87452fdfcc57c3e0ba683b"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/include/humanoid_common_mpc/swing_foot_planner/SwingTrajectoryPlanner.h",
+      "current": "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/swing_foot_planner/SwingTrajectoryPlanner.h",
+      "status": "line_endings_only",
+      "source_sha256": "807f915eba6e9388002105522660775ee2764cc5157c7b86f95d73615a549d28",
+      "current_sha256": "2141fa18d0a82acd36158c5d1644d6024e9ad6ff9987f11e9e9a187b9018bb2b"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/package.xml",
+      "current": "cpp/whole_body/humanoid_common_mpc/package.xml",
+      "status": "missing",
+      "source_sha256": "9d525954156f39f43cfbe3be06470450e7caa7e8a585841ca01fca12f0ef2d70",
+      "current_sha256": null
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/HumanoidCostConstraintFactory.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/HumanoidCostConstraintFactory.cpp",
+      "status": "modified",
+      "source_sha256": "df784fdd01ff0b5afa909adf8a1e89374b123f2caf1a460fcf8f3cab94271113",
+      "current_sha256": "ff4c142af9ba4c3ad01675486f7ff4685e94f3dbfed51eb1f32857415186519a"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/HumanoidPreComputation.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/HumanoidPreComputation.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "f9f57ca1f146f13719e88ac354005461311142bb301a1899ca81bc3f64c2bb53",
+      "current_sha256": "a79a4980975a31099138ed13ada19ca9434f4350b21fd698d953f18a232294e2"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/command/TargetTrajectoriesCalculatorBase.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/command/TargetTrajectoriesCalculatorBase.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "5e1e98d7d9ee872fccd832ed8d4ba7cce53376af4fd6a5de67a18d831baacf98",
+      "current_sha256": "d5e27de25160c28aebdc5111f526778d96e5395491d2ca5043671a7261a1de24"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/common/ModelSettings.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/common/ModelSettings.cpp",
+      "status": "modified",
+      "source_sha256": "608be9be283e37268cc4651d9485648f4ff932ba3f56ab8741924f344e6a18e3",
+      "current_sha256": "64deaa94b9e08c3c92e8aa97de25b3e46fefac4a57baa9d386dbfd91b29afb22"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/constraint/ContactMomentXYConstraintCppAd.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/constraint/ContactMomentXYConstraintCppAd.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "2e15b9e9ab456ff8972c6f3b8c9e6122001c9197d7c8ac27f9fa93e8418511b1",
+      "current_sha256": "233535f523db6e3007e238363d222383afe35ad3bb5534ec8805bb29bd89fd75"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/constraint/EndEffectorKinematicsLinearVelConstraint.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/constraint/EndEffectorKinematicsLinearVelConstraint.cpp",
+      "status": "modified",
+      "source_sha256": "6c45020ba35f158bb0d843dfd23a93b3e792da78816156ebc69e17eb2fe34e0d",
+      "current_sha256": "35faf3bca6849a7b34b2591ff2ff53a10a4d74410950cb6536d6de749007fd4f"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/constraint/EndEffectorKinematicsTwistConstraint.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/constraint/EndEffectorKinematicsTwistConstraint.cpp",
+      "status": "modified",
+      "source_sha256": "44396f2a4836e80dbc911afd468d30a3e7526d5917c7f16b73053fee556b01fd",
+      "current_sha256": "ce6d6285b224d8b5dd2d5fa13c0bb8eaa643b227448f5c4a15f72f54e53fc962"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/constraint/FootCollisionConstraint.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/constraint/FootCollisionConstraint.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "991b478ac9f6ecbbd31e50474776cdd040249f16313458d26939f988bc613a08",
+      "current_sha256": "06362b058d73418de9a28d71c32bef7d44f1882aeb6f60d88e0d02771e178711"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/constraint/FrictionForceConeConstraint.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/constraint/FrictionForceConeConstraint.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "823cb5928c3c09e68770573f42516e8e8149748037b0741634a6bfb78db88489",
+      "current_sha256": "ae994a4908462fa139b39e707323a8c395de9b0643de44281da89a187612e355"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/constraint/JointLimitsSoftConstraint.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/constraint/JointLimitsSoftConstraint.cpp",
+      "status": "modified",
+      "source_sha256": "f3969d136f6720d12fb38f8b5ba41e313bb05a786e5264b7f7e967c8768afc2b",
+      "current_sha256": "f0223954fdbdd7f77375925e6b283a0bcc704c6d4dbca181878f27d9a0cd2ecd"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/constraint/ZeroWrenchConstraint.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/constraint/ZeroWrenchConstraint.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "cbb22118147930d13078101d9389c90f68ee01a1547325f21093ecfd28ae2282",
+      "current_sha256": "0563bb612ca78ebaa3e689de2796b883de532dea5ccf7506c3aec3910bdef0ba"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/contact/ContactCenterPoint.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/contact/ContactCenterPoint.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "29415b01178c77d276cd471b4dce67756ad8948e32d04c4e622a9a9761062b56",
+      "current_sha256": "7625d050e982b2c05fba075798ff64aaba00afc8ee7d2c7321748a91fe6f142a"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/contact/ContactPolygon.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/contact/ContactPolygon.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "44dbd97c1c6c03d041fa0a54bb8ff4047e77fc63f6c558890b332b68d4bd24fc",
+      "current_sha256": "0092614a08893f2700ac25cccbdec370c33d859529f08199154bfbaca6c0dd77"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/contact/ContactRectangle.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/contact/ContactRectangle.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "7d243f9da30641a14cc45b96fe6c8eb58833446812ea5432f59a9dcad85593a6",
+      "current_sha256": "4838ac2e611abc683c3d96545b18919c9c9a9e539e6d5238de6307c363641b53"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/cost/EndEffectorKinematicCostHelpers.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/cost/EndEffectorKinematicCostHelpers.cpp",
+      "status": "modified",
+      "source_sha256": "0512c592c4659efef999891a43c2367a4e46e96f4b5e6bbb3272cd277dc85cea",
+      "current_sha256": "22b4de869140ae9adc8406ed76e15a3ccc8e2103cf88f1cf8e6706e834591420"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/cost/EndEffectorKinematicsQuadraticCost.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/cost/EndEffectorKinematicsQuadraticCost.cpp",
+      "status": "modified",
+      "source_sha256": "62af25f985c5cef33cd50fc52fe8cf0730a4c4549de8d805a54129c60daa3433",
+      "current_sha256": "90532e0148f66b3ba2a37e415142f46f86d2c936d19ed72ccec3767e07bd2a47"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/cost/ExternalTorqueQuadraticCostAD.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/cost/ExternalTorqueQuadraticCostAD.cpp",
+      "status": "modified",
+      "source_sha256": "8180453f516c33a310a30ed809d7fac7961411a85ac0cb5c3ba730f4ff037613",
+      "current_sha256": "0fd8d8317e54fd0e8846b1e8a1ca4a2bc7b2600078e9bec97cb8171d2b335aaa"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/cost/StateInputQuadraticCost.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/cost/StateInputQuadraticCost.cpp",
+      "status": "modified",
+      "source_sha256": "5698c67115adc5f196882c5714ce891fd13d7624702b8027dd6dbf913953eba9",
+      "current_sha256": "ea07b8d76d4322d69e63ff1b561e05289c4f618fe864a054cc59497c4f35cb0e"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/gait/Gait.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/gait/Gait.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "fce7608afa96b3afc17a43a0846fa636fc4f7212bc8851058adee73029cb16c1",
+      "current_sha256": "2c16049bb992ee90b4fe09489a97e21b006b951849ed56d2b7971ea7f1bfddc2"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/gait/GaitSchedule.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/gait/GaitSchedule.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "ed64a96344278f04826734bd94472216a6ffc516f92a1e28f72bff2e1a4a1d41",
+      "current_sha256": "afe8273e6c96740a7df112fbc588ec5b1479108919d79ef76211988bbe990e27"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/gait/GaitScheduleUpdater.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/gait/GaitScheduleUpdater.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "4e877012152fdf725e57bb227703965124a864bb2105c1765e3b79829e8b679d",
+      "current_sha256": "06202ca3a5558ac39269bf8ac2c63ef3f4525bf7a8b15b3fc99087468e970663"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/gait/ModeSequenceTemplate.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/gait/ModeSequenceTemplate.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "35f2b78e68f27b36328348d8155b7950bee63d82eb061e6a3b0267d433bf9f92",
+      "current_sha256": "0cbfe0c361d21f1b5c42262670c511e5b9bdbec659f0286cec4318dabbbe9038"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/initialization/WeightCompInitializer.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/initialization/WeightCompInitializer.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "8a03a666bbd529d9f213216a901f56b98979d31647df443b708f8c9e3393e744",
+      "current_sha256": "a0bd9624b8d1fed4cd103b34745e73d100a821c05ec86e9abb66b978c81614a4"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/pinocchio_model/DynamicsHelperFunctions.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/pinocchio_model/DynamicsHelperFunctions.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "721ae2034916933edcfd51bb0523b03e4e3bf67721ffb0e60e720050b891c3ad",
+      "current_sha256": "c6cb02fa9d8f3147553d1a427f3290eb7a33852ddb970e90d96b6aa1c179ccc8"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/pinocchio_model/createPinocchioModel.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/pinocchio_model/createPinocchioModel.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "f8a072d8a5e3a4309076cf927920d4ed007a4810917ec5db721e49c7b7b5b535",
+      "current_sha256": "83fe8f832af2637682287a04125723e440264424af5476dc328340e509a2e571"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/pinocchio_model/pinocchioUtils.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/pinocchio_model/pinocchioUtils.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "f9256c1f44b60aa7be9747a66944c4d2296aa44202a90fb2059e1910e5caaa44",
+      "current_sha256": "033134c2ccbd38a0548e44e64d11c40b3edb3b9bf0c10443c5bd10cb8c777244"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/reference_manager/ProceduralMpcMotionManager.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/reference_manager/ProceduralMpcMotionManager.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "dc1620fa123a4e50d5862698ff00626ae51a453fb0e2aa8eff2f7afe1a7b7e76",
+      "current_sha256": "abe0ea3df15828ff136b3e82f69a5ecdc48185915f8f8a2addd9f16c56402c0f"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/reference_manager/SwitchedModelReferenceManager.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/reference_manager/SwitchedModelReferenceManager.cpp",
+      "status": "modified",
+      "source_sha256": "c6b67668f9988d5a2329dace48cafb262e9bbc479f51a37fedae9f776bc4a11d",
+      "current_sha256": "8bf04f9b8ddfaa355767396a140ea2168c9fc1dc8c095cfbe6de4dfc937c5f51"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/swing_foot_planner/CubicSpline.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/swing_foot_planner/CubicSpline.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "71d56974ea39ff536c3d389a7d5168b746348bcc6f9035a5a4e958f5937965a8",
+      "current_sha256": "ba12f47462f28f96b0d777a363ea2df7fefaedeae1ff8c2c0acbd2482ff7715b"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/swing_foot_planner/SplineCpg.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/swing_foot_planner/SplineCpg.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "126926dbc2ac7a58f90b70944be5a179dc522bb11d61092527f6894a67a198ed",
+      "current_sha256": "14a18e87fe4e7fb4a41c117399ad683a8b664a9253f9b9b8fd9e3ffb9ed7fd9c"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/src/swing_foot_planner/SwingTrajectoryPlanner.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/src/swing_foot_planner/SwingTrajectoryPlanner.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "7b50cb460d55ce788a3053116b0302984edb2774fa04b478ccfe3df0baaaf018",
+      "current_sha256": "db3635b4469004b86d2a154814ccc51ad7c59be2a8b2d9edba1d6899b4c9eb71"
+    },
+    {
+      "source": "humanoid_nmpc/humanoid_common_mpc/test/testEndEffectorKinematicsCostElement.cpp",
+      "current": "cpp/whole_body/humanoid_common_mpc/test/testEndEffectorKinematicsCostElement.cpp",
+      "status": "missing",
+      "source_sha256": "1834def4dba7ffb110de4a31a578549532e91243d8797b56e1cd0e740f8e85f3",
+      "current_sha256": null
+    },
+    {
+      "source": "robot_runtime/robot_core/CMakeLists.txt",
+      "current": "cpp/robot/robot_core/CMakeLists.txt",
+      "status": "missing",
+      "source_sha256": "70bb20db41e3858eba0f9b9bcf75ab87bd47ec0dcc765a7178194de57e40512e",
+      "current_sha256": null
+    },
+    {
+      "source": "robot_runtime/robot_core/include/robot_core/FPSTracker.h",
+      "current": "cpp/robot/robot_core/include/robot_core/FPSTracker.h",
+      "status": "line_endings_only",
+      "source_sha256": "47819513262ea4e44c32a8a7b47251f7691d544b120b16486ffc39693c5dee83",
+      "current_sha256": "8c66a3197a5e3deb5217ca39ad820c81039a34759519ecad958e2f46ebe6f2bd"
+    },
+    {
+      "source": "robot_runtime/robot_core/include/robot_core/ThreadSafe.h",
+      "current": "cpp/robot/robot_core/include/robot_core/ThreadSafe.h",
+      "status": "line_endings_only",
+      "source_sha256": "8dd1dd8de3f26a34a2aa1f16b7c7b8984000b7a220030ae249e265a9f7212126",
+      "current_sha256": "56dc1bac7c6d8c7135f02ccc1b373ba9607e4adba457509e7e38a613d8ef7aed"
+    },
+    {
+      "source": "robot_runtime/robot_core/include/robot_core/Types.h",
+      "current": "cpp/robot/robot_core/include/robot_core/Types.h",
+      "status": "line_endings_only",
+      "source_sha256": "d2dcd3381f99e7d8748263267b85d08e67fcb50987f517545a34aaaa28448172",
+      "current_sha256": "b85d5589051e247d71db2c21ab52426565f0dba6a91e4f0360772a008f87b9a8"
+    },
+    {
+      "source": "robot_runtime/robot_core/package.xml",
+      "current": "cpp/robot/robot_core/package.xml",
+      "status": "missing",
+      "source_sha256": "434c5a1c3a40f5af0a8f067cb1e6772a52966d55279ca66dbac8afcfaebf07e8",
+      "current_sha256": null
+    },
+    {
+      "source": "robot_runtime/robot_model/CMakeLists.txt",
+      "current": "cpp/robot/robot_model/CMakeLists.txt",
+      "status": "missing",
+      "source_sha256": "18a6058016bd79b73a587e2b2fe0c029256f88d39d477b221e945aa7627189e4",
+      "current_sha256": null
+    },
+    {
+      "source": "robot_runtime/robot_model/include/robot_model/ControllerBase.h",
+      "current": "cpp/robot/robot_model/include/robot_model/ControllerBase.h",
+      "status": "line_endings_only",
+      "source_sha256": "5b5c4992ef20a75f71bae767a5f5aa2b09fb6b2c8f921eb51bf864d7b935a448",
+      "current_sha256": "0ac6fc121983a94fd40f15c0ab3b411ef8f1f3532c604bb2e44fbbddd53a87dc"
+    },
+    {
+      "source": "robot_runtime/robot_model/include/robot_model/IDMapBase.h",
+      "current": "cpp/robot/robot_model/include/robot_model/IDMapBase.h",
+      "status": "line_endings_only",
+      "source_sha256": "8faa93fd86543bf8c3042d2d401500901489ffae548aa7a24c2a39987c1d1b09",
+      "current_sha256": "f235f246c9c720c598d695293281df1bf6070d0819adbb312eab4118c8396ede"
+    },
+    {
+      "source": "robot_runtime/robot_model/include/robot_model/JointIDMap.h",
+      "current": "cpp/robot/robot_model/include/robot_model/JointIDMap.h",
+      "status": "line_endings_only",
+      "source_sha256": "7a62b6031783b0a0cee459b61fc23ad02b150ba99172865c89518e9754cde74d",
+      "current_sha256": "3f0f89faf7c5b07c2fe8c6f4353dfc9f6d128d93e7dbca3096b1fcbc7e454a89"
+    },
+    {
+      "source": "robot_runtime/robot_model/include/robot_model/RobotDescription.h",
+      "current": "cpp/robot/robot_model/include/robot_model/RobotDescription.h",
+      "status": "line_endings_only",
+      "source_sha256": "3dc38396482414bdde4119f92f46e077bf4b3cf525ff406c25d7c9b6609e0e1c",
+      "current_sha256": "b54a56596c1c7f72dd2b7cd54eb3de7aa34944115caa805f9471ad897ce93470"
+    },
+    {
+      "source": "robot_runtime/robot_model/include/robot_model/RobotHWInterfaceBase.h",
+      "current": "cpp/robot/robot_model/include/robot_model/RobotHWInterfaceBase.h",
+      "status": "line_endings_only",
+      "source_sha256": "de163e9a851ba2e14d9b31c5ff61e6892157be45d7e061ff250717d6b5a46524",
+      "current_sha256": "7440da4778851fcb1a871ee0be0f7bb625ab6a0d411d803711b00570da4e64c0"
+    },
+    {
+      "source": "robot_runtime/robot_model/include/robot_model/RobotJointAction.h",
+      "current": "cpp/robot/robot_model/include/robot_model/RobotJointAction.h",
+      "status": "line_endings_only",
+      "source_sha256": "6811e0a27388bdfbd437bcb68def92d5f586d71567e41df5fc4cd5855be4e9ec",
+      "current_sha256": "60effdd1968bde493156f0d48021d282df68b7d0349f00c931026c676814f8a0"
+    },
+    {
+      "source": "robot_runtime/robot_model/include/robot_model/RobotState.h",
+      "current": "cpp/robot/robot_model/include/robot_model/RobotState.h",
+      "status": "line_endings_only",
+      "source_sha256": "172be5e28e9b152976f9c0acfa5a829b94bccb36c1093f9cc1282db77aad7c73",
+      "current_sha256": "5b3ca1227a270e32dd6aea587e87cf08d03fb7bbc0ec469d4413403afd2af080"
+    },
+    {
+      "source": "robot_runtime/robot_model/package.xml",
+      "current": "cpp/robot/robot_model/package.xml",
+      "status": "missing",
+      "source_sha256": "82a0907592a200d783e96b50f9c2722f763194df9a43b2b3a755215535ea1eed",
+      "current_sha256": null
+    },
+    {
+      "source": "robot_runtime/robot_model/src/RobotDescription.cpp",
+      "current": "cpp/robot/robot_model/src/RobotDescription.cpp",
+      "status": "modified",
+      "source_sha256": "498b6f8eee28cfe4f2ca9c54fc2bf1cddcd13c824885cbf6b37896d7170c4cb1",
+      "current_sha256": "b914aeb5b32bbd4efe9876fc7d391658fd38883178b915929cc1804d9fa7f95e"
+    },
+    {
+      "source": "robot_runtime/robot_model/src/RobotState.cpp",
+      "current": "cpp/robot/robot_model/src/RobotState.cpp",
+      "status": "line_endings_only",
+      "source_sha256": "23bc0f767ea8c0a47a3e04395f8e27f5c8156364c6ababc61620de38c2d272ff",
+      "current_sha256": "33dc8640b3efa3dc725ec6ccf943176ff2cf9406f893077219d1502e53a831fe"
+    },
+    {
+      "source": "robot_runtime/robot_model/test/testRobotDescription.cpp",
+      "current": "cpp/robot/robot_model/test/testRobotDescription.cpp",
+      "status": "missing",
+      "source_sha256": "40ab08f2fb08b4aeed382ad10cf3ab7728166dbe2357613692dc1a3e13e4c0d7",
+      "current_sha256": null
+    }
+  ]
+}

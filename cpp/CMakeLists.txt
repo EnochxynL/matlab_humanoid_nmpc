@@ -1,18 +1,14 @@
 add_library(g1_controller_core SHARED
   controller/G1Controller.cpp
-  controller/WBMpcController.cpp
-  math/GeneratedFootCost.cpp
-  math/GeometryInstallBridge.cpp)
+  controller/WBMpcController.cpp)
 set_target_properties(g1_controller_core PROPERTIES OUTPUT_NAME g1_controller)
 target_include_directories(g1_controller_core
   PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
          "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/controller>"
          "$<INSTALL_INTERFACE:include>"
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
-          "${CMAKE_CURRENT_SOURCE_DIR}/whole_body" ${math_includes})
-target_link_libraries(g1_controller_core PRIVATE humanoid_wb_mpc
-  task5c_mathematics task5c_wave_b_math task5c_wave_c_math
-  task5c_moment_math task5c_collision_math task5c_foot_cost_math)
+          "${CMAKE_CURRENT_SOURCE_DIR}/whole_body")
+target_link_libraries(g1_controller_core PRIVATE humanoid_wb_mpc)
 if(UNIX AND NOT APPLE)
   target_link_options(g1_controller_core PRIVATE -Wl,--disable-new-dtags)
   set_target_properties(g1_controller_core PROPERTIES BUILD_RPATH "${CMAKE_BINARY_DIR}/lib;$ORIGIN")

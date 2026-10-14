@@ -10,9 +10,6 @@
 #include <memory>
 
 namespace g1_controller {
-// Public ABI contains no Eigen, OCS2, Pinocchio, MATLAB or ROS types.
-// One instance owns its runtime, solver worker and policy cache. Configuration
-// of the retained mathematical authority still uses the accepted environment.
 /**
  * @brief 一个实例拥有一套运行时、求解工作线程及当前策略缓存。
  * 典型调用：initialize → setReference → query → inverseDynamics → shutdown。

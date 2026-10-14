@@ -7,7 +7,6 @@ assert(isfile(cfg.modelFile),'Missing models/g1_walking.slx.');
 folder=fullfile(root,'runtime',['walking_' char(datetime('now','TimeZone','Asia/Shanghai','Format','yyyyMMdd_HHmmss'))]);mkdir(folder);
 env=jsondecode(fileread(fullfile(root,'config/controller_environment.json')));
 env.TASK5A_AUTHORITY='SIMULINK_REFERENCE';env.TASK5A_PACKET_FILE='IN_PROCESS_ONLY';
-env.TASK5C_GEOMETRY_CACHE=fullfile(root,'build/moment_ad');env.TASK5C_COLLISION_CACHE=fullfile(root,'build/collision_ad');env.TASK5C_FOOT_COST_CACHE=fullfile(root,'build/foot_cost_ad');
 keys=fieldnames(env);old=cell(size(keys));for k=1:numel(keys),old{k}=getenv(keys{k});setenv(keys{k},env.(keys{k}));end
 cleanup=onCleanup(@()finish(keys,old));diary(fullfile(folder,'matlab.log'));
 g1log.writeJson(fullfile(root,'runtime/current_run.json'),struct('folder',folder,'status','STARTING'));

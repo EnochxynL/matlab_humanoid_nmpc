@@ -36,8 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include "controller/WBMpcController.h"
-#include "math/GeneratedNominals.h"
-#include "prepareState.h"
 
 #include <ocs2_robotic_tools/common/RotationDerivativesTransforms.h>
 #include <ocs2_robotic_tools/common/RotationTransforms.h>
@@ -122,10 +120,9 @@ void WaveBControlTimeWBMpcController::startMpcThread(const ::robot::model::Robot
  * @brief 将机器人观测转换为58维 OCP 状态。
  * 基座姿态转 Euler ZYX，局部线速度转世界系，局部角速度转 Euler 角导数，
  * 并按 MPC 关节顺序提取23个关节的位置和速度。
- * 保留 Legacy/Shadow/生成实现三种历史权威分支，由环境配置选择；不在这里修改公式。
+ * 使用参考仓库 updateMpcState 的 C++ 转换公式，不经 MATLAB 生成内核。
  */
 void WaveBControlTimeWBMpcController::updateMpcState(vector_t& mpcState, const ::robot::model::RobotState& robotState) {
-  auto legacy=[&](){
   mpcRobotModel_.setBasePosition(mpcState, robotState.getRootPositionInWorldFrame());
   mpcRobotModel_.setBaseOrientationEulerZYX(mpcState, quaternionToEulerZYX(robotState.getRootRotationLocalToWorldFrame()));
 
@@ -140,20 +137,6 @@ void WaveBControlTimeWBMpcController::updateMpcState(vector_t& mpcState, const :
 
   vector_t dummyInput = vector_t::Zero(mpcRobotModel_.getInputDim());
   mpcRobotModel_.setJointVelocities(mpcState, dummyInput, robotState.getJointVelocities(mpcJointIndices_));
-  };
-  if(!std::getenv("TASK5C_STATE_PREP") || task5c::authorityFor("TASK5C_STATE_AUTHORITY")==task5c::Authority::Legacy){
-    if(stateEvidence_)++stateEvidence_->legacyEvaluations;legacy();return;
-  }
-  auto position=robotState.getRootPositionInWorldFrame();auto rotation=robotState.getRootRotationLocalToWorldFrame();
-  double quaternion[4]={rotation.w(),rotation.x(),rotation.y(),rotation.z()};
-  auto q=robotState.getJointPositions(mpcJointIndices_),qd=robotState.getJointVelocities(mpcJointIndices_);
-  auto linear=robotState.getRootLinearVelocityInLocalFrame(),angular=robotState.getRootAngularVelocityInLocalFrame();
-  vector_t generated(58);prepareState(position.data(),quaternion,q.data(),linear.data(),angular.data(),qd.data(),generated.data());
-  ++stateEvidence_->value;++stateEvidence_->generated;stateEvidence_->stack();
-  if(task5c::authorityFor("TASK5C_STATE_AUTHORITY")==task5c::Authority::Shadow){
-    legacy();++stateEvidence_->legacyEvaluations;++stateEvidence_->shadowComparisons;
-    if(!(generated.array()==mpcState.array()).all())throw std::runtime_error("State preparation exact shadow mismatch");
-  }else mpcState=generated;
 
 }
 
@@ -230,7 +213,7 @@ void WaveBControlTimeWBMpcController::computeJointControlAction(scalar_t time,
     std::cerr << "Apply weight compensating torque..." << std::endl;
     //   Apply weight compensated input around current state
     mpcPolicyState = currentMpcObservation_.state;
-    mpcPolicyInput = task5c::generatedNominalInput(pinocchioInterface_, {true, true}, mpcRobotModel_,nominalInputEvidence_);
+    mpcPolicyInput = weightCompensatingInput(pinocchioInterface_, {true, true}, mpcRobotModel_);
     vector_t weightCompensatingTorques = computeJointTorques<scalar_t>(mpcPolicyState, mpcPolicyInput, pinocchioInterface_, mpcRobotModel_);
 
     for (size_t i = 0; i < mpcJointIndices_.size(); i++) {

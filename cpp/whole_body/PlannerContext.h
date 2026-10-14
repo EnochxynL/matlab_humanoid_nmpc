@@ -1,16 +1,12 @@
 /**
  * @file
- * @brief 控制核心的对象装配入口：模型/OCP → 已验收数学包装 → SQP MPC → 参考与诊断。
- * 本文件主要管理依赖关系，不是 SQP 算法实现。TASK5A/TASK5C 名称是保留的历史配置。
+ * @brief 控制核心的对象装配入口：模型/OCP → SQP MPC → 参考与诊断。
+ * 本文件主要管理依赖关系，不是 SQP 算法实现。TASK5A 名称是保留的参考接入配置。
  */
 #pragma once
 #include "controller/WBMpcController.h"
 #include "diagnostics/StructuralObserver.h"
 #include "diagnostics/TimeLog.h"
-#include "math/GeneratedFootContracts.h"
-#include "math/GeneratedFootCost.h"
-#include "math/GeneratedQuadraticCosts.h"
-#include "math/GeometryInstallBridge.h"
 #include "reference/ExternalReferenceAdapter.h"
 #include "time/CanonicalControlTime.h"
 
@@ -40,18 +36,10 @@ struct Inputs {
 };
 /**
  * @brief 拥有一套完整规划上下文。成员按声明顺序初始化、按逆序析构。
- * interface 先提供基础 OCP，migratedProblem 包装既有数学实现，mpc 使用包装后的问题。
- * Evidence 对象记录真实数学调用来源；它们不是新的代价或约束。
+ * interface 提供完整 OCP 与初始化器，mpc 直接使用其 C++ 实现。
  */
 struct PlannerContext {
   WBMpcInterface interface;
-  std::shared_ptr<task5c::Evidence> mathematicalEvidence, frictionEvidence,
-      polynomialEvidence, relaxedEvidence, jointEvidence, terminalEvidence,
-      runningEvidence, stateEvidence, nominalStateEvidence,
-      nominalInputEvidence, preEvidence, stanceEvidence, swingEvidence,
-      momentEvidence, collisionEvidence, footCostEvidence;
-  OptimalControlProblem migratedProblem;
-  task5c::GeneratedInitializer migratedInitializer;
   SqpMpc mpc;
   std::shared_ptr<TimeLog> log;
   std::shared_ptr<task5a::ExternalReferenceAdapter> external;
@@ -61,61 +49,14 @@ struct PlannerContext {
   bool migrated;
   uint64_t expectedSession = 0;
 /**
- * @brief 先构建 WBMpcInterface，再从内向外安装数学包装和初始化器，最后创建 SqpMpc。
- * install 链涵盖接触约束、罚函数、关节范围、二次代价、预计算与足端数学等边界；
- * 具体 Legacy/Shadow/生成实现权限由既有环境配置控制，并非全部在此重新定义。
+ * @brief 构建 WBMpcInterface，直接以原 C++ OCP 和初始化器创建 SqpMpc。
  * 随后绑定 Simulink 外部参考：每次求解都检查 session 与实际观测 tick 一致。
  * 日志和结构观察器挂到求解同步接口；/proc/self/maps 仅用于 Linux 运行依赖记录。
  */
   PlannerContext(const Inputs &i)
       : interface(i.task, i.urdf, i.ref),
-        mathematicalEvidence(std::make_shared<task5c::Evidence>(i.root)),
-        frictionEvidence(
-            std::make_shared<task5c::Evidence>(i.root, "friction_")),
-        polynomialEvidence(
-            std::make_shared<task5c::Evidence>(i.root, "polynomial_")),
-        relaxedEvidence(std::make_shared<task5c::Evidence>(i.root, "relaxed_")),
-        jointEvidence(std::make_shared<task5c::Evidence>(i.root, "joint_")),
-        terminalEvidence(
-            std::make_shared<task5c::Evidence>(i.root, "terminal_")),
-        runningEvidence(std::make_shared<task5c::Evidence>(i.root, "running_")),
-        stateEvidence(std::make_shared<task5c::Evidence>(i.root, "state_")),
-        nominalStateEvidence(
-            std::make_shared<task5c::Evidence>(i.root, "nominal_state_")),
-        nominalInputEvidence(
-            std::make_shared<task5c::Evidence>(i.root, "nominal_input_")),
-        preEvidence(
-            std::make_shared<task5c::Evidence>(i.root, "precomputation_")),
-        stanceEvidence(std::make_shared<task5c::Evidence>(i.root, "stance_")),
-        swingEvidence(std::make_shared<task5c::Evidence>(i.root, "swing_")),
-        momentEvidence(std::make_shared<task5c::Evidence>(i.root, "moment_")),
-        collisionEvidence(
-            std::make_shared<task5c::Evidence>(i.root, "collision_")),
-        footCostEvidence(
-            std::make_shared<task5c::Evidence>(i.root, "foot_cost_")),
-        migratedProblem(task5c::footcost::installFootCosts(
-            task5c::footcost::installCollisionBridge(
-                task5c::footcost::installMomentBridge(
-                    task5c::wavec::install(
-                        task5c::installQuadraticCosts(
-                            task5c::installJointLimits(
-                                task5c::installPenalties(
-                                    task5c::installFriction(
-                                        task5c::install(interface,
-                                                        mathematicalEvidence),
-                                        interface, i.task, frictionEvidence),
-                                    polynomialEvidence, relaxedEvidence),
-                                interface, jointEvidence),
-                            interface, terminalEvidence, runningEvidence,
-                            nominalStateEvidence, nominalInputEvidence),
-                        interface, preEvidence, stanceEvidence, swingEvidence),
-                    interface, i.task, momentEvidence),
-                interface, i.task, collisionEvidence),
-            interface, footCostEvidence)),
-        migratedInitializer(interface.getInitializer(), interface,
-                            nominalInputEvidence),
-        mpc(interface.mpcSettings(), interface.sqpSettings(), migratedProblem,
-            migratedInitializer),
+        mpc(interface.mpcSettings(), interface.sqpSettings(),
+            interface.getOptimalControlProblem(), interface.getInitializer()),
         log(std::make_shared<TimeLog>(i.root, i.heavy)),
         migrated(std::getenv("TASK5A_AUTHORITY") &&
                  std::string(std::getenv("TASK5A_AUTHORITY")) ==
@@ -155,11 +96,10 @@ struct PlannerContext {
         << (migrated ? "SIMULINK_REFERENCE" : "LEGACY_CPP_REFERENCE") << "\n";
   }
 /**
- * @brief 为控制调度器绑定数学来源记录、确定性仿真模式和时间事件回调。
+ * @brief 为控制调度器绑定确定性仿真模式和时间事件回调。
  * 此处不启动线程，也不改变 MPC/SQP 参数。
  */
   void configure(WaveBControlTimeWBMpcController &c) {
-    c.setMathematicsEvidence(stateEvidence, nominalInputEvidence);
     c.enableDeterministicSimulation();
     c.setTraceCallback([this](const char *e, double t, double d, double r) {
       log->trace(e, t, d, r);
