@@ -1,3 +1,11 @@
+/**
+ * @file
+ * @brief MATLAB 与独立 G1 控制核心之间的薄适配层。
+ * 只负责 mxArray 校验、固定长度向量编解码、实例生命周期及异常转换。
+ * 机器人数学、求解调度和策略缓存均由 G1Controller 及其内部实现负责。
+ * 阅读顺序：本文件 → G1Controller.h → ControllerRuntime.cpp。
+ * 下文数组偏移均为 C++ 从 0 开始的索引；MATLAB 索引需加 1。
+ */
 #include "g1_controller/G1Controller.h"
 #include "mex.h"
 
@@ -9,8 +17,14 @@
 
 namespace {
 using g1_controller::G1Controller;
+/**
+ * @brief 当前 MEX 模块持有的唯一控制实例；跨多次 MATLAB 调用保留。
+ */
 std::unique_ptr<G1Controller> controller;
 
+/**
+ * @brief 读取 MATLAB 字符向量，并释放 mxArrayToString 分配的临时内存。
+ */
 std::string readString(const mxArray *argument) {
   if (!mxIsChar(argument))
     throw std::runtime_error("Expected character vector");
@@ -20,6 +34,10 @@ std::string readString(const mxArray *argument) {
   return result;
 }
 
+/**
+ * @brief 校验实数 double 数组的元素总数和有限性，返回借用指针。
+ * 不强制行/列形状；指针仅在本次 MEX 调用期间使用，不转移所有权。
+ */
 const double *readDoubles(const mxArray *argument, std::size_t count) {
   if (!mxIsDouble(argument) || mxIsComplex(argument) ||
       mxGetNumberOfElements(argument) != count)
@@ -31,12 +49,19 @@ const double *readDoubles(const mxArray *argument, std::size_t count) {
   return values;
 }
 
+/**
+ * @brief 获取已初始化实例；未 init 时抛异常，随后转换为 MATLAB 错误。
+ * 我觉得不如叫 get_controller()
+ */
 G1Controller &runtime() {
   if (!controller)
     throw std::runtime_error("Initialize MEX first");
   return *controller;
 }
 
+/**
+ * @brief 关闭核心并释放实例；用于 close 命令、初始化失败和 MEX 退出清理。
+ */
 void closeController() {
   if (controller)
     controller->shutdown();
@@ -45,6 +70,12 @@ void closeController() {
 
 // These offsets are the unchanged MATLAB transport protocol. No robot math
 // or solver scheduling belongs in this adapter.
+/**
+ * @brief 将 74 元素观测包转换为具名结构。
+ * 布局：时间[0]、世界位置[1:3]、wxyz 四元数[4:7]、局部线/角速度[8:13]、
+ * 29 关节位置[14:42]、29 关节速度[43:71]、接触标志[72:73]。
+ * 这里只搬运数据，不做坐标转换或关节重排。
+ */
 g1_controller::Observation decodeObservation(const double *a) {
   g1_controller::Observation o;
   o.rawBackendTime = a[0];
@@ -58,6 +89,11 @@ g1_controller::Observation decodeObservation(const double *a) {
   return o;
 }
 
+/**
+ * @brief 解码 428 元素参考包；publish 为假时直接返回。
+ * 包含 tick、至多 3 个 58/35 维目标节点、至多 64 个事件和 65 个模式，
+ * 以及终止时间、摆腿参数和滤波命令；实际计数由核心继续校验。
+ */
 g1_controller::Reference decodeReference(const double *a) {
   g1_controller::Reference r;
   r.publish = a[1] != 0;
@@ -80,6 +116,9 @@ g1_controller::Reference decodeReference(const double *a) {
   return r;
 }
 
+/**
+ * @brief 解码 query 返回的 95 元素策略：状态58、输入35、模式1、查询时间1。
+ */
 g1_controller::Policy decodePolicy(const double *a) {
   g1_controller::Policy p;
   std::copy_n(a, 58, p.state.begin());
@@ -89,6 +128,9 @@ g1_controller::Policy decodePolicy(const double *a) {
   return p;
 }
 
+/**
+ * @brief 创建 MATLAB 拥有的 95×1 策略向量，供后续 inverse_dynamics 原样回传。
+ */
 mxArray *encodePolicy(const g1_controller::Policy &p) {
   mxArray *output = mxCreateDoubleMatrix(95, 1, mxREAL);
   double *a = mxGetPr(output);
@@ -99,6 +141,10 @@ mxArray *encodePolicy(const g1_controller::Policy &p) {
   return output;
 }
 
+/**
+ * @brief 编码兼容 step 输出：状态58、输入35、前馈力矩23、模式1、查询时间1。
+ * 该 118 元素结果不包含 JointDrive 最终叠加的 PD 反馈力矩。
+ */
 mxArray *encodeResult(const g1_controller::ControlResult &r) {
   mxArray *output = mxCreateDoubleMatrix(118, 1, mxREAL);
   double *a = mxGetPr(output);
@@ -111,6 +157,14 @@ mxArray *encodeResult(const g1_controller::ControlResult &r) {
 }
 } // namespace
 
+/**
+ * @brief MEX 命令分发入口，保持既有输入输出协议。
+ * init(root,folder)：创建核心并 mexLock，防止运行中卸载；close：关闭并解锁。
+ * reference(r428)：提交参考；query(o74) → p95：更新/查询策略。
+ * inverse_dynamics(p95) → tau23：计算该策略的前馈力矩。
+ * step(o74) → r118：依次执行 query 和 inverse_dynamics。
+ * 标准 C++ 异常统一转换为 G1:PlannerMex 错误；此处不实现控制算法。
+ */
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   try {
     if (nrhs < 1)

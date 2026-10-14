@@ -1,3 +1,9 @@
+/**
+ * @file
+ * @brief G1 全身 OCP 的基础装配实现，是理解“优化什么、受什么限制”的主要入口。
+ * 读取模型和任务配置，注册动力学、代价、软约束与等式约束；不在此实现 SQP。
+ * PlannerContext 随后可能为这些对象安装已验收的生成数学包装。
+ */
 #include "extensions/TermRegistry.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
@@ -67,6 +73,11 @@ namespace ocs2::humanoid {
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
+/**
+ * @brief 校验配置文件并加载 MPC、SQP、rollout 等独立设置。
+ * 从 URDF 创建 Pinocchio 模型及普通/AD 状态输入映射，建立步态和摆腿参考管理器。
+ * setupOCP 为真时组装完整问题；initialState_ 是配置初值，不是实时观测。
+ */
 WBMpcInterface::WBMpcInterface(const std::string& taskFile, const std::string& urdfFile, const std::string& referenceFile, bool setupOCP)
     : taskFile_(taskFile), urdfFile_(urdfFile), referenceFile_(referenceFile), modelSettings_(taskFile, urdfFile, "wb_mpc_", "true") {
   // check that task file exists
@@ -129,6 +140,14 @@ WBMpcInterface::WBMpcInterface(const std::string& taskFile, const std::string& u
 /******************************************************************************************************/
 /******************************************************************************************************/
 
+/**
+ * @brief 装配交给 OCS2 的 OptimalControlProblem。
+ * 动力学：全身加速度模型；代价：状态输入跟踪、终端跟踪、双足任务空间跟踪。
+ * 关节范围和足间碰撞进入状态软约束，摩擦锥和接触力矩进入状态输入软约束。
+ * 逐足注册零 wrench、支撑/摆动足等式及可选 mimic 约束，激活逻辑由具体类/模式管理。
+ * 最后创建预计算、rollout 和重力补偿初始化器。
+ * 注意 jointTorqueCost 注册语句当前被注释，不能因为存在工厂函数就认定该项已启用。
+ */
 void WBMpcInterface::setupOptimalControlProblem() {
   HumanoidCostConstraintFactory factory =
       HumanoidCostConstraintFactory(taskFile_, referenceFile_, *referenceManagerPtr_, *pinocchioInterfacePtr_, *mpcRobotModelPtr_,
@@ -203,6 +222,11 @@ void WBMpcInterface::setupOptimalControlProblem() {
 /******************************************************************************************************/
 /******************************************************************************************************/
 
+/**
+ * @brief 构造支撑足6维稳定化等式的系数，并交给 ZeroAccelerationConstraintCppAd。
+ * 约束综合位姿误差、速度和加速度；具体增益从 footConstraintConfig 读取。
+ * 即使注册名称为 zeroVelocity，也不能据名称把它理解为单纯速度等于零。
+ */
 std::unique_ptr<StateInputConstraint> WBMpcInterface::getStanceFootConstraint(const EndEffectorDynamics<scalar_t>& eeDynamics,
                                                                               size_t contactPointIndex) {
   const ModelSettings::FootConstraintConfig& footCfg = modelSettings_.footConstraintConfig;
@@ -232,6 +256,10 @@ std::unique_ptr<StateInputConstraint> WBMpcInterface::getStanceFootConstraint(co
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
+/**
+ * @brief 按左右腿读取 mimic 关节关系及位置/速度稳定化增益，创建动力学等式。
+ * 仅在任务配置包含 mimicJoints 时由装配循环调用；不支持其他腿索引。
+ */
 std::unique_ptr<StateInputConstraint> WBMpcInterface::getJointMimicConstraint(size_t mimicIndex) {
   boost::property_tree::ptree pt;
   boost::property_tree::read_info(taskFile_, pt);
@@ -275,6 +303,9 @@ std::unique_ptr<StateInputConstraint> WBMpcInterface::getJointMimicConstraint(si
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
+/**
+ * @brief 创建摆动腿竖直方向约束；实际表达和模式激活见 SwingLegVerticalConstraintCppAd。
+ */
 std::unique_ptr<StateInputConstraint> WBMpcInterface::getNormalVelocityConstraint(const EndEffectorDynamics<scalar_t>& eeDynamics,
                                                                                   size_t contactPointIndex) {
   return std::unique_ptr<StateInputConstraint>(new SwingLegVerticalConstraintCppAd(*referenceManagerPtr_, eeDynamics, contactPointIndex));
@@ -284,6 +315,10 @@ std::unique_ptr<StateInputConstraint> WBMpcInterface::getNormalVelocityConstrain
 /******************************************************************************************************/
 /******************************************************************************************************/
 
+/**
+ * @brief 读取关节力矩权重并构建力矩代价对象。
+ * 当前 setupOptimalControlProblem 未启用此代价；此函数存在不代表它参与求解。
+ */
 std::unique_ptr<StateInputCost> WBMpcInterface::getJointTorqueCost(const std::string& taskFile) {
   vector_t jointTorqueWeights(mpcRobotModelPtr_->getJointDim());
   loadData::loadEigenMatrix(taskFile, "joint_torque_weights", jointTorqueWeights);
