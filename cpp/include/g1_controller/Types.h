@@ -60,6 +60,13 @@ struct Reference {
   std::array<double, 4> filteredCommand{};
 };
 
+/** @brief 显式规划阶段之间传递的身份；由核心创建，调用者不得修改。 */
+struct PlannerTick {
+  std::uint64_t tick = 0;
+  double time = 0;
+  double mpcPeriod = 0;
+};
+
 /**
  * @brief 一次 MRT 查询的结果，不是整条预测轨迹，也不携带反馈增益矩阵。
  * 包含58维名义状态、35维策略输入、模式及实际查询时间。

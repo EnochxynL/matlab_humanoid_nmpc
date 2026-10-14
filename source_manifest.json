@@ -174,6 +174,24 @@
       "human_visual": "PENDING",
       "acceptance": "docs/cpp_ocp_restoration_acceptance.json",
       "run_folder": "runtime/walking_20261014_142343"
+    },
+    "planner_model": "models/g1_planner.slx",
+    "planner_flow": [
+      "ReferenceInstall",
+      "ObservationPrepare",
+      "MPCSchedule",
+      "MPCUpdate",
+      "PolicyQuery",
+      "InverseDynamics"
+    ],
+    "planner_verification": {
+      "report": "build/planner_dataflow/acceptance.json",
+      "physical_run": "runtime/walking_20261014_185640",
+      "replay_ticks": 2401,
+      "mpc_updates": 289,
+      "physical_duration_s": 4.8,
+      "pre_refactor_cpp_and_physical_outputs": "byte-identical",
+      "human_visual": "PASS：除原有偏行外正常"
     }
   },
   "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",

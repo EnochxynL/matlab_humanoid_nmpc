@@ -155,12 +155,26 @@ mxArray *encodeResult(const g1_controller::ControlResult &r) {
   a[117] = r.policy.queryTime;
   return output;
 }
+g1_controller::PlannerTick decodeTick(const double* a) {
+  if (a[0] < 0 || a[0] > 9007199254740992.0 || std::floor(a[0]) != a[0])
+    throw std::runtime_error("Invalid planner tick");
+  return {static_cast<std::uint64_t>(a[0]), a[1], a[2]};
+}
+mxArray* encodeTick(const g1_controller::PlannerTick& tick) {
+  auto* result = mxCreateDoubleMatrix(3, 1, mxREAL);
+  auto* a = mxGetPr(result);
+  a[0] = static_cast<double>(tick.tick); a[1] = tick.time; a[2] = tick.mpcPeriod;
+  return result;
+}
 } // namespace
 
 /**
  * @brief MEX 命令分发入口，保持既有输入输出协议。
  * init(root,folder)：创建核心并 mexLock，防止运行中卸载；close：关闭并解锁。
- * reference(r428)：提交参考；query(o74) → p95：更新/查询策略。
+ * reference(r428)：提交参考；query(o74) → p95：兼容的组合更新/查询。
+ * prepare_observation(o74) → tick3：装填观测，不求解。
+ * update_mpc(tick3,request) → tick3：校验外部更新判断，等待必要求解完成。
+ * query_policy(tick3) → p95：只查询已准备好的策略，不触发求解。
  * inverse_dynamics(p95) → tau23：计算该策略的前馈力矩。
  * step(o74) → r118：依次执行 query 和 inverse_dynamics。
  * 标准 C++ 异常统一转换为 G1:PlannerMex 错误；此处不实现控制算法。
@@ -200,6 +214,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         throw std::runtime_error("reference requires 428 values");
       const double *values = readDoubles(prhs[1], 428);
       runtime().setReference(decodeReference(values));
+    } else if (command == "prepare_observation") {
+      if (nrhs != 2 || nlhs != 1) throw std::runtime_error("prepare_observation requires o74 and one output");
+      plhs[0] = encodeTick(runtime().prepareObservation(decodeObservation(readDoubles(prhs[1], 74))));
+    } else if (command == "update_mpc") {
+      if (nrhs != 3 || nlhs != 1) throw std::runtime_error("update_mpc requires tick3, request and one output");
+      const auto tick = decodeTick(readDoubles(prhs[1], 3));
+      const double request = readDoubles(prhs[2], 1)[0];
+      if (request != 0 && request != 1) throw std::runtime_error("MPC request must be zero or one");
+      plhs[0] = encodeTick(runtime().updateMpc(tick, request != 0));
+    } else if (command == "query_policy") {
+      if (nrhs != 2 || nlhs != 1) throw std::runtime_error("query_policy requires tick3 and one output");
+      plhs[0] = encodePolicy(runtime().queryPrepared(decodeTick(readDoubles(prhs[1], 3))));
     } else if (command == "query") {
       if (nrhs != 2 || nlhs != 1)
         throw std::runtime_error("query requires 74 values and one output");

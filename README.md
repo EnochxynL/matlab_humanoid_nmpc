@@ -115,5 +115,13 @@ python3 scripts/verify_dependencies.py
   `queryPolicy` 只查询已有策略，不触发求解；`inverseDynamics` 计算前馈力矩。
 - `controller/G1Controller`：按顺序协调上述阶段，保留 tick/策略身份、缓存和生命周期门禁。
 
-当前 MEX `query` 仍组合执行更新与查询，接口和 Simulink 模型不变。
-本次没有移除工作线程，也没有将调度迁移进 Simulink；后续可基于这些边界逐步展开。
+`models/g1_planner.slx` 显式连接参考装填、观测准备、MPC 更新资格判断、
+MPC 更新、策略查询和逆动力学。`g1_walking` 通过模型引用接入，动作生成与 JointDrive 不变。
+更新判断采用核心传入的 MPC 周期；观测仍使用真实物理 tick，不被 snap 到名义 deadline。
+
+新增 MEX 阶段接口：`prepare_observation(o74) -> tick3`、
+`update_mpc(tick3, request) -> tick3`、`query_policy(tick3) -> p95`。
+`tick3=[control_tick;canonical_time;mpc_period]` 是阶段执行依赖及身份凭据，不能改写。
+初始化、工作线程、策略缓存和关闭仍由核心管理；旧 `query`、`step` 等协议保留。
+
+独立模型回归入口：`tests/validate_planner_dataflow.m`（使用本机保存的 fixture 与重构前 C++ 输出）。

@@ -35,6 +35,10 @@ public:
  * @brief 接收连续物理 tick 的观测；到 MPC 截止时间时等待求解，再查询 t+5ms 策略。
  */
   Policy query(const Observation &observation);
+/** @brief 显式阶段接口：准备观测，不求解；更新节点等待必要求解；查询节点只读策略。 */
+  PlannerTick prepareObservation(const Observation &observation);
+  PlannerTick updateMpc(const PlannerTick &tick, bool requested);
+  Policy queryPrepared(const PlannerTick &tick);
 /**
  * @brief 只接受当前 tick 最近查询的原样策略；拒绝陈旧或被修改的数据。
  * 完成此步骤后才允许推进下一物理 tick，重复调用返回已缓存力矩。

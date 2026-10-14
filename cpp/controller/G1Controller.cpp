@@ -29,6 +29,8 @@ struct G1Controller::Impl {
   vector_t lastResult = vector_t::Zero(118);
   vector_t lastPolicy = vector_t::Zero(95);
   bool actionReady = false;
+  uint64_t preparedTick = UINT64_MAX;
+  bool updateReady = false, expectedUpdate = false;
   double lastRawTime = 0;
   std::ofstream sampleLog;
   std::unique_ptr<CanonicalControlTime> canonicalLog;
@@ -46,6 +48,8 @@ struct G1Controller::Impl {
     lastTick = UINT64_MAX;
     sequence = 0;
     actionReady = false;
+    preparedTick = UINT64_MAX;
+    updateReady = false;
   }
 /**
  * @brief 创建 OCP 上下文、状态和日志，并建立按名称排序的29关节索引。
@@ -100,7 +104,7 @@ struct G1Controller::Impl {
  * 高度与倾角门禁检查真实观测，不是优化预测轨迹。
  * 当前路径固定两足观测接触标志为真，未来接触切换仍由参考步态决定。
  */
-  void query(const double *a) {
+  void prepare(const double *a) {
     if (!controller)
       throw std::runtime_error("Initialize MEX first");
     uint64_t tick = static_cast<uint64_t>(std::llround(a[0] / .002));
@@ -113,8 +117,10 @@ struct G1Controller::Impl {
     if (std::abs(pitch) > .7853981633974483 ||
         std::abs(roll) > .7853981633974483)
       throw std::runtime_error("Tilt outside physical safety envelope");
-    if (lastTick == tick)
+    if (preparedTick == tick)
       return;
+    if (preparedTick != UINT64_MAX && preparedTick != lastTick)
+      throw std::runtime_error("Query prepared observation before advancing tick");
     if (lastTick != UINT64_MAX && !actionReady)
       throw std::runtime_error(
           "Complete inverse dynamics before advancing policy tick");
@@ -122,23 +128,55 @@ struct G1Controller::Impl {
       throw std::runtime_error("Nonsequential physical tick");
     double t = canonicalLog->accept(tick, a[0], 1, tick);
     observation::fillRobotState(*state, a, ids, t);
+    preparedTick = tick;
+    expectedUpdate = lastTick == UINT64_MAX || controller->mpcUpdateDue(t);
+    updateReady = false;
+    lastRawTime = a[0];
+  }
+  PlannerTick tickIdentity() const {
+    if (!state || preparedTick == UINT64_MAX)
+      throw std::runtime_error("Prepare observation first");
+    return {preparedTick, state->getTime(), 1.0 / context->interface.mpcSettings().mpcDesiredFrequency_};
+  }
+  void validateTick(const PlannerTick& token) const {
+    const auto current = tickIdentity();
+    if (token.tick != current.tick || token.time != current.time || token.mpcPeriod != current.mpcPeriod)
+      throw std::runtime_error("Planner tick identity mismatch");
+  }
+  void update(const PlannerTick& token, bool requested) {
+    validateTick(token);
+    if (requested != expectedUpdate)
+      throw std::runtime_error("External MPC eligibility differs from physical deadline contract");
+    if (updateReady) return;
     if (lastTick == UINT64_MAX)
       controller->startMpcThread(*state);
+    controller->updatePolicy(*state);
+    updateReady = true;
+  }
+  void queryPrepared(const PlannerTick& token) {
+    validateTick(token);
+    if (!updateReady) throw std::runtime_error("Complete MPC update stage before querying policy");
+    if (lastTick == preparedTick) return;
     vector_t x, u;
     size_t mode;
-    controller->updatePolicy(*state);
     controller->queryPolicy(x, u, mode);
-    lastPolicy << x, u, double(mode), t + .005;
-    lastTick = tick;
-    lastRawTime = a[0];
+    lastPolicy << x, u, double(mode), state->getTime() + .005;
+    lastTick = preparedTick;
     actionReady = false;
+  }
+  // 旧 query 协议严格复用新阶段，不维护第二套算法或调度规则。
+  void query(const double* a) {
+    prepare(a);
+    const auto token = tickIdentity();
+    update(token, expectedUpdate);
+    queryPrepared(token);
   }
 /**
  * @brief 验证95元素策略与当前缓存逐元素相同，再计算并缓存前馈力矩。
  * 完成后写一行118元素样本；重复调用不重复求解或记录。
  */
   void inverseDynamics(const double *p) {
-    if (!controller || lastTick == UINT64_MAX)
+    if (!controller || lastTick == UINT64_MAX || lastTick != preparedTick)
       throw std::runtime_error("Query a policy before inverse dynamics");
     // Bind the action to exactly the policy queried in this tick; reject
     // stale/mutated packets.
@@ -213,6 +251,20 @@ Policy G1Controller::query(const Observation &observation) {
   const auto a = g1_controller::observation::encodeObservation(observation);
   requireFinite(a.data(), a.size());
   impl_->query(a.data());
+  return decodePolicy(impl_->lastPolicy.data());
+}
+PlannerTick G1Controller::prepareObservation(const Observation& observation) {
+  const auto a = g1_controller::observation::encodeObservation(observation);
+  requireFinite(a.data(), a.size());
+  impl_->prepare(a.data());
+  return impl_->tickIdentity();
+}
+PlannerTick G1Controller::updateMpc(const PlannerTick& tick, bool requested) {
+  impl_->update(tick, requested);
+  return tick;
+}
+Policy G1Controller::queryPrepared(const PlannerTick& tick) {
+  impl_->queryPrepared(tick);
   return decodePolicy(impl_->lastPolicy.data());
 }
 /**

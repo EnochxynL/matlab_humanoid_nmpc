@@ -92,6 +92,8 @@ class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBas
   void startMpcThread(const ::robot::model::RobotState& initRobotState);
 
   // 显式阶段：更新资格判断/求解完成之后，才允许查询已准备观测对应的策略。
+  // 仅用于校验外部调度决定；不推进 slot，也不触发求解。
+  bool mpcUpdateDue(double time) const { return time + 1e-12 >= epoch_ + nextSlot_ * mpcControlPeriod_; }
   void updatePolicy(const ::robot::model::RobotState& state);
   void queryPolicy(vector_t& x, vector_t& u, size_t& mode);
   // 保留旧组合入口；与上述拆分调用走同一路径。
