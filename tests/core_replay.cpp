@@ -11,19 +11,8 @@
 #include <iomanip>
 #include <stdexcept>
 using namespace g1_controller;
+struct ControlResult { Policy policy; Torque torque; };
 
-Observation observation(const double *a) {
-  Observation o;
-  o.rawBackendTime = a[0];
-  std::copy_n(a + 1, 3, o.basePosition.begin());
-  std::copy_n(a + 4, 4, o.baseOrientationWxyz.begin());
-  std::copy_n(a + 8, 3, o.baseLinearVelocityLocal.begin());
-  std::copy_n(a + 11, 3, o.baseAngularVelocityLocal.begin());
-  std::copy_n(a + 14, 29, o.jointPositions.begin());
-  std::copy_n(a + 43, 29, o.jointVelocities.begin());
-  std::copy_n(a + 72, 2, o.measuredContacts.begin());
-  return o;
-}
 Reference reference(const double *a) {
   Reference r;
   r.tick = static_cast<std::uint64_t>(a[0]);
@@ -56,7 +45,7 @@ int main(int argc, char **argv) {
   try {
     if (argc != 5 && argc != 6)
       throw std::runtime_error(
-          "core_replay root fixture log_folder split|step [measure]");
+          "core_replay root fixture log_folder installed [measure]; requires fixture.states.bin");
     const std::string root = argv[1], folder = argv[3], mode = argv[4];
     boost::property_tree::ptree env;
     boost::property_tree::read_json(
@@ -70,6 +59,10 @@ int main(int argc, char **argv) {
     input.read(reinterpret_cast<char *>(&rows), 8);
     if (!input || rows != 2401)
       throw std::runtime_error("Expected complete 2401-tick fixture");
+    if(mode!="installed") throw std::runtime_error("Use installed mode; raw-observation core API retired");
+    std::ifstream states(argv[2]+std::string(".states.bin"),std::ios::binary);
+    if(!states) throw std::runtime_error("Missing preconverted OCP state fixture");
+    double epoch=0, period=1./60.;size_t nextSlot=1;
     G1Controller core;
     core.initialize({root, folder});
     const bool measure = argc == 6 && std::string(argv[5]) == "measure";
@@ -82,39 +75,26 @@ int main(int argc, char **argv) {
       input.read(reinterpret_cast<char *>(a.data()), sizeof(a));
       if (!input)
         throw std::runtime_error("Truncated fixture");
-      const auto obs = observation(a.data());
-      core.setReference(reference(a.data() + 74));
+      std::array<double,58> state;
+      states.read(reinterpret_cast<char*>(state.data()),sizeof(state));
+      if(!states) throw std::runtime_error("Truncated OCP state fixture");
+      core.setReference(reference(a.data()+74));
+      const double t=double(k)*.002;
+      auto token=core.installOcpObservation(state,{double(k),t,a[0]});
+      bool due=k==0 || t+1e-12>=epoch+nextSlot*period;
+      if(k==0){epoch=t;period=token.mpcPeriod;}
+      else if(due){while(epoch+(nextSlot+1)*period<=t+1e-12)++nextSlot;++nextSlot;}
+      core.updateMpc(token,due);
       ControlResult control;
-      if (mode == "step")
-        control = core.step(obs);
-      else {
-        control.policy = core.query(obs);
-        if (k == 0) {
-          auto bad = control.policy;
-          bad.state[0] += .01;
-          bool rejected = false;
-          try {
-            core.inverseDynamics(bad);
-          } catch (const std::exception &) {
-            rejected = true;
-          }
-          if (!rejected)
-            throw std::runtime_error("Altered policy accepted");
-          auto next = obs;
-          next.rawBackendTime = .002;
-          rejected = false;
-          try {
-            core.query(next);
-          } catch (const std::exception &) {
-            rejected = true;
-          }
-          if (!rejected)
-            throw std::runtime_error("Unfinished tick accepted");
-        }
-        control.torque = core.inverseDynamics(control.policy);
-        if (k == 0 && core.inverseDynamics(control.policy) != control.torque)
-          throw std::runtime_error("Repeated ID changed");
+      control.policy=core.queryPrepared(token);
+      if(k==0){
+        auto bad=control.policy;bad.state[0]+=.01;
+        bool rejected=false;try{core.inverseDynamics(bad);}catch(const std::exception&){rejected=true;}
+        if(!rejected) throw std::runtime_error("Altered policy accepted");
       }
+      control.torque=core.inverseDynamics(control.policy);
+      if(k==0 && core.inverseDynamics(control.policy)!=control.torque)
+        throw std::runtime_error("Repeated ID changed");
       auto actual = result(control);
       const double *expected = a.data() + 502;
       for (std::size_t j = 0; j < 118; ++j) {

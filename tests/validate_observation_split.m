@@ -1,7 +1,8 @@
-function result = validate_observation_split()
+function result = validate_observation_split(evidenceName)
+if nargin==0,evidenceName='observation_split';end
 %VALIDATE_OBSERVATION_SPLIT Independent extraction, install guards and full replay.
 root=fileparts(fileparts(mfilename('fullpath')));cd(root);cfg=g1.initialize();
-folder=fullfile(root,'build','observation_split');
+folder=fullfile(root,'build',evidenceName);
 fixture=load(fullfile(root,'build','core_extraction','fixture.mat'));
 golden=load(fullfile(root,'build','observation_hybrid','conversion_values.mat'));
 indices=double(cfg.mpcIndices(:)');
@@ -29,7 +30,7 @@ reject(@()g1_ocp_mex('query_policy',token),'G1:PlannerMex');
 nextIdentity=g1_observation_extract_mex(fixture.raw(2,:)',golden.expected(2,:)',indices);
 reject(@()g1_ocp_mex('install_observation',golden.expected(2,:)',nextIdentity),'G1:PlannerMex');
 clear cleanup;
-replay=validate_planner_dataflow('observation_split');
+replay=validate_planner_dataflow(evidenceName);
 result=struct('passed',true,'independent_extraction_ticks',2401,'negative_cases',8,'replay',replay);
 g1log.writeJson(fullfile(folder,'acceptance.json'),result);disp(result);
 end

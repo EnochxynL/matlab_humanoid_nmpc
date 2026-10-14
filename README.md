@@ -91,7 +91,7 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 python3 scripts/verify_dependencies.py
 ```
 
-公开入口为 `g1_controller::G1Controller`：`initialize`、`setReference`、`query`、`inverseDynamics`、`step`、`shutdown`。控制器声明与实现位于 `cpp/controller/G1Controller.h` 和 `G1Controller.cpp`；公用数据类型定义在 `cpp/include/g1_controller/Types.h`，依赖只有标准 C++。`config/controller_environment.json` 当前为空，不再选择 MATLAB/Shadow/Legacy 数学路径。standalone replay driver 可脱离 MATLAB 调用核心。
+公开入口为 `g1_controller::G1Controller`：`initialize`、`setReference`、`installOcpObservation`、`updateMpc`、`queryPrepared`、`inverseDynamics`、`shutdown`。控制器声明与实现位于 `cpp/controller/G1Controller.h` 和 `G1Controller.cpp`；公用数据类型定义在 `cpp/include/g1_controller/Types.h`，依赖只有标准 C++。`config/controller_environment.json` 当前为空，不再选择 MATLAB/Shadow/Legacy 数学路径。standalone replay driver 可脱离 MATLAB 调用核心。
 
 核心不包含 MATLAB SDK/MEX API，也不再编译或链接 MATLAB Coder 数学库。模型、协议、solver、权重和时间语义未改变。Pinocchio 等数值包当前仍安装于 `/opt/ros/jazzy`，这是发现安装包的前缀，不是 ROS 构建工具或通信依赖。
 
@@ -109,7 +109,7 @@ python3 scripts/verify_dependencies.py
 
 ### 控制数据流边界
 
-- `data/observation/ObservationConversion`：观测编码、机器人状态装填、OCP 坐标和关节顺序转换。
+- 观测转换、检查与重排位于 Simulink 和独立观测 MEX；核心不再维护 `RobotState` 中间容器。
 - `data/reference/ReferenceConversion`：参考容器与既有 OCP 参考包之间的格式转换。
 - `controller/WBMpcController`：`updatePolicy` 判断更新时刻并等待必要的求解完成；
   `queryPolicy` 只查询已有策略，不触发求解；`inverseDynamics` 计算前馈力矩。
@@ -119,10 +119,10 @@ python3 scripts/verify_dependencies.py
 MPC 更新、策略查询和逆动力学。`g1_walking` 通过模型引用接入，动作生成与 JointDrive 不变。
 更新判断采用核心传入的 MPC 周期；观测仍使用真实物理 tick，不被 snap 到名义 deadline。
 
-新增 MEX 阶段接口：`prepare_observation(o74) -> tick3`、
+当前 MEX 阶段接口：`install_observation(x58, identity3) -> tick3`、
 `update_mpc(tick3, request) -> tick3`、`query_policy(tick3) -> p95`。
 `tick3=[control_tick;canonical_time;mpc_period]` 是阶段执行依赖及身份凭据，不能改写。
-初始化、工作线程、策略缓存和关闭仍由核心管理；旧 `query`、`step` 等协议保留。
+初始化、工作线程、策略缓存和关闭仍由核心管理；旧原始观测入口已经退役。
 
 独立模型回归入口：`tests/validate_planner_dataflow.m`（使用本机保存的 fixture 与重构前 C++ 输出）。
 
@@ -133,24 +133,22 @@ MPC 更新、策略查询和逆动力学。`g1_walking` 通过模型引用接入
 `g1_observation_mex`：四元数转 Euler ZYX、局部线速度转世界系、局部角速度转 Euler 导数。
 这些敏感计算继续使用已验证的 C++ 数学；不在 MATLAB 中维护另一套公式。
 
-小 MEX 的实现位于 `cpp/data/observation/ObservationKernels.h/.cpp`，适配器为
+小 MEX 的实现位于 `adapters/matlab/ObservationKernels.h/.cpp`，适配器为
 `adapters/matlab/ObservationMex.cpp`。它不初始化控制器，不链接 OCS2、Pinocchio 或控制核心。
 仅构建此内核可使用：
 
 ```bash
-cmake -S cpp/data/observation -B build/observation \
+cmake -S adapters/matlab -B build/observation \
   -DMatlab_ROOT_DIR=/usr/local/MATLAB/R2025b \
   -DCMAKE_BUILD_TYPE=Release '-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG'
 cmake --build build/observation --parallel 1
 ```
 
 设置 `-DG1_BUILD_MATLAB=OFF` 可仅构建纯 C++ 静态库，不需要 MATLAB。
-主工程的 `scripts/build_mex.sh` 会同时构建规划器和观测两个 MEX。
+主工程的 `scripts/build_mex.sh` 会同时构建规划器、观测转换和观测提取三个 MEX。
 
-新规划链通过 `prepare_ocp_observation(raw74,state58)` 将已转换观测交给核心。
-核心仍执行时间、有限性、安全范围和关节映射检查；不重新计算观测坐标。
 纯 MATLAB 敏感公式候选的严格 FAIL 证据保留在忽略目录 `build/observation_dataflow/`。
 
-观测迁移后的删除整理：调度器只接收已装填的 OCS2 观测，不再重复装填 RobotState 或生成 JointAction；未使用的旧 MRT 控制器和墙钟异步循环已移除。旧 MEX 观测入口仍保留必要的 `ObservationConversion` / `RobotState` 兼容实现，因此 `cpp/data/observation` 尚不能整体删除。
+`ObservationPrepare` 已拆成两个顶层节点：`ObservationExtraction` 调用独立、无状态的 `g1_observation_extract_mex(raw74, x58, jointIndices23)`，检查观测及复制字段并输出 `[tick; canonical_time; raw_time]`；`ObservationInstall` 调用 `g1_ocp_mex('install_observation', x58, identity3)`，检查调用连续性并登记观测。旧 `prepare_observation`、`prepare_ocp_observation`、`convert_observation`、`query` 和 `step` 原始观测入口已删除；核心只接收已提取的观测。可运行 `addpath tests; validate_observation_split` 检查独立提取、拒绝非法输入及完整策略回放；本次未重跑物理行走。
 
-`ObservationPrepare` 已拆成两个顶层节点：`ObservationExtraction` 调用独立、无状态的 `g1_observation_extract_mex(raw74, x58, jointIndices23)`，检查观测及复制字段并输出 `[tick; canonical_time; raw_time]`；`ObservationInstall` 调用 `g1_ocp_mex('install_observation', x58, identity3)`，检查调用连续性并登记观测。原有 MEX 入口仍保留兼容。可运行 `addpath tests; validate_observation_split` 检查独立提取、拒绝非法输入及完整策略回放；本次未重跑物理行走。
+独立观测 MEX 的辅助内核现与包装同放在 `adapters/matlab/`，拥有独立 CMake target；`cpp/` 仅保留控制核心。旧 `RobotState`、原始观测转换、关节映射容器及未使用的硬件接口占位代码已删除。机器人模型仍由原 Pinocchio/URDF OCP 路径加载，本次没有更改模型或数学定义。

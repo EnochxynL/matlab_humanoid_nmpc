@@ -1,6 +1,4 @@
-add_subdirectory(data/observation)
 add_library(g1_controller_core SHARED
-  data/observation/ObservationConversion.cpp
   data/reference/ReferenceConversion.cpp
   controller/G1Controller.cpp
   controller/WBMpcController.cpp)

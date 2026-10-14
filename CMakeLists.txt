@@ -43,6 +43,7 @@ add_subdirectory(third_party/blasfeo)
 add_subdirectory(third_party/hpipm)
 set(G1_OCS2_SOURCE_DIR "${PROJECT_SOURCE_DIR}/third_party/ocs2")
 include(cmake/NumericalLibraries.cmake)
+add_subdirectory(adapters/matlab)
 add_subdirectory(cpp)
 if(G1_BUILD_MATLAB)
   matlab_add_mex(NAME g1_ocp_mex SRC adapters/matlab/PlannerMex.cpp

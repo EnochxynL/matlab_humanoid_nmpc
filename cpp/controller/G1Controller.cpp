@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief G1Controller 的运行时实现：连接公共 API、机器人状态和内部 MPC 控制器。
+ * @brief G1Controller 的运行时实现：连接公共 API、已提取观测和内部 MPC 控制器。
  * 负责资源所有权、参考包缓存、物理 tick、输入安全检查和策略/力矩身份绑定。
  * 不在这里定义 OCP 方程；OCP 组装见 PlannerContext 和 WBMpcInterface。
  */
@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
-#include "data/observation/ObservationConversion.h"
 #include "data/reference/ReferenceConversion.h"
 #include <stdexcept>
 
@@ -21,11 +20,7 @@ namespace g1_controller {
  */
 struct G1Controller::Impl {
   std::unique_ptr<PlannerContext> context;
-  std::unique_ptr<robot::model::RobotDescription> description;
-  std::unique_ptr<robot::model::RobotState> state;
   std::unique_ptr<WaveBControlTimeWBMpcController> controller;
-  std::vector<size_t> ids;
-  std::vector<size_t> mpcRawIndices;
   uint64_t lastTick = UINT64_MAX, sequence = 0;
   vector_t lastResult = vector_t::Zero(118);
   vector_t lastPolicy = vector_t::Zero(95);
@@ -38,17 +33,13 @@ struct G1Controller::Impl {
   std::ofstream sampleLog;
   std::unique_ptr<CanonicalControlTime> canonicalLog;
 /**
- * @brief 按依赖逆序关闭；先释放控制器并等待线程，再销毁机器人状态和 OCP 上下文。
+ * @brief 按依赖逆序关闭；先释放控制器并等待线程，再销毁 OCP 上下文。
  */
   void close() {
     sampleLog.close();
     canonicalLog.reset();
     controller.reset();
-    state.reset();
-    description.reset();
     context.reset();
-    ids.clear();
-    mpcRawIndices.clear();
     lastTick = UINT64_MAX;
     sequence = 0;
     actionReady = false;
@@ -56,8 +47,8 @@ struct G1Controller::Impl {
     updateReady = false;
   }
 /**
- * @brief 创建 OCP 上下文、状态和日志，并建立按名称排序的29关节索引。
- * 这里只配置确定性调度；实际工作线程在首次 query 时启动。
+ * @brief 创建 OCP 上下文和日志；观测转换与关节映射由外部数据流承担。
+ * 这里只配置确定性调度；实际工作线程在首次 MPC 更新时启动。
  */
   void init(const std::string &root, const std::string &folder) {
     if (context)
@@ -74,16 +65,6 @@ struct G1Controller::Impl {
     for (int j = 0; j < 118; ++j)
       sampleLog << ",value" << j;
     sampleLog << "\n";
-    description = std::make_unique<robot::model::RobotDescription>(inputs.urdf);
-    state = std::make_unique<robot::model::RobotState>(*description);
-    auto names = description->getJointNames();
-    std::sort(names.begin(), names.end());
-    ids = description->getJointIndices(names);
-    for (const auto& joint : context->interface.modelSettings().mpcModelJointNames) {
-      const auto it = std::lower_bound(names.begin(), names.end(), joint);
-      if (it == names.end() || *it != joint) throw std::runtime_error("Unknown MPC joint");
-      mpcRawIndices.push_back(static_cast<size_t>(it - names.begin()));
-    }
     controller = std::make_unique<WaveBControlTimeWBMpcController>(
         context->interface.modelSettings(), context->mpc,
         context->interface.getPinocchioInterface(),
@@ -106,63 +87,9 @@ struct G1Controller::Impl {
     auto p = g1_controller::reference::decodeReference(a, ++sequence);
     context->currentPacket = std::move(p);
   }
-/**
- * @brief 校验物理观测，推进一次2ms物理 tick，并更新策略缓存。
- * 同 tick 返回缓存；新 tick 必须连续且上一 tick 已完成逆动力学。
- * 保留原始后端时间，canonicalLog 校验 tick/time 身份；四元数必须近似单位化。
- * 高度与倾角门禁检查真实观测，不是优化预测轨迹。
- * 当前路径固定两足观测接触标志为真，未来接触切换仍由参考步态决定。
- */
-  void prepare(const double *a, const double* ocpState = nullptr) {
-    if (!controller)
-      throw std::runtime_error("Initialize MEX first");
-    uint64_t tick = static_cast<uint64_t>(std::llround(a[0] / .002));
-    if (a[3] < .35 || a[3] > 1.3)
-      throw std::runtime_error("Base height outside physical safety envelope");
-    double pitch =
-        std::asin(std::clamp(2 * (a[4] * a[6] - a[7] * a[5]), -1., 1.));
-    double roll = std::atan2(2 * (a[4] * a[5] + a[6] * a[7]),
-                             1 - 2 * (a[5] * a[5] + a[6] * a[6]));
-    if (std::abs(pitch) > .7853981633974483 ||
-        std::abs(roll) > .7853981633974483)
-      throw std::runtime_error("Tilt outside physical safety envelope");
-    if (preparedTick == tick)
-      return;
-    if (preparedTick != UINT64_MAX && preparedTick != lastTick)
-      throw std::runtime_error("Query prepared observation before advancing tick");
-    if (lastTick != UINT64_MAX && !actionReady)
-      throw std::runtime_error(
-          "Complete inverse dynamics before advancing policy tick");
-    if (lastTick != UINT64_MAX && tick != lastTick + 1)
-      throw std::runtime_error("Nonsequential physical tick");
-    double t = canonicalLog->accept(tick, a[0], 1, tick);
-    if (ocpState) {
-      robot::quaternion_t q(a[4], a[5], a[6], a[7]);
-      if (std::abs(q.norm()-1) > 1e-6) throw std::runtime_error("Quaternion rejected");
-      for (size_t j = 0; j < 3; ++j)
-        if (ocpState[j] != a[1+j]) throw std::runtime_error("OCP position identity mismatch");
-      for (size_t j = 0; j < mpcRawIndices.size(); ++j)
-        if (ocpState[6+j] != a[14+mpcRawIndices[j]] || ocpState[35+j] != a[43+mpcRawIndices[j]])
-          throw std::runtime_error("OCP joint mapping mismatch");
-      preparedObservation.state = Eigen::Map<const vector_t>(ocpState, 58);
-      preparedObservation.time = t;
-      preparedObservation.input = vector_t::Zero(35);
-      // Accepted measured-mode contract: STANCE, irrespective of future planned modes.
-      preparedObservation.mode = 3;
-    } else {
-      observation::fillRobotState(*state, a, ids, t);
-      const auto joints = description->getJointIndices(context->interface.modelSettings().mpcModelJointNames);
-      preparedObservation.state = vector_t::Zero(58);
-      observation::fillMpcObservation(preparedObservation, *state, context->interface.getMpcRobotModel(), joints);
-    }
-    preparedTime = t;
-    preparedTick = tick;
-    expectedUpdate = lastTick == UINT64_MAX || controller->mpcUpdateDue(t);
-    updateReady = false;
-    lastRawTime = a[0];
-  }
+
   PlannerTick tickIdentity() const {
-    if (!state || preparedTick == UINT64_MAX)
+    if (!controller || preparedTick == UINT64_MAX)
       throw std::runtime_error("Prepare observation first");
     return {preparedTick, preparedTime, 1.0 / context->interface.mpcSettings().mpcDesiredFrequency_};
   }
@@ -192,13 +119,7 @@ struct G1Controller::Impl {
     lastTick = preparedTick;
     actionReady = false;
   }
-  // 旧 query 协议严格复用新阶段，不维护第二套算法或调度规则。
-  void query(const double* a) {
-    prepare(a);
-    const auto token = tickIdentity();
-    update(token, expectedUpdate);
-    queryPrepared(token);
-  }
+
 /**
  * @brief 验证95元素策略与当前缓存逐元素相同，再计算并缓存前馈力矩。
  * 完成后写一行118元素样本；重复调用不重复求解或记录。
@@ -272,28 +193,7 @@ void G1Controller::setReference(const Reference &r) {
   requireFinite(a.data(), a.size());
   impl_->reference(a.data());
 }
-/**
- * @brief 公共查询入口：结构编码、有限性检查、运行时更新、结果解码。
- */
-Policy G1Controller::query(const Observation &observation) {
-  const auto a = g1_controller::observation::encodeObservation(observation);
-  requireFinite(a.data(), a.size());
-  impl_->query(a.data());
-  return decodePolicy(impl_->lastPolicy.data());
-}
-PlannerTick G1Controller::prepareObservation(const Observation& observation) {
-  const auto a = g1_controller::observation::encodeObservation(observation);
-  requireFinite(a.data(), a.size());
-  impl_->prepare(a.data());
-  return impl_->tickIdentity();
-}
-PlannerTick G1Controller::prepareOcpObservation(const Observation& raw, const std::array<double, StateDimension>& state) {
-  const auto encoded = observation::encodeObservation(raw);
-  requireFinite(encoded.data(), encoded.size());
-  requireFinite(state.data(), state.size());
-  impl_->prepare(encoded.data(), state.data());
-  return impl_->tickIdentity();
-}
+
 PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDimension>& state,
                                                const std::array<double,3>& identity) {
   requireFinite(state.data(),state.size());
@@ -324,19 +224,7 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
   runtime.lastRawTime=identity[2];
   return runtime.tickIdentity();
 }
-std::array<double, StateDimension> G1Controller::convertObservation(const Observation& raw) const {
-  if (!impl_->context) throw std::runtime_error("Initialize MEX first");
-  const auto encoded = observation::encodeObservation(raw);
-  requireFinite(encoded.data(), encoded.size());
-  robot::model::RobotState temporary(*impl_->description);
-  observation::fillRobotState(temporary, encoded.data(), impl_->ids, raw.rawBackendTime);
-  vector_t converted = vector_t::Zero(StateDimension);
-  const auto joints = impl_->description->getJointIndices(impl_->context->interface.modelSettings().mpcModelJointNames);
-  observation::fillMpcState(converted, temporary, impl_->context->interface.getMpcRobotModel(), joints);
-  std::array<double, StateDimension> result;
-  std::copy_n(converted.data(), StateDimension, result.begin());
-  return result;
-}
+
 PlannerTick G1Controller::updateMpc(const PlannerTick& tick, bool requested) {
   impl_->update(tick, requested);
   return tick;
@@ -356,12 +244,5 @@ Torque G1Controller::inverseDynamics(const Policy &policy) {
   std::copy_n(impl_->lastResult.data() + 93, 23, torque.begin());
   return torque;
 }
-/**
- * @brief 组合接口严格复用拆分接口，不维护第二套求解或动作算法。
- */
-ControlResult G1Controller::step(const Observation &observation) {
-  Policy policy = query(observation);
-  Torque torque = inverseDynamics(policy);
-  return {policy, torque};
-}
+
 } // namespace g1_controller

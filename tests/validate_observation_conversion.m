@@ -21,12 +21,9 @@ ds=Simulink.SimulationData.Dataset;ds{1}=timeseries(raw,t);
 in=Simulink.SimulationInput('g1_observation_check');in=in.setExternalInput(ds);
 in=in.setModelParameter('StopTime',num2str(t(end),17),'SaveOutput','on','OutputSaveName','yout','SaveFormat','Dataset');
 out=sim(in);actual=g1log.signalMatrix(out.yout{1}.Values);
-keys={'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};old={getenv(keys{1}),getenv(keys{2})};
-setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
-envCleanup=onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
-g1_ocp_mex('init',root,fullfile(folder,'conversion_reference'));cleanup=onCleanup(@()g1_ocp_mex('close')); %#ok<NASGU>
-expected=zeros(size(actual));
-for k=1:size(raw,1),expected(k,:)=g1_ocp_mex('convert_observation',raw(k,:)');end
+golden=load(fullfile(root,'build','observation_hybrid','conversion_values.mat'));
+assert(isequal(raw,golden.raw),'Frozen reference input changed');
+expected=golden.expected;
 assert(isequal(actual(:,[1:3,7:29,36:58]),expected(:,[1:3,7:29,36:58])),'Copied fields/joint mapping differs.');
 error=abs(actual-expected);budget=contract.continuous_conversion.absolute_tolerance+contract.continuous_conversion.relative_tolerance*abs(expected);
 assert(all(error<=budget,'all'),'Conversion exceeds frozen tolerance.');
@@ -34,9 +31,9 @@ assert(all(isfinite(actual),'all'));
 % A wrong external joint mapping must be rejected by the runtime before solve.
 bad=expected(1,:)';bad(7)=bad(7)+0.01;rejected=false;
 try
-    ignored=g1_ocp_mex('prepare_ocp_observation',raw(1,:)',bad); %#ok<NASGU>
+    ignored=g1_observation_extract_mex(raw(1,:)',bad,double(cfg.mpcIndices(:)')); %#ok<NASGU>
 catch exception
-    rejected=strcmp(exception.identifier,'G1:PlannerMex');
+    rejected=strcmp(exception.identifier,'G1:ObservationExtractionMex');
 end
 assert(rejected,'Incorrect joint mapping was accepted.');
 result=struct('passed',true,'samples',size(raw,1),'saved_observations',size(f.raw,1),'independent_cases',40, ...

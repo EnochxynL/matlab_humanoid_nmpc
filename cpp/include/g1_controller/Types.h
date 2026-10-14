@@ -12,7 +12,6 @@
 namespace g1_controller {
 inline constexpr std::size_t StateDimension = 58;
 inline constexpr std::size_t InputDimension = 35;
-inline constexpr std::size_t RobotJointCount = 29;
 inline constexpr std::size_t ControlledJointCount = 23;
 
 /**
@@ -23,22 +22,6 @@ struct ControllerConfig {
   std::string logDirectory;
 };
 
-/**
- * @brief 真实机器人观测。位置在世界系，四元数 wxyz 表示局部到世界旋转。
- * 线/角速度在基座局部系；29 关节按运行时约定的机器人顺序传递。
- * rawBackendTime 保留物理后端时间；核心校验后派生 canonical tick/time。
- * measuredContacts 虽保留在接口中，当前已验收运行路径仍固定观测模式为双足支撑。
- */
-struct Observation {
-  double rawBackendTime = 0;
-  std::array<double, 3> basePosition{};
-  std::array<double, 4> baseOrientationWxyz{};
-  std::array<double, 3> baseLinearVelocityLocal{};
-  std::array<double, 3> baseAngularVelocityLocal{};
-  std::array<double, RobotJointCount> jointPositions{};
-  std::array<double, RobotJointCount> jointVelocities{};
-  std::array<double, 2> measuredContacts{};
-};
 
 /**
  * @brief 外部参考与接触时间表的定长容器。
@@ -82,12 +65,4 @@ struct Policy {
  * @brief 23 个受控关节的逆动力学前馈力矩；最终 PD 与饱和处理位于外部执行链。
  */
 using Torque = std::array<double, ControlledJointCount>;
-/**
- * @brief 组合查询结果：同一策略及由该策略计算的前馈力矩。
- */
-struct ControlResult {
-  Policy policy;
-  Torque torque;
-};
-
 } // namespace g1_controller

@@ -70,24 +70,7 @@ void closeController() {
 
 // These offsets are the unchanged MATLAB transport protocol. No robot math
 // or solver scheduling belongs in this adapter.
-/**
- * @brief 将 74 元素观测包转换为具名结构。
- * 布局：时间[0]、世界位置[1:3]、wxyz 四元数[4:7]、局部线/角速度[8:13]、
- * 29 关节位置[14:42]、29 关节速度[43:71]、接触标志[72:73]。
- * 这里只搬运数据，不做坐标转换或关节重排。
- */
-g1_controller::Observation decodeObservation(const double *a) {
-  g1_controller::Observation o;
-  o.rawBackendTime = a[0];
-  std::copy_n(a + 1, 3, o.basePosition.begin());
-  std::copy_n(a + 4, 4, o.baseOrientationWxyz.begin());
-  std::copy_n(a + 8, 3, o.baseLinearVelocityLocal.begin());
-  std::copy_n(a + 11, 3, o.baseAngularVelocityLocal.begin());
-  std::copy_n(a + 14, 29, o.jointPositions.begin());
-  std::copy_n(a + 43, 29, o.jointVelocities.begin());
-  std::copy_n(a + 72, 2, o.measuredContacts.begin());
-  return o;
-}
+
 
 /**
  * @brief 解码 428 元素参考包；publish 为假时直接返回。
@@ -117,7 +100,7 @@ g1_controller::Reference decodeReference(const double *a) {
 }
 
 /**
- * @brief 解码 query 返回的 95 元素策略：状态58、输入35、模式1、查询时间1。
+ * @brief 解码 query_policy 返回的 95 元素策略：状态58、输入35、模式1、查询时间1。
  */
 g1_controller::Policy decodePolicy(const double *a) {
   g1_controller::Policy p;
@@ -141,20 +124,7 @@ mxArray *encodePolicy(const g1_controller::Policy &p) {
   return output;
 }
 
-/**
- * @brief 编码兼容 step 输出：状态58、输入35、前馈力矩23、模式1、查询时间1。
- * 该 118 元素结果不包含 JointDrive 最终叠加的 PD 反馈力矩。
- */
-mxArray *encodeResult(const g1_controller::ControlResult &r) {
-  mxArray *output = mxCreateDoubleMatrix(118, 1, mxREAL);
-  double *a = mxGetPr(output);
-  std::copy(r.policy.state.begin(), r.policy.state.end(), a);
-  std::copy(r.policy.input.begin(), r.policy.input.end(), a + 58);
-  std::copy(r.torque.begin(), r.torque.end(), a + 93);
-  a[116] = r.policy.mode;
-  a[117] = r.policy.queryTime;
-  return output;
-}
+
 g1_controller::PlannerTick decodeTick(const double* a) {
   if (a[0] < 0 || a[0] > 9007199254740992.0 || std::floor(a[0]) != a[0])
     throw std::runtime_error("Invalid planner tick");
@@ -169,20 +139,19 @@ mxArray* encodeTick(const g1_controller::PlannerTick& tick) {
 } // namespace
 
 /**
- * @brief MEX 命令分发入口，保持既有输入输出协议。
+ * @brief MEX 命令分发入口，仅暴露当前分阶段运行接口。
  * init(root,folder)：创建核心并 mexLock，防止运行中卸载；close：关闭并解锁。
- * reference(r428)：提交参考；query(o74) → p95：兼容的组合更新/查询。
- * prepare_observation(o74) → tick3：装填观测，不求解。
+ * reference(r428)：提交参考。
+ * install_observation(x58, identity3) → tick3：登记独立提取的观测，不求解。
  * update_mpc(tick3,request) → tick3：校验外部更新判断，等待必要求解完成。
  * query_policy(tick3) → p95：只查询已准备好的策略，不触发求解。
  * inverse_dynamics(p95) → tau23：计算该策略的前馈力矩。
- * step(o74) → r118：依次执行 query 和 inverse_dynamics。
  * 标准 C++ 异常统一转换为 G1:PlannerMex 错误；此处不实现控制算法。
  */
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   try {
     if (nrhs < 1)
-      throw std::runtime_error("Expected init/reference/step/close command");
+      throw std::runtime_error("Expected planner command");
     const std::string command = readString(prhs[0]);
     if (command == "init") {
       if (nrhs != 3 || nlhs)
@@ -214,13 +183,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         throw std::runtime_error("reference requires 428 values");
       const double *values = readDoubles(prhs[1], 428);
       runtime().setReference(decodeReference(values));
-    } else if (command == "prepare_ocp_observation") {
-      if (nrhs != 3 || nlhs != 1) throw std::runtime_error("prepare_ocp_observation requires o74, x58 and one output");
-      const auto raw = decodeObservation(readDoubles(prhs[1], 74));
-      const auto* values = readDoubles(prhs[2], 58);
-      std::array<double, 58> state;
-      std::copy_n(values, 58, state.begin());
-      plhs[0] = encodeTick(runtime().prepareOcpObservation(raw, state));
     } else if (command == "install_observation") {
       if(nrhs!=3 || nlhs!=1) throw std::runtime_error("install_observation requires x58, identity3 and one output");
       std::array<double,58> state;
@@ -228,14 +190,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       std::copy_n(readDoubles(prhs[1],58),58,state.begin());
       std::copy_n(readDoubles(prhs[2],3),3,identity.begin());
       plhs[0]=encodeTick(runtime().installOcpObservation(state,identity));
-    } else if (command == "convert_observation") {
-      if (nrhs != 2 || nlhs != 1) throw std::runtime_error("convert_observation requires o74 and one output");
-      const auto state = runtime().convertObservation(decodeObservation(readDoubles(prhs[1], 74)));
-      plhs[0] = mxCreateDoubleMatrix(58, 1, mxREAL);
-      std::copy(state.begin(), state.end(), mxGetPr(plhs[0]));
-    } else if (command == "prepare_observation") {
-      if (nrhs != 2 || nlhs != 1) throw std::runtime_error("prepare_observation requires o74 and one output");
-      plhs[0] = encodeTick(runtime().prepareObservation(decodeObservation(readDoubles(prhs[1], 74))));
     } else if (command == "update_mpc") {
       if (nrhs != 3 || nlhs != 1) throw std::runtime_error("update_mpc requires tick3, request and one output");
       const auto tick = decodeTick(readDoubles(prhs[1], 3));
@@ -245,11 +199,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     } else if (command == "query_policy") {
       if (nrhs != 2 || nlhs != 1) throw std::runtime_error("query_policy requires tick3 and one output");
       plhs[0] = encodePolicy(runtime().queryPrepared(decodeTick(readDoubles(prhs[1], 3))));
-    } else if (command == "query") {
-      if (nrhs != 2 || nlhs != 1)
-        throw std::runtime_error("query requires 74 values and one output");
-      const double *values = readDoubles(prhs[1], 74);
-      plhs[0] = encodePolicy(runtime().query(decodeObservation(values)));
     } else if (command == "inverse_dynamics") {
       if (nrhs != 2 || nlhs != 1)
         throw std::runtime_error(
@@ -258,11 +207,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       const auto torque = runtime().inverseDynamics(decodePolicy(values));
       plhs[0] = mxCreateDoubleMatrix(23, 1, mxREAL);
       std::copy(torque.begin(), torque.end(), mxGetPr(plhs[0]));
-    } else if (command == "step") {
-      if (nrhs != 2 || nlhs != 1)
-        throw std::runtime_error("step requires 74 values and one output");
-      const double *values = readDoubles(prhs[1], 74);
-      plhs[0] = encodeResult(runtime().step(decodeObservation(values)));
     } else {
       throw std::runtime_error("Unknown MEX command");
     }

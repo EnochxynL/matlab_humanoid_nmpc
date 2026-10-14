@@ -16,9 +16,8 @@ set_target_properties(g1_observation_kernels PROPERTIES POSITION_INDEPENDENT_COD
 target_include_directories(g1_observation_kernels PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(g1_observation_kernels PUBLIC Eigen3::Eigen)
 if(G1_BUILD_MATLAB)
-  get_filename_component(g1_observation_root "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
-  matlab_add_mex(NAME g1_observation_mex SRC "${g1_observation_root}/adapters/matlab/ObservationMex.cpp"
+  matlab_add_mex(NAME g1_observation_mex SRC "${CMAKE_CURRENT_SOURCE_DIR}/ObservationMex.cpp"
     LINK_TO g1_observation_kernels)
-  matlab_add_mex(NAME g1_observation_extract_mex SRC "${g1_observation_root}/adapters/matlab/ObservationExtractionMex.cpp"
+  matlab_add_mex(NAME g1_observation_extract_mex SRC "${CMAKE_CURRENT_SOURCE_DIR}/ObservationExtractionMex.cpp"
     LINK_TO g1_observation_kernels)
 endif()

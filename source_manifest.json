@@ -198,8 +198,8 @@
       "field_selection_and_joint_mapping": "native Simulink Selector",
       "state_assembly": "native Simulink Mux",
       "sensitive_kernels": "g1_observation_mex",
-      "kernel_cpp": "cpp/data/observation/ObservationKernels.cpp",
-      "standalone_build": "cpp/data/observation/CMakeLists.txt",
+      "kernel_cpp": "adapters/matlab/ObservationKernels.cpp",
+      "standalone_build": "cmake -S adapters/matlab -B build/observation",
       "strict_conversion_cases": 2441,
       "strict_replay_ticks": 2401,
       "physical_duration_s": 4.8,
@@ -249,6 +249,37 @@
       "ticks": 2401,
       "mpc_updates": 289,
       "policy_action_exact_equal": true,
+      "physical_simulation": false
+    },
+    "observation_retirement": {
+      "removed_raw_observation_commands": [
+        "prepare_observation",
+        "prepare_ocp_observation",
+        "convert_observation",
+        "query",
+        "step"
+      ],
+      "core_observation_entry": "install_observation",
+      "removed_scaffolding": [
+        "RobotState",
+        "ObservationConversion",
+        "RobotDescription wrapper",
+        "JointIDMap",
+        "IDMapBase",
+        "RobotJointAction",
+        "unused hardware adapter"
+      ],
+      "actual_robot_model": "unchanged OCP Pinocchio/URDF model",
+      "observation_kernel_location": "adapters/matlab",
+      "kernel_source_byte_identical": true,
+      "independent_numerical_mex": true,
+      "models_unchanged": true,
+      "exact_replay_logs": {
+        "planner_samples.csv": true,
+        "policy_knots.csv": true,
+        "gait_queries.csv": true
+      },
+      "evidence": "build/observation_retirement",
       "physical_simulation": false
     }
   },

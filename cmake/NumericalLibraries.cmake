@@ -6,10 +6,6 @@ target_link_libraries(g1_ocp_extensions PUBLIC ocs2_core ocs2_robotic_tools)
 # Plain-CMake build adapter. Vendored OCS2 sources and original build files remain unchanged.
 add_library(ocs2_thirdparty INTERFACE)
 target_include_directories(ocs2_thirdparty SYSTEM INTERFACE "${G1_OCS2_SOURCE_DIR}/ocs2_thirdparty/include")
-add_library(robot_core INTERFACE)
-target_include_directories(robot_core INTERFACE "${G1_CORE_DIR}")
-target_link_libraries(robot_core INTERFACE Eigen3::Eigen)
-
 add_library(ocs2_core SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/Types.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/augmented_lagrangian/AugmentedLagrangian.cpp"
@@ -227,14 +223,6 @@ target_include_directories(ocs2_sqp PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/ocs2_
 target_link_libraries(ocs2_sqp PUBLIC ocs2_core ocs2_mpc ocs2_oc ocs2_qp_solver hpipm_catkin)
 target_compile_options(ocs2_sqp PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(robot_model SHARED
-  "${G1_CORE_DIR}/data/description/RobotDescription.cpp"
-  "${G1_CORE_DIR}/data/observation/RobotState.cpp"
-)
-target_include_directories(robot_model PUBLIC "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
-target_link_libraries(robot_model PUBLIC robot_core ${urdfdom_LIBRARIES} absl::flat_hash_map)
-target_compile_options(robot_model PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
-
 add_library(humanoid_common_mpc SHARED
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactCenterPoint.cpp"
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactPolygon.cpp"
@@ -290,7 +278,7 @@ add_library(humanoid_wb_mpc SHARED
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/command/WBMpcTargetTrajectoriesCalculator.cpp"
 )
 target_include_directories(humanoid_wb_mpc PUBLIC "${G1_CORE_DIR}/problem/humanoid_wb_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
-target_link_libraries(humanoid_wb_mpc PUBLIC humanoid_common_mpc robot_model ocs2_sqp ocs2_ddp ocs2_centroidal_model)
+target_link_libraries(humanoid_wb_mpc PUBLIC humanoid_common_mpc ocs2_sqp ocs2_ddp ocs2_centroidal_model)
 target_compile_options(humanoid_wb_mpc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
 # Pinned official SqpSolver.cpp uses ofstream without directly including fstream.

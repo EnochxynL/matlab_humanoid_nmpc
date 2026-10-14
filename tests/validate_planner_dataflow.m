@@ -3,7 +3,8 @@ function result = validate_planner_dataflow(evidenceName)
 % Checks staged API guards, then the complete 2401-tick/289-update contract.
 if nargin==0,evidenceName='planner_dataflow';end
 root = fileparts(fileparts(mfilename('fullpath')));
-cd(root); g1.initialize();
+cd(root); cfg=g1.initialize();
+golden=load(fullfile(root,'build','observation_hybrid','conversion_values.mat'));
 folder = fullfile(root,'build',evidenceName,'model_replay');
 fixture = load(fullfile(root,'build','core_extraction','fixture.mat'));
 keys = {'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};
@@ -13,13 +14,14 @@ envCleanup = onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
 g1_ocp_mex('init',root,folder);
 cleanup = onCleanup(@()g1_ocp_mex('close'));
 g1_ocp_mex('reference',fixture.ref(1,:)');
-token = g1_ocp_mex('prepare_observation',fixture.raw(1,:)');
+identity=g1_observation_extract_mex(fixture.raw(1,:)',golden.expected(1,:)',double(cfg.mpcIndices(:)'));
+token = g1_ocp_mex('install_observation',golden.expected(1,:)',identity);
 assertRejected(@()g1_ocp_mex('query_policy',token));
 assertRejected(@()g1_ocp_mex('update_mpc',token,0));
 bad = token;bad(2) = bad(2)+0.002;
 assertRejected(@()g1_ocp_mex('update_mpc',bad,1));
-next = fixture.raw(2,:)';
-assertRejected(@()g1_ocp_mex('prepare_observation',next));
+nextIdentity=g1_observation_extract_mex(fixture.raw(2,:)',golden.expected(2,:)',double(cfg.mpcIndices(:)'));
+assertRejected(@()g1_ocp_mex('install_observation',golden.expected(2,:)',nextIdentity));
 clear cleanup;
 % Fresh runtime and model persistent state; do not reuse guard-test state.
 g1_ocp_mex('init',root,folder);
