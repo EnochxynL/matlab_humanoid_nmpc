@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include "controller/WBMpcController.h"
+#include "data/observation/ObservationConversion.h"
 
 #include <ocs2_robotic_tools/common/RotationDerivativesTransforms.h>
 #include <ocs2_robotic_tools/common/RotationTransforms.h>
@@ -117,46 +118,10 @@ void WaveBControlTimeWBMpcController::startMpcThread(const ::robot::model::Robot
 /******************************************************************************************************/
 
 /**
- * @brief 将机器人观测转换为58维 OCP 状态。
- * 基座姿态转 Euler ZYX，局部线速度转世界系，局部角速度转 Euler 角导数，
- * 并按 MPC 关节顺序提取23个关节的位置和速度。
- * 使用参考仓库 updateMpcState 的 C++ 转换公式，不经 MATLAB 生成内核。
+ * @brief 委托 observation 模块装填 OCS2 观测；调度器不再内联坐标转换公式。
  */
-void WaveBControlTimeWBMpcController::updateMpcState(vector_t& mpcState, const ::robot::model::RobotState& robotState) {
-  mpcRobotModel_.setBasePosition(mpcState, robotState.getRootPositionInWorldFrame());
-  mpcRobotModel_.setBaseOrientationEulerZYX(mpcState, quaternionToEulerZYX(robotState.getRootRotationLocalToWorldFrame()));
-
-  mpcRobotModel_.setJointAngles(mpcState, robotState.getJointPositions(mpcJointIndices_));
-
-  // currently we send local angular and linear velocity
-  mpcRobotModel_.setBaseLinearVelocity(mpcState,
-                                       robotState.getRootRotationLocalToWorldFrame() * robotState.getRootLinearVelocityInLocalFrame());
-  mpcRobotModel_.setBaseOrientationEulerZYXDerivatives(
-      mpcState, getEulerAnglesZyxDerivativesFromLocalAngularVelocity<scalar_t>(mpcRobotModel_.getBaseOrientationEulerZYX(mpcState),
-                                                                               robotState.getRootAngularVelocityInLocalFrame()));
-
-  vector_t dummyInput = vector_t::Zero(mpcRobotModel_.getInputDim());
-  mpcRobotModel_.setJointVelocities(mpcState, dummyInput, robotState.getJointVelocities(mpcJointIndices_));
-
-}
-
-/******************************************************************************************************/
-/******************************************************************************************************/
-/******************************************************************************************************/
-
-/**
- * @brief 组装 OCS2 观测：转换状态、写入物理时间、清零输入并编码接触模式。
- * 这里的零输入是观测初始化字段，不是向机器人发布零力矩。
- */
-void WaveBControlTimeWBMpcController::updateMpcObservation(ocs2::SystemObservation& mpcObservation, const ::robot::model::RobotState& robotState) {
-  updateMpcState(mpcObservation.state, robotState);
-  mpcObservation.time = robotState.getTime();
-  mpcObservation.input = vector_t::Zero(mpcRobotModel_.getInputDim());  // Add contact forces later.
-  std::vector<bool> configContacts = robotState.getContactFlags();
-  assert(configContacts.size() == 2);
-  contact_flag_t contactFlags;
-  std::copy(configContacts.begin(), configContacts.end(), contactFlags.begin());
-  mpcObservation.mode = stanceLeg2ModeNumber(contactFlags);
+void WaveBControlTimeWBMpcController::updateMpcObservation(SystemObservation& observation, const ::robot::model::RobotState& state) {
+  g1_controller::observation::fillMpcObservation(observation, state, mpcRobotModel_, mpcJointIndices_);
 }
 
 /******************************************************************************************************/
@@ -393,16 +358,28 @@ void WaveBControlTimeWBMpcController::deterministicSolverWorker() {
  * 当前观测状态也传给 MRT；是否使用反馈由其实际控制器及配置决定。
  * 检查策略状态/输入有限性；此函数尚不计算关节力矩。
  */
-void WaveBControlTimeWBMpcController::evaluatePolicy(const ::robot::model::RobotState& state,
-                                                    vector_t& x, vector_t& u, size_t& mode) {
+void WaveBControlTimeWBMpcController::updatePolicy(const ::robot::model::RobotState& state) {
+  policyQueryPrepared_ = false;
   if (timingMode_ != TimingMode::SIMULATION_TIME_DETERMINISTIC)
     throw std::runtime_error("MEX requires deterministic simulation scheduling");
   deterministicUpdate(state);
   updateMpcObservation(currentMpcObservation_, state);
   setObservation(currentMpcObservation_);
   if (!mcpMrtInterface_.initialPolicyReceived()) throw std::runtime_error("No publishable OCS2 policy");
+  policyQueryPrepared_ = true;
+}
+
+// 只查询缓存策略；不会触发一次新的 MPC 求解。
+void WaveBControlTimeWBMpcController::queryPolicy(vector_t& x, vector_t& u, size_t& mode) {
+  if (!policyQueryPrepared_) throw std::runtime_error("Prepare current observation before policy query");
   mcpMrtInterface_.evaluatePolicy(currentMpcObservation_.time + 0.005, currentMpcObservation_.state, x, u, mode);
   if (!x.allFinite() || !u.allFinite()) throw std::runtime_error("Nonfinite policy output");
+}
+
+void WaveBControlTimeWBMpcController::evaluatePolicy(const ::robot::model::RobotState& state,
+                                                    vector_t& x, vector_t& u, size_t& mode) {
+  updatePolicy(state);
+  queryPolicy(x, u, mode);
 }
 
 /**

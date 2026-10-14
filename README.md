@@ -106,3 +106,14 @@ python3 scripts/verify_dependencies.py
 ## 恢复参考 C++ OCP
 
 本次恢复范围、旧严格回放差异与新物理测试结果见 [恢复报告](docs/cpp_ocp_restoration.md)。上面的历史验证记录对应当时版本，不构成本次新路径逐位等价声明。
+
+### 控制数据流边界
+
+- `data/observation/ObservationConversion`：观测编码、机器人状态装填、OCP 坐标和关节顺序转换。
+- `data/reference/ReferenceConversion`：参考容器与既有 OCP 参考包之间的格式转换。
+- `controller/WBMpcController`：`updatePolicy` 判断更新时刻并等待必要的求解完成；
+  `queryPolicy` 只查询已有策略，不触发求解；`inverseDynamics` 计算前馈力矩。
+- `controller/G1Controller`：按顺序协调上述阶段，保留 tick/策略身份、缓存和生命周期门禁。
+
+当前 MEX `query` 仍组合执行更新与查询，接口和 Simulink 模型不变。
+本次没有移除工作线程，也没有将调度迁移进 Simulink；后续可基于这些边界逐步展开。

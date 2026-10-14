@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include "controller/WBMpcMrtJointController.h"
+#include "data/observation/ObservationConversion.h"
 
 #include <ocs2_robotic_tools/common/RotationDerivativesTransforms.h>
 #include <ocs2_robotic_tools/common/RotationTransforms.h>
@@ -87,36 +88,8 @@ void WBMpcMrtJointController::startMpcThread(const ::robot::model::RobotState& i
 /******************************************************************************************************/
 /******************************************************************************************************/
 
-void WBMpcMrtJointController::updateMpcState(vector_t& mpcState, const ::robot::model::RobotState& robotState) {
-  mpcRobotModel_.setBasePosition(mpcState, robotState.getRootPositionInWorldFrame());
-  mpcRobotModel_.setBaseOrientationEulerZYX(mpcState, quaternionToEulerZYX(robotState.getRootRotationLocalToWorldFrame()));
-
-  mpcRobotModel_.setJointAngles(mpcState, robotState.getJointPositions(mpcJointIndices_));
-
-  // currently we send local angular and linear velocity
-  mpcRobotModel_.setBaseLinearVelocity(mpcState,
-                                       robotState.getRootRotationLocalToWorldFrame() * robotState.getRootLinearVelocityInLocalFrame());
-  mpcRobotModel_.setBaseOrientationEulerZYXDerivatives(
-      mpcState, getEulerAnglesZyxDerivativesFromLocalAngularVelocity<scalar_t>(mpcRobotModel_.getBaseOrientationEulerZYX(mpcState),
-                                                                               robotState.getRootAngularVelocityInLocalFrame()));
-
-  vector_t dummyInput = vector_t::Zero(mpcRobotModel_.getInputDim());
-  mpcRobotModel_.setJointVelocities(mpcState, dummyInput, robotState.getJointVelocities(mpcJointIndices_));
-}
-
-/******************************************************************************************************/
-/******************************************************************************************************/
-/******************************************************************************************************/
-
-void WBMpcMrtJointController::updateMpcObservation(ocs2::SystemObservation& mpcObservation, const ::robot::model::RobotState& robotState) {
-  updateMpcState(mpcObservation.state, robotState);
-  mpcObservation.time = robotState.getTime();
-  mpcObservation.input = vector_t::Zero(mpcRobotModel_.getInputDim());  // Add contact forces later.
-  std::vector<bool> configContacts = robotState.getContactFlags();
-  assert(configContacts.size() == 2);
-  contact_flag_t contactFlags;
-  std::copy(configContacts.begin(), configContacts.end(), contactFlags.begin());
-  mpcObservation.mode = stanceLeg2ModeNumber(contactFlags);
+void WBMpcMrtJointController::updateMpcObservation(SystemObservation& observation, const ::robot::model::RobotState& state) {
+  g1_controller::observation::fillMpcObservation(observation, state, mpcRobotModel_, mpcJointIndices_);
 }
 
 /******************************************************************************************************/

@@ -91,7 +91,6 @@ class WBMpcMrtJointController final : public ::g1_controller::ControlBase {
    */
   TargetTrajectories currentObservationToResetTrajectory(const SystemObservation& currentMpcObservation);
 
-  void updateMpcState(vector_t& mpcState, const ::robot::model::RobotState& robotState);
   void updateMpcObservation(ocs2::SystemObservation& mpcObservation, const ::robot::model::RobotState& robotState);
 
   MPC_MRT_Interface mcpMrtInterface_;

@@ -9,7 +9,8 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
-#include <data/observation/RobotState.h>
+#include "data/observation/ObservationConversion.h"
+#include "data/reference/ReferenceConversion.h"
 #include <stdexcept>
 
 namespace g1_controller {
@@ -89,29 +90,7 @@ struct G1Controller::Impl {
       return;
     if (sequence && context->currentPacket.tick == static_cast<uint64_t>(a[0]))
       return;
-    task5a::Packet p;
-    p.tick = static_cast<uint64_t>(a[0]);
-    p.session = 1;
-    p.sequence = ++sequence;
-    size_t n = static_cast<size_t>(a[2]), m = static_cast<size_t>(a[285]);
-    if ((n != 1 && n != 3) || m < 1 || m > 64)
-      throw std::runtime_error("Reference shape rejected");
-    for (size_t k = 0; k < n; ++k) {
-      p.target.timeTrajectory.push_back(a[3 + k]);
-      p.target.stateTrajectory.emplace_back(
-          Eigen::Map<const vector_t>(a + 6 + 58 * k, 58));
-      p.target.inputTrajectory.emplace_back(
-          Eigen::Map<const vector_t>(a + 180 + 35 * k, 35));
-    }
-    for (size_t k = 0; k < m; ++k)
-      p.schedule.eventTimes.push_back(a[286 + k]);
-    for (size_t k = 0; k <= m; ++k)
-      p.schedule.modeSequence.push_back(static_cast<size_t>(a[350 + k]));
-    p.terminal = a[415];
-    for (int k = 0; k < 8; ++k)
-      p.swing[k] = a[416 + k];
-    for (int k = 0; k < 4; ++k)
-      p.filtered[k] = a[424 + k];
+    auto p = g1_controller::reference::decodeReference(a, ++sequence);
     context->currentPacket = std::move(p);
   }
 /**
@@ -142,26 +121,13 @@ struct G1Controller::Impl {
     if (lastTick != UINT64_MAX && tick != lastTick + 1)
       throw std::runtime_error("Nonsequential physical tick");
     double t = canonicalLog->accept(tick, a[0], 1, tick);
-    state->setTime(t);
-    state->setRootPositionInWorldFrame(robot::vector3_t(a + 1));
-    robot::quaternion_t q(a[4], a[5], a[6], a[7]);
-    if (std::abs(q.norm() - 1) > 1e-6)
-      throw std::runtime_error("Quaternion rejected");
-    state->setRootRotationLocalToWorldFrame(q);
-    state->setRootLinearVelocityInLocalFrame(robot::vector3_t(a + 8));
-    state->setRootAngularVelocityInLocalFrame(robot::vector3_t(a + 11));
-    for (size_t j = 0; j < 29; ++j) {
-      state->setJointPosition(ids[j], a[14 + j]);
-      state->setJointVelocity(ids[j], a[43 + j]);
-    }
-    // Original successful controller uses STANCE for measured observation mode.
-    state->setContactFlag(0, true);
-    state->setContactFlag(1, true);
+    observation::fillRobotState(*state, a, ids, t);
     if (lastTick == UINT64_MAX)
       controller->startMpcThread(*state);
     vector_t x, u;
     size_t mode;
-    controller->evaluatePolicy(*state, x, u, mode);
+    controller->updatePolicy(*state);
+    controller->queryPolicy(x, u, mode);
     lastPolicy << x, u, double(mode), t + .005;
     lastTick = tick;
     lastRawTime = a[0];
@@ -194,25 +160,6 @@ struct G1Controller::Impl {
 };
 
 namespace {
-/**
- * @brief 将公共观测结构适配为既有内部74元素布局；不改变坐标系。
- */
-std::array<double, 74> encodeObservation(const Observation &o) {
-  std::array<double, 74> a{};
-  a[0] = o.rawBackendTime;
-  std::copy(o.basePosition.begin(), o.basePosition.end(), a.begin() + 1);
-  std::copy(o.baseOrientationWxyz.begin(), o.baseOrientationWxyz.end(),
-            a.begin() + 4);
-  std::copy(o.baseLinearVelocityLocal.begin(), o.baseLinearVelocityLocal.end(),
-            a.begin() + 8);
-  std::copy(o.baseAngularVelocityLocal.begin(),
-            o.baseAngularVelocityLocal.end(), a.begin() + 11);
-  std::copy(o.jointPositions.begin(), o.jointPositions.end(), a.begin() + 14);
-  std::copy(o.jointVelocities.begin(), o.jointVelocities.end(), a.begin() + 43);
-  std::copy(o.measuredContacts.begin(), o.measuredContacts.end(),
-            a.begin() + 72);
-  return a;
-}
 /**
  * @brief 将公共策略转为内部身份校验使用的95元素布局。
  */
@@ -255,27 +202,7 @@ void G1Controller::shutdown() noexcept { impl_->close(); }
  * @brief 保留内部428元素参考适配格式，校验数值后更新参考缓存。
  */
 void G1Controller::setReference(const Reference &r) {
-  // Keep the accepted reference layout local to the retained OCP adapter.
-  std::array<double, 428> a{};
-  a[0] = static_cast<double>(r.tick);
-  a[1] = r.publish;
-  a[2] = static_cast<double>(r.targetCount);
-  std::copy(r.targetTimes.begin(), r.targetTimes.end(), a.begin() + 3);
-  for (std::size_t k = 0; k < 3; ++k) {
-    std::copy(r.targetStates[k].begin(), r.targetStates[k].end(),
-              a.begin() + 6 + 58 * k);
-    std::copy(r.targetInputs[k].begin(), r.targetInputs[k].end(),
-              a.begin() + 180 + 35 * k);
-  }
-  a[285] = static_cast<double>(r.eventCount);
-  std::copy(r.eventTimes.begin(), r.eventTimes.end(), a.begin() + 286);
-  for (std::size_t k = 0; k < 65; ++k)
-    a[350 + k] = static_cast<double>(r.modes[k]);
-  a[415] = r.terminalTime;
-  std::copy(r.swingParameters.begin(), r.swingParameters.end(),
-            a.begin() + 416);
-  std::copy(r.filteredCommand.begin(), r.filteredCommand.end(),
-            a.begin() + 424);
+  const auto a = g1_controller::reference::encodeReference(r);
   requireFinite(a.data(), a.size());
   impl_->reference(a.data());
 }
@@ -283,7 +210,7 @@ void G1Controller::setReference(const Reference &r) {
  * @brief 公共查询入口：结构编码、有限性检查、运行时更新、结果解码。
  */
 Policy G1Controller::query(const Observation &observation) {
-  const auto a = encodeObservation(observation);
+  const auto a = g1_controller::observation::encodeObservation(observation);
   requireFinite(a.data(), a.size());
   impl_->query(a.data());
   return decodePolicy(impl_->lastPolicy.data());

@@ -91,7 +91,10 @@ class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBas
 
   void startMpcThread(const ::robot::model::RobotState& initRobotState);
 
-  // Separate policy evaluation and inverse dynamics; the legacy combined API remains.
+  // 显式阶段：更新资格判断/求解完成之后，才允许查询已准备观测对应的策略。
+  void updatePolicy(const ::robot::model::RobotState& state);
+  void queryPolicy(vector_t& x, vector_t& u, size_t& mode);
+  // 保留旧组合入口；与上述拆分调用走同一路径。
   void evaluatePolicy(const ::robot::model::RobotState& state, vector_t& x, vector_t& u, size_t& mode);
   vector_t inverseDynamics(const vector_t& x, const vector_t& u);
 
@@ -107,6 +110,7 @@ class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBas
   void deterministicSolverWorker();
   void waitForRequest(size_t request);
   void deterministicUpdate(const ::robot::model::RobotState& state);
+  bool policyQueryPrepared_ = false;
   TimingMode timingMode_ = TimingMode::REALTIME_ASYNCHRONOUS;
   double mpcControlPeriod_;
   double epoch_ = 0, lastObservationTime_ = -std::numeric_limits<double>::infinity();
@@ -126,7 +130,6 @@ class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBas
    */
   TargetTrajectories currentObservationToResetTrajectory(const SystemObservation& currentMpcObservation);
 
-  void updateMpcState(vector_t& mpcState, const ::robot::model::RobotState& robotState);
   void updateMpcObservation(ocs2::SystemObservation& mpcObservation, const ::robot::model::RobotState& robotState);
 
   MPC_MRT_Interface mcpMrtInterface_;
