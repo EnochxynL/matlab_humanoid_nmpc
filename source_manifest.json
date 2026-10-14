@@ -281,6 +281,32 @@
       },
       "evidence": "build/observation_retirement",
       "physical_simulation": false
+    },
+    "reference_split": {
+      "model_nodes": [
+        "ReferenceExtraction",
+        "ReferenceInstall"
+      ],
+      "independent_mex": "g1_reference_extract_mex",
+      "source_directory": "adapters/matlab",
+      "core_entry": "install_reference",
+      "removed_roundtrip": "Reference -> 428-vector -> OCS2 Packet",
+      "ocp_consumer": "cpp/problem/reference/ExternalReferenceAdapter.h",
+      "removed_unused_readers": [
+        "loadPackets CSV",
+        "readBinaryPacket"
+      ],
+      "preserves_user_observation_wiring": true,
+      "evidence": "build/reference_split",
+      "reference_packets_exact": 2401,
+      "mpc_updates": 289,
+      "byte_identical_logs": {
+        "planner_samples.csv": true,
+        "policy_knots.csv": true,
+        "gait_queries.csv": true,
+        "adapter_consumption.csv": true
+      },
+      "physical_simulation": false
     }
   },
   "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",

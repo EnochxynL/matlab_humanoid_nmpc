@@ -43,7 +43,7 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 | `cpp/include/g1_controller/` | 不暴露 MATLAB/ROS/OCS2 类型的公开数据类型 |
 | `cpp/controller/` | 核心实例、状态缓存、求解线程与原调度 |
 | `cpp/problem/humanoid_wb_mpc/src/dynamics/` | 原逆动力学辅助计算 |
-| `cpp/data/reference/`、`time/` | 原参考消费与 canonical time |
+| `cpp/problem/reference/`、`cpp/data/time/` | OCP 参考消费与 canonical time |
 | `cpp/data/diagnostics/` | 原控制链诊断 |
 | `assets/`、`config/`、`data/` | 网格、URDF、任务与物理参数 |
 | `cpp/problem/` | 原全身 OCP 数学和 composition root |
@@ -110,7 +110,7 @@ python3 scripts/verify_dependencies.py
 ### 控制数据流边界
 
 - 观测转换、检查与重排位于 Simulink 和独立观测 MEX；核心不再维护 `RobotState` 中间容器。
-- `data/reference/ReferenceConversion`：参考容器与既有 OCP 参考包之间的格式转换。
+- `problem/reference/ExternalReferenceAdapter`：求解前消费外部参考；参考检查位于独立 MATLAB adapter。
 - `controller/WBMpcController`：`updatePolicy` 判断更新时刻并等待必要的求解完成；
   `queryPolicy` 只查询已有策略，不触发求解；`inverseDynamics` 计算前馈力矩。
 - `controller/G1Controller`：按顺序协调上述阶段，保留 tick/策略身份、缓存和生命周期门禁。
@@ -145,10 +145,12 @@ cmake --build build/observation --parallel 1
 ```
 
 设置 `-DG1_BUILD_MATLAB=OFF` 可仅构建纯 C++ 静态库，不需要 MATLAB。
-主工程的 `scripts/build_mex.sh` 会同时构建规划器、观测转换和观测提取三个 MEX。
+主工程的 `scripts/build_mex.sh` 会同时构建规划器、观测转换、观测提取和参考提取四个 MEX。
 
 纯 MATLAB 敏感公式候选的严格 FAIL 证据保留在忽略目录 `build/observation_dataflow/`。
 
 `ObservationPrepare` 已拆成两个顶层节点：`ObservationExtraction` 调用独立、无状态的 `g1_observation_extract_mex(raw74, x58, jointIndices23)`，检查观测及复制字段并输出 `[tick; canonical_time; raw_time]`；`ObservationInstall` 调用 `g1_ocp_mex('install_observation', x58, identity3)`，检查调用连续性并登记观测。旧 `prepare_observation`、`prepare_ocp_observation`、`convert_observation`、`query` 和 `step` 原始观测入口已删除；核心只接收已提取的观测。可运行 `addpath tests; validate_observation_split` 检查独立提取、拒绝非法输入及完整策略回放；本次未重跑物理行走。
 
 独立观测 MEX 的辅助内核现与包装同放在 `adapters/matlab/`，拥有独立 CMake target；`cpp/` 仅保留控制核心。旧 `RobotState`、原始观测转换、关节映射容器及未使用的硬件接口占位代码已删除。机器人模型仍由原 Pinocchio/URDF OCP 路径加载，本次没有更改模型或数学定义。
+
+参考路径为 `ReferenceExtraction → ReferenceInstall`。独立 `g1_reference_extract_mex(reference428)` 检查字段并原样输出，不依赖核心、OCS2 或 Pinocchio；辅助源码与 MEX 包装位于 `adapters/matlab/`。安装节点调用 `g1_ocp_mex('install_reference', reference428)`，核心直接将具名参考转换为 OCS2 容器，不再通过428向量往返。旧 `reference` 命令和 `cpp/data/reference/ReferenceConversion` 已删除。OCP 消费适配器移至 `cpp/problem/reference/`，未使用的 CSV/二进制读取逻辑已移除。运行 `addpath tests; validate_reference_split` 可验证字段逐位一致、非法输入拒绝和完整策略回放；本次没有重跑物理行走。

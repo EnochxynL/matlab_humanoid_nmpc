@@ -1,5 +1,4 @@
 add_library(g1_controller_core SHARED
-  data/reference/ReferenceConversion.cpp
   controller/G1Controller.cpp
   controller/WBMpcController.cpp)
 set_target_properties(g1_controller_core PROPERTIES OUTPUT_NAME g1_controller)

@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
-#include "data/reference/ReferenceConversion.h"
 #include <stdexcept>
 
 namespace g1_controller {
@@ -72,22 +71,6 @@ struct G1Controller::Impl {
         context->structure);
     context->configure(*controller);
   }
-/**
- * @brief 将内部兼容参考向量转换为 OCP 参考包。
- * 忽略未发布及同 tick 重复包；有效目标数只能为1或3，事件数为1至64。
- * 保存最新包，供求解器同步参考管理回调读取；不是立即求解。
- */
-  void reference(const double *a) {
-    if (!context)
-      throw std::runtime_error("Initialize MEX first");
-    if (!a[1])
-      return;
-    if (sequence && context->currentPacket.tick == static_cast<uint64_t>(a[0]))
-      return;
-    auto p = g1_controller::reference::decodeReference(a, ++sequence);
-    context->currentPacket = std::move(p);
-  }
-
   PlannerTick tickIdentity() const {
     if (!controller || preparedTick == UINT64_MAX)
       throw std::runtime_error("Prepare observation first");
@@ -185,13 +168,24 @@ void G1Controller::initialize(const ControllerConfig &config) {
   impl_->init(config.projectRoot, config.logDirectory);
 }
 void G1Controller::shutdown() noexcept { impl_->close(); }
-/**
- * @brief 保留内部428元素参考适配格式，校验数值后更新参考缓存。
- */
+/** @brief 安装具名参考：只构造 OCS2 容器并写入缓存；不再往返428向量。 */
 void G1Controller::setReference(const Reference &r) {
-  const auto a = g1_controller::reference::encodeReference(r);
-  requireFinite(a.data(), a.size());
-  impl_->reference(a.data());
+  if(!impl_->context) throw std::runtime_error("Initialize MEX first");
+  if(!r.publish || (impl_->sequence && impl_->context->currentPacket.tick==r.tick)) return;
+  if((r.targetCount!=1 && r.targetCount!=3)||r.eventCount<1||r.eventCount>64)
+    throw std::runtime_error("Reference shape rejected");
+  task5a::Packet p;
+  p.tick=r.tick;p.session=1;p.sequence=++impl_->sequence;
+  for(size_t k=0;k<r.targetCount;++k){
+    p.target.timeTrajectory.push_back(r.targetTimes[k]);
+    p.target.stateTrajectory.emplace_back(Eigen::Map<const vector_t>(r.targetStates[k].data(),58));
+    p.target.inputTrajectory.emplace_back(Eigen::Map<const vector_t>(r.targetInputs[k].data(),35));
+  }
+  p.schedule.eventTimes.assign(r.eventTimes.begin(),r.eventTimes.begin()+r.eventCount);
+  p.schedule.modeSequence.assign(r.modes.begin(),r.modes.begin()+r.eventCount+1);
+  p.terminal=r.terminalTime;p.swing=r.swingParameters;
+  for(size_t k=0;k<4;++k)p.filtered[k]=r.filteredCommand[k];
+  impl_->context->currentPacket=std::move(p);
 }
 
 PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDimension>& state,

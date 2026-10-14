@@ -7,9 +7,7 @@
 #include <ocs2_oc/synchronized_module/ReferenceManagerDecorator.h>
 #include <humanoid_common_mpc/reference_manager/SwitchedModelReferenceManager.h>
 #include <functional>
-#include <map>
 #include <fstream>
-#include <sstream>
 #include <iomanip>
 namespace task5a {
 struct Packet {
@@ -21,37 +19,6 @@ struct Packet {
  double terminal=0;
  std::array<double,8>swing={.05,-0.0,.08,-.001,.4,-.15,.3,.005};
 };
-inline std::map<uint64_t,Packet>loadPackets(const std::string&file){
- std::ifstream in(file);if(!in)throw std::runtime_error("Cannot open Simulink semantic packets");std::string line;std::getline(in,line);std::map<uint64_t,Packet>out;
- while(std::getline(in,line)){
-  std::stringstream row(line);std::string token;std::vector<std::string>v;while(std::getline(row,token,','))v.push_back(token);if(v.size()!=6)throw std::runtime_error("Bad semantic CSV row");
-  uint64_t tick=std::stoull(v[0]);auto&p=out[tick];p.tick=tick;double t=std::stod(v[1]);if(t!=CanonicalControlTime::time(tick))throw std::runtime_error("Packet time identity mismatch");int knot=std::stoi(v[3]),j=std::stoi(v[4]);double value=std::stod(v[5]);auto kind=v[2];
-  if(kind=="filtered")p.filtered[j]=value;
-  else if(kind=="active_time"){p.target.timeTrajectory.push_back(value);p.target.stateTrajectory.push_back(ocs2::vector_t::Zero(58));p.target.inputTrajectory.push_back(ocs2::vector_t::Zero(35));}
-  else if(kind=="active_state")p.target.stateTrajectory.at(knot)[j]=value;
-  else if(kind=="active_input")p.target.inputTrajectory.at(knot)[j]=value;
-  else if(kind=="event")p.schedule.eventTimes.push_back(value);
-  else if(kind=="mode")p.schedule.modeSequence.push_back(static_cast<size_t>(value));
-  else if(kind=="swing_parameter")p.swing.at(j)=value;
-  else if(kind=="adapter_terminal")p.terminal=value;
- }
- uint64_t seq=0;for(auto&[tick,p]:out)p.sequence=++seq;return out;
-}
-inline Packet readBinaryPacket(const std::string&file){
- std::ifstream in(file,std::ios::binary);if(!in)throw std::runtime_error("G: Missing atomic semantic packet");
- auto integer=[&](){uint64_t v=0;in.read(reinterpret_cast<char*>(&v),8);if(!in)throw std::runtime_error("G: Truncated semantic packet");return v;};
- auto scalar=[&](){double v=0;in.read(reinterpret_cast<char*>(&v),8);if(!in)throw std::runtime_error("G: Truncated semantic packet");return v;};
- if(integer()!=1413567285||integer()!=1)throw std::runtime_error("G: Semantic protocol magic/version rejected");
- Packet p;p.session=integer();p.epoch=integer();p.sequence=integer();p.tick=integer();auto n=integer(),m=integer();
- if((n!=1&&n!=3)||m==0||m>64)throw std::runtime_error("G: Semantic capacity rejected");
- for(uint64_t k=0;k<n;++k){p.target.timeTrajectory.push_back(scalar());p.target.stateTrajectory.push_back(ocs2::vector_t::Zero(58));p.target.inputTrajectory.push_back(ocs2::vector_t::Zero(35));}
- for(auto&v:p.target.stateTrajectory)for(int j=0;j<58;++j)v[j]=scalar();
- for(auto&v:p.target.inputTrajectory)for(int j=0;j<35;++j)v[j]=scalar();
- for(uint64_t k=0;k<m;++k)p.schedule.eventTimes.push_back(scalar());
- for(uint64_t k=0;k<=m;++k)p.schedule.modeSequence.push_back(integer());
- p.terminal=scalar();for(auto&v:p.swing)v=scalar();for(int j=0;j<4;++j)p.filtered[j]=scalar();
- if(integer()!=1413567285||in.peek()!=std::char_traits<char>::eof())throw std::runtime_error("G: Semantic packet framing rejected");return p;
-}
 // Preserve the original reference-manager object already held by OCP costs,
 // constraints and precomputation. The public GaitSchedule supports an empty
 // template (continue forever): install it once, then feed the sender's complete

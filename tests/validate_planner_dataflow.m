@@ -13,7 +13,7 @@ setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
 envCleanup = onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
 g1_ocp_mex('init',root,folder);
 cleanup = onCleanup(@()g1_ocp_mex('close'));
-g1_ocp_mex('reference',fixture.ref(1,:)');
+g1_ocp_mex('install_reference',g1_reference_extract_mex(fixture.ref(1,:)'));
 identity=g1_observation_extract_mex(fixture.raw(1,:)',golden.expected(1,:)',double(cfg.mpcIndices(:)'));
 token = g1_ocp_mex('install_observation',golden.expected(1,:)',identity);
 assertRejected(@()g1_ocp_mex('query_policy',token));

@@ -7,7 +7,7 @@
 #include "controller/WBMpcController.h"
 #include "data/diagnostics/StructuralObserver.h"
 #include "data/diagnostics/TimeLog.h"
-#include "data/reference/ExternalReferenceAdapter.h"
+#include "problem/reference/ExternalReferenceAdapter.h"
 #include "data/time/CanonicalControlTime.h"
 
 #include <humanoid_wb_mpc/WBMpcInterface.h>
@@ -45,7 +45,6 @@ struct PlannerContext {
   std::shared_ptr<task5a::ExternalReferenceAdapter> external;
   std::shared_ptr<task5b::StructuralObserver> structure;
   task5a::Packet currentPacket;
-  std::map<uint64_t, task5a::Packet> packets;
   bool migrated;
   uint64_t expectedSession = 0;
 /**

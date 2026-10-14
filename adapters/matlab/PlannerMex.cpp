@@ -141,7 +141,7 @@ mxArray* encodeTick(const g1_controller::PlannerTick& tick) {
 /**
  * @brief MEX 命令分发入口，仅暴露当前分阶段运行接口。
  * init(root,folder)：创建核心并 mexLock，防止运行中卸载；close：关闭并解锁。
- * reference(r428)：提交参考。
+ * install_reference(r428)：安装已提取参考。
  * install_observation(x58, identity3) → tick3：登记独立提取的观测，不求解。
  * update_mpc(tick3,request) → tick3：校验外部更新判断，等待必要求解完成。
  * query_policy(tick3) → p95：只查询已准备好的策略，不触发求解。
@@ -178,9 +178,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       closeController();
       if (mexIsLocked())
         mexUnlock();
-    } else if (command == "reference") {
+    } else if (command == "install_reference") {
       if (nrhs != 2)
-        throw std::runtime_error("reference requires 428 values");
+        throw std::runtime_error("install_reference requires 428 values");
       const double *values = readDoubles(prhs[1], 428);
       runtime().setReference(decodeReference(values));
     } else if (command == "install_observation") {
