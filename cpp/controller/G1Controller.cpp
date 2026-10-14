@@ -5,11 +5,11 @@
  * 不在这里定义 OCP 方程；OCP 组装见 PlannerContext 和 WBMpcInterface。
  */
 #include "G1Controller.h"
-#include "whole_body/PlannerContext.h"
+#include "problem/PlannerContext.h"
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
-#include <robot_model/RobotState.h>
+#include <data/observation/RobotState.h>
 #include <stdexcept>
 
 namespace g1_controller {

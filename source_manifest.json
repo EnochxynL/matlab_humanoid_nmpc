@@ -87,8 +87,10 @@
     "robot_model"
   ],
   "source_layout": {
-    "whole_body": "cpp/whole_body",
-    "robot": "cpp/robot",
+    "whole_body": "cpp/problem",
+    "observation": "cpp/data/observation",
+    "action": "cpp/data/action",
+    "description": "cpp/data/description",
     "ocs2_snapshot": "third_party/ocs2",
     "build_adapter": "cmake/NumericalLibraries.cmake",
     "runtime_artifacts": "build/standalone/lib"
@@ -108,10 +110,10 @@
     "business_source_review": {
       "business_source_files": 117,
       "changed_source_files": [
-        "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/command/WalkingVelocityCommand.h",
-        "cpp/whole_body/humanoid_common_mpc/include/humanoid_common_mpc/gait/GaitScheduleUpdater.h",
-        "cpp/whole_body/humanoid_wb_mpc/include/humanoid_wb_mpc/mrt/WBMpcMrtJointController.h",
-        "cpp/robot/robot_model/src/RobotDescription.cpp"
+        "cpp/problem/humanoid_common_mpc/include/humanoid_common_mpc/command/WalkingVelocityCommand.h",
+        "cpp/problem/humanoid_common_mpc/include/humanoid_common_mpc/gait/GaitScheduleUpdater.h",
+        "cpp/problem/humanoid_wb_mpc/include/humanoid_wb_mpc/mrt/WBMpcMrtJointController.h",
+        "cpp/data/description/RobotDescription.cpp"
       ]
     },
     "retained_physics_reference_generated_math": "Byte unchanged from c93943d",

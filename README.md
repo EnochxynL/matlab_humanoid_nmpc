@@ -42,12 +42,14 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 | `adapters/matlab/` | 六个原 MEX 命令、协议转换和 MATLAB 实例生命周期 |
 | `cpp/include/g1_controller/` | 不暴露 MATLAB/ROS/OCS2 类型的公开数据类型 |
 | `cpp/controller/` | 核心实例、状态缓存、求解线程与原调度 |
-| `cpp/whole_body/humanoid_wb_mpc/src/dynamics/` | 原逆动力学辅助计算 |
-| `cpp/reference/`、`time/` | 原参考消费与 canonical time |
-| `cpp/diagnostics/` | 原控制链诊断 |
+| `cpp/problem/humanoid_wb_mpc/src/dynamics/` | 原逆动力学辅助计算 |
+| `cpp/data/reference/`、`time/` | 原参考消费与 canonical time |
+| `cpp/data/diagnostics/` | 原控制链诊断 |
 | `assets/`、`config/`、`data/` | 网格、URDF、任务与物理参数 |
-| `cpp/whole_body/` | 原全身 OCP 数学和 composition root |
-| `cpp/robot/` | 原机器人状态、动作和模型描述 |
+| `cpp/problem/` | 原全身 OCP 数学和 composition root |
+| `cpp/data/observation/` | 机器人观测状态 |
+| `cpp/data/action/` | 关节动作数据 |
+| `cpp/data/description/` | 机器人描述、关节映射及共用数值类型 |
 | `cpp/extensions/` | 自定义罚函数、软约束所有权、权重与模式元数据、六维足端接口及旋转辅助函数 |
 | `cpp/interfaces/` | 内部纯 C++ 观察接口 |
 | `third_party/ocs2/` | 官方 OCS2 固定提交 submodule，原文件未改写 |

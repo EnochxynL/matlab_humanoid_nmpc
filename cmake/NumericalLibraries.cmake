@@ -7,7 +7,7 @@ target_link_libraries(g1_ocp_extensions PUBLIC ocs2_core ocs2_robotic_tools)
 add_library(ocs2_thirdparty INTERFACE)
 target_include_directories(ocs2_thirdparty SYSTEM INTERFACE "${G1_OCS2_SOURCE_DIR}/ocs2_thirdparty/include")
 add_library(robot_core INTERFACE)
-target_include_directories(robot_core INTERFACE "${G1_CORE_DIR}/robot/robot_core/include")
+target_include_directories(robot_core INTERFACE "${G1_CORE_DIR}")
 target_link_libraries(robot_core INTERFACE Eigen3::Eigen)
 
 add_library(ocs2_core SHARED
@@ -95,7 +95,7 @@ add_library(ocs2_core SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/penalties/penalties/SquaredHingePenalty.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/thread_support/ThreadPool.cpp"
 )
-target_include_directories(ocs2_core PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_core/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(ocs2_core PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_core/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_core PUBLIC ocs2_thirdparty ${Boost_LIBRARIES} $<LINK_ONLY:Boost::log> $<LINK_ONLY:Boost::log_setup> $<LINK_ONLY:Boost::system> Eigen3::Eigen OpenMP::OpenMP_CXX Threads::Threads ${CMAKE_DL_LIBS})
 target_compile_options(ocs2_core PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
@@ -133,7 +133,7 @@ add_library(ocs2_oc SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_oc/src/search_strategy/FilterLinesearch.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_oc/src/trajectory_adjustment/TrajectorySpreading.cpp"
 )
-target_include_directories(ocs2_oc PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_oc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(ocs2_oc PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_oc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_oc PUBLIC ocs2_core)
 target_compile_options(ocs2_oc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
@@ -145,7 +145,7 @@ add_library(ocs2_mpc SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_mpc/src/MRT_BASE.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_mpc/src/MPC_MRT_Interface.cpp"
 )
-target_include_directories(ocs2_mpc PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(ocs2_mpc PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_mpc PUBLIC ocs2_core ocs2_oc)
 target_compile_options(ocs2_mpc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
@@ -155,7 +155,7 @@ add_library(ocs2_qp_solver SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_test_tools/ocs2_qp_solver/src/QpSolver.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_test_tools/ocs2_qp_solver/src/QpTrajectories.cpp"
 )
-target_include_directories(ocs2_qp_solver PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_test_tools/ocs2_qp_solver/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(ocs2_qp_solver PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_test_tools/ocs2_qp_solver/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_qp_solver PUBLIC ocs2_core ocs2_oc)
 target_compile_options(ocs2_qp_solver PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
@@ -174,7 +174,7 @@ add_library(ocs2_ddp SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_ddp/src/DDP_Settings.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_ddp/src/DDP_HelperFunctions.cpp"
 )
-target_include_directories(ocs2_ddp PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_ddp/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(ocs2_ddp PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_ddp/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_ddp PUBLIC ocs2_core ocs2_oc ocs2_mpc ocs2_qp_solver)
 target_compile_options(ocs2_ddp PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
@@ -182,7 +182,7 @@ add_library(ocs2_robotic_tools SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_robotic_tools/src/common/RotationTransforms.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_robotic_tools/src/common/LoopshapingRobotInterface.cpp"
 )
-target_include_directories(ocs2_robotic_tools PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_robotic_tools/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(ocs2_robotic_tools PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_robotic_tools/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_robotic_tools PUBLIC ocs2_oc ocs2_core ocs2_thirdparty)
 target_compile_options(ocs2_robotic_tools PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
@@ -193,7 +193,7 @@ add_library(ocs2_pinocchio_interface SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_pinocchio_interface/src/PinocchioEndEffectorKinematicsCppAd.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_pinocchio_interface/src/urdf.cpp"
 )
-target_include_directories(ocs2_pinocchio_interface PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_pinocchio_interface/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(ocs2_pinocchio_interface PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_pinocchio_interface/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_pinocchio_interface PUBLIC ocs2_core ocs2_oc ocs2_robotic_tools pinocchio::pinocchio ${urdfdom_LIBRARIES})
 target_compile_options(ocs2_pinocchio_interface PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
@@ -206,7 +206,7 @@ add_library(ocs2_centroidal_model SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_centroidal_model/src/FactoryFunctions.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_centroidal_model/src/ModelHelperFunctions.cpp"
 )
-target_include_directories(ocs2_centroidal_model PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_centroidal_model/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(ocs2_centroidal_model PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_centroidal_model/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_centroidal_model PUBLIC ocs2_core ocs2_robotic_tools ocs2_pinocchio_interface)
 target_compile_options(ocs2_centroidal_model PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
@@ -214,7 +214,7 @@ add_library(hpipm_catkin SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/hpipm_catkin/src/HpipmInterface.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/hpipm_catkin/src/HpipmInterfaceSettings.cpp"
 )
-target_include_directories(hpipm_catkin PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/hpipm_catkin/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(hpipm_catkin PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/hpipm_catkin/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(hpipm_catkin PUBLIC ocs2_core ocs2_oc ocs2_qp_solver hpipm blasfeo)
 target_compile_options(hpipm_catkin PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
@@ -223,74 +223,74 @@ add_library(ocs2_sqp SHARED
   "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/ocs2_sqp/src/SqpSettings.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/ocs2_sqp/src/SqpSolver.cpp"
 )
-target_include_directories(ocs2_sqp PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/ocs2_sqp/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(ocs2_sqp PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/ocs2_sqp/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_sqp PUBLIC ocs2_core ocs2_mpc ocs2_oc ocs2_qp_solver hpipm_catkin)
 target_compile_options(ocs2_sqp PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
 add_library(robot_model SHARED
-  "${G1_CORE_DIR}/robot/robot_model/src/RobotDescription.cpp"
-  "${G1_CORE_DIR}/robot/robot_model/src/RobotState.cpp"
+  "${G1_CORE_DIR}/data/description/RobotDescription.cpp"
+  "${G1_CORE_DIR}/data/observation/RobotState.cpp"
 )
-target_include_directories(robot_model PUBLIC "${G1_CORE_DIR}/robot/robot_model/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(robot_model PUBLIC "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(robot_model PUBLIC robot_core ${urdfdom_LIBRARIES} absl::flat_hash_map)
 target_compile_options(robot_model PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
 add_library(humanoid_common_mpc SHARED
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/contact/ContactCenterPoint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/contact/ContactPolygon.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/contact/ContactRectangle.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/pinocchio_model/pinocchioUtils.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/pinocchio_model/createPinocchioModel.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/pinocchio_model/DynamicsHelperFunctions.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/common/ModelSettings.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/constraint/JointLimitsSoftConstraint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/constraint/FootCollisionConstraint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/constraint/ZeroWrenchConstraint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/constraint/EndEffectorKinematicsTwistConstraint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/constraint/FrictionForceConeConstraint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/constraint/ContactMomentXYConstraintCppAd.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/constraint/EndEffectorKinematicsLinearVelConstraint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/cost/StateInputQuadraticCost.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/cost/EndEffectorKinematicCostHelpers.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/cost/EndEffectorKinematicsQuadraticCost.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/cost/ExternalTorqueQuadraticCostAD.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/command/TargetTrajectoriesCalculatorBase.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/gait/Gait.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/gait/GaitSchedule.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/gait/ModeSequenceTemplate.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/gait/GaitScheduleUpdater.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/swing_foot_planner/CubicSpline.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/swing_foot_planner/SplineCpg.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/swing_foot_planner/SwingTrajectoryPlanner.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/reference_manager/SwitchedModelReferenceManager.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/reference_manager/ProceduralMpcMotionManager.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/HumanoidCostConstraintFactory.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/HumanoidPreComputation.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/src/initialization/WeightCompInitializer.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactCenterPoint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactPolygon.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactRectangle.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/pinocchio_model/pinocchioUtils.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/pinocchio_model/createPinocchioModel.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/pinocchio_model/DynamicsHelperFunctions.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/common/ModelSettings.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/JointLimitsSoftConstraint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/FootCollisionConstraint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/ZeroWrenchConstraint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/EndEffectorKinematicsTwistConstraint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/FrictionForceConeConstraint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/ContactMomentXYConstraintCppAd.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/EndEffectorKinematicsLinearVelConstraint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/cost/StateInputQuadraticCost.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/cost/EndEffectorKinematicCostHelpers.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/cost/EndEffectorKinematicsQuadraticCost.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/cost/ExternalTorqueQuadraticCostAD.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/command/TargetTrajectoriesCalculatorBase.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/gait/Gait.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/gait/GaitSchedule.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/gait/ModeSequenceTemplate.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/gait/GaitScheduleUpdater.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/swing_foot_planner/CubicSpline.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/swing_foot_planner/SplineCpg.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/swing_foot_planner/SwingTrajectoryPlanner.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/reference_manager/SwitchedModelReferenceManager.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/reference_manager/ProceduralMpcMotionManager.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/HumanoidCostConstraintFactory.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/HumanoidPreComputation.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/initialization/WeightCompInitializer.cpp"
 )
-target_include_directories(humanoid_common_mpc PUBLIC "${G1_CORE_DIR}/whole_body/humanoid_common_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(humanoid_common_mpc PUBLIC "${G1_CORE_DIR}/problem/humanoid_common_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(humanoid_common_mpc PUBLIC g1_ocp_extensions ocs2_core ocs2_mpc ocs2_pinocchio_interface pinocchio::pinocchio)
 target_compile_options(humanoid_common_mpc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
 add_library(humanoid_wb_mpc SHARED
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/dynamics/DynamicsHelperFunctions.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/dynamics/WBAccelDynamicsAD.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/end_effector/PinocchioEndEffectorDynamicsCppAd.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/constraint/EndEffectorDynamicsLinearAccConstraint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/constraint/EndEffectorDynamicsAccelerationsConstraint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/constraint/ZeroAccelerationConstraintCppAd.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/constraint/SwingLegVerticalConstraintCppAd.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/constraint/JointMimicDynamicsConstraint.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/WBMpcInterface.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/WBMpcPreComputation.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/cost/EndEffectorDynamicsCostHelpers.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/cost/EndEffectorDynamicsQuadraticCost.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/cost/EndEffectorDynamicsFootCost.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/cost/JointTorqueCostCppAd.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/command/WBMpcTargetTrajectoriesCalculator.cpp"
-  "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/src/mrt/WBMpcMrtJointController.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/dynamics/DynamicsHelperFunctions.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/dynamics/WBAccelDynamicsAD.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/end_effector/PinocchioEndEffectorDynamicsCppAd.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/constraint/EndEffectorDynamicsLinearAccConstraint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/constraint/EndEffectorDynamicsAccelerationsConstraint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/constraint/ZeroAccelerationConstraintCppAd.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/constraint/SwingLegVerticalConstraintCppAd.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/constraint/JointMimicDynamicsConstraint.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/WBMpcInterface.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/WBMpcPreComputation.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/cost/EndEffectorDynamicsCostHelpers.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/cost/EndEffectorDynamicsQuadraticCost.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/cost/EndEffectorDynamicsFootCost.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/cost/JointTorqueCostCppAd.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/command/WBMpcTargetTrajectoriesCalculator.cpp"
+  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/mrt/WBMpcMrtJointController.cpp"
 )
-target_include_directories(humanoid_wb_mpc PUBLIC "${G1_CORE_DIR}/whole_body/humanoid_wb_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/whole_body")
+target_include_directories(humanoid_wb_mpc PUBLIC "${G1_CORE_DIR}/problem/humanoid_wb_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(humanoid_wb_mpc PUBLIC humanoid_common_mpc robot_model ocs2_sqp ocs2_ddp ocs2_centroidal_model)
 target_compile_options(humanoid_wb_mpc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 

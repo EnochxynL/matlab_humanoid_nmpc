@@ -34,19 +34,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <mutex>
 #include <limits>
-#include "time/ControlTime.h"
+#include "data/time/ControlTime.h"
 #include <ocs2_mpc/MPC_MRT_Interface.h>
 
 #include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
-#include "diagnostics/PolicyObserver.h"
-#include <robot_model/ControllerBase.h>
+#include "data/diagnostics/PolicyObserver.h"
+#include <controller/ControllerBase.h>
 #include "humanoid_common_mpc/reference_manager/ProceduralMpcMotionManager.h"
-#include "robot_model/RobotDescription.h"
+#include "data/description/RobotDescription.h"
 
 namespace ocs2::humanoid {
 
-class WaveBControlTimeWBMpcController final : public ::robot::model::ControlBase {
+class WaveBControlTimeWBMpcController final : public ::g1_controller::ControlBase {
  public:
  private:
   void setObservation(const SystemObservation& observation);

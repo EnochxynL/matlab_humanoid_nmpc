@@ -7,7 +7,7 @@ target_include_directories(g1_controller_core
          "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/controller>"
          "$<INSTALL_INTERFACE:include>"
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
-          "${CMAKE_CURRENT_SOURCE_DIR}/whole_body")
+          "${CMAKE_CURRENT_SOURCE_DIR}/problem")
 target_link_libraries(g1_controller_core PRIVATE humanoid_wb_mpc)
 if(UNIX AND NOT APPLE)
   target_link_options(g1_controller_core PRIVATE -Wl,--disable-new-dtags)
