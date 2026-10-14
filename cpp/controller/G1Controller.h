@@ -39,6 +39,8 @@ public:
   PlannerTick prepareObservation(const Observation &observation);
   // Simulink 已完成坐标转换的观测入口；核心只校验并赋值，不重新计算坐标。
   PlannerTick prepareOcpObservation(const Observation &raw, const std::array<double, StateDimension>& state);
+  // 独立 Extraction 已校验观测；这里只登记状态和 [tick, canonical time, raw time]。
+  PlannerTick installOcpObservation(const std::array<double, StateDimension>& state, const std::array<double,3>& identity);
   // 保留的 C++ 转换参考后端，用于独立数学对照，不推进 tick 或求解器。
   std::array<double, StateDimension> convertObservation(const Observation &raw) const;
   PlannerTick updateMpc(const PlannerTick &tick, bool requested);

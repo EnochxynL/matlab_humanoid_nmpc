@@ -221,6 +221,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       std::array<double, 58> state;
       std::copy_n(values, 58, state.begin());
       plhs[0] = encodeTick(runtime().prepareOcpObservation(raw, state));
+    } else if (command == "install_observation") {
+      if(nrhs!=3 || nlhs!=1) throw std::runtime_error("install_observation requires x58, identity3 and one output");
+      std::array<double,58> state;
+      std::array<double,3> identity;
+      std::copy_n(readDoubles(prhs[1],58),58,state.begin());
+      std::copy_n(readDoubles(prhs[2],3),3,identity.begin());
+      plhs[0]=encodeTick(runtime().installOcpObservation(state,identity));
     } else if (command == "convert_observation") {
       if (nrhs != 2 || nlhs != 1) throw std::runtime_error("convert_observation requires o74 and one output");
       const auto state = runtime().convertObservation(decodeObservation(readDoubles(prhs[1], 74)));

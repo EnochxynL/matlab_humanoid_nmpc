@@ -5,4 +5,7 @@ namespace g1_controller::observation {
 std::array<double,3> quaternionToEulerZyx(const std::array<double,4>& wxyz);
 std::array<double,3> rotateLinearVelocity(const std::array<double,4>& wxyz, const std::array<double,3>& local);
 std::array<double,3> localAngularVelocityToEulerRates(const std::array<double,3>& euler, const std::array<double,3>& omega);
+// Returns [physical tick, canonical time, raw backend time]; joint indices are MATLAB 1-based.
+std::array<double,3> extractObservation(const std::array<double,74>& raw,
+    const std::array<double,58>& state, const std::array<double,23>& jointIndices);
 }

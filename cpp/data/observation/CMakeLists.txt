@@ -19,4 +19,6 @@ if(G1_BUILD_MATLAB)
   get_filename_component(g1_observation_root "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
   matlab_add_mex(NAME g1_observation_mex SRC "${g1_observation_root}/adapters/matlab/ObservationMex.cpp"
     LINK_TO g1_observation_kernels)
+  matlab_add_mex(NAME g1_observation_extract_mex SRC "${g1_observation_root}/adapters/matlab/ObservationExtractionMex.cpp"
+    LINK_TO g1_observation_kernels)
 endif()

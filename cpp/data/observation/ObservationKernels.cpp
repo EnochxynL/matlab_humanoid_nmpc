@@ -26,6 +26,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ObservationKernels.h"
 #include <Eigen/Geometry>
 #include <cmath>
+#include <algorithm>
+#include <stdexcept>
+#include <cstdint>
 namespace g1_controller::observation {
 namespace {
 std::array<double,3> copy(const Eigen::Vector3d& v) { return {v[0],v[1],v[2]}; }
@@ -49,4 +52,34 @@ std::array<double,3> localAngularVelocityToEulerRates(const std::array<double,3>
   const double tmp=sx*wy/cy+cx*wz/cy;
   return {tmp,cx*wy-sx*wz,wx+sy*tmp};
 }
+std::array<double,3> extractObservation(const std::array<double,74>& a,
+    const std::array<double,58>& state, const std::array<double,23>& indices) {
+  for(double v:a) if(!std::isfinite(v)) throw std::runtime_error("Nonfinite observation");
+  for(double v:state) if(!std::isfinite(v)) throw std::runtime_error("Nonfinite OCP state");
+  if(a[0]<0 || a[0]/.002>static_cast<double>(uint64_t{1}<<53))
+    throw std::runtime_error("Invalid physical time");
+  const auto tick=static_cast<uint64_t>(std::llround(a[0]/.002));
+  const double canonical=static_cast<double>(tick)*.002;
+  if(std::abs(a[0]-canonical)>1e-12) throw std::runtime_error("Raw backend time exceeds canonical physical tick tolerance");
+  if(a[3]<.35 || a[3]>1.3) throw std::runtime_error("Base height outside physical safety envelope");
+  const double pitch=std::asin(std::clamp(2*(a[4]*a[6]-a[7]*a[5]),-1.,1.));
+  const double roll=std::atan2(2*(a[4]*a[5]+a[6]*a[7]),1-2*(a[5]*a[5]+a[6]*a[6]));
+  if(std::abs(pitch)>.7853981633974483 || std::abs(roll)>.7853981633974483)
+    throw std::runtime_error("Tilt outside physical safety envelope");
+  if(std::abs(Eigen::Quaterniond(a[4],a[5],a[6],a[7]).norm()-1)>1e-6)
+    throw std::runtime_error("Quaternion rejected");
+  for(size_t j=0;j<3;++j) if(state[j]!=a[1+j]) throw std::runtime_error("OCP position identity mismatch");
+  bool seen[29]{};
+  for(size_t j=0;j<23;++j) {
+    const double value=indices[j];
+    if(!std::isfinite(value)||value<1||value>29||value!=std::floor(value))
+      throw std::runtime_error("Invalid joint index");
+    const auto k=static_cast<size_t>(value)-1;
+    if(seen[k]) throw std::runtime_error("Duplicate joint index");
+    seen[k]=true;
+    if(state[6+j]!=a[14+k] || state[35+j]!=a[43+k]) throw std::runtime_error("OCP joint mapping mismatch");
+  }
+  return {static_cast<double>(tick),canonical,a[0]};
+}
+
 }

@@ -231,6 +231,25 @@
         "fresh_process": true,
         "new_physical_simulation": false
       }
+    },
+    "observation_split": {
+      "extraction_block": "ObservationExtraction",
+      "extraction_mex": "g1_observation_extract_mex",
+      "extraction_state": "stateless, no controller dependency",
+      "identity_order": [
+        "physical_tick",
+        "canonical_time",
+        "raw_backend_time"
+      ],
+      "install_block": "ObservationInstall",
+      "install_command": "g1_ocp_mex install_observation",
+      "install_checks": "session/tick continuity, stage lifecycle, finite state, canonical identity",
+      "other_blocks_unchanged": true,
+      "numerical_validation": "build/observation_split/acceptance.json",
+      "ticks": 2401,
+      "mpc_updates": 289,
+      "policy_action_exact_equal": true,
+      "physical_simulation": false
     }
   },
   "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",

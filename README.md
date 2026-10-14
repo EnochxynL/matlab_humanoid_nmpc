@@ -152,3 +152,5 @@ cmake --build build/observation --parallel 1
 纯 MATLAB 敏感公式候选的严格 FAIL 证据保留在忽略目录 `build/observation_dataflow/`。
 
 观测迁移后的删除整理：调度器只接收已装填的 OCS2 观测，不再重复装填 RobotState 或生成 JointAction；未使用的旧 MRT 控制器和墙钟异步循环已移除。旧 MEX 观测入口仍保留必要的 `ObservationConversion` / `RobotState` 兼容实现，因此 `cpp/data/observation` 尚不能整体删除。
+
+`ObservationPrepare` 已拆成两个顶层节点：`ObservationExtraction` 调用独立、无状态的 `g1_observation_extract_mex(raw74, x58, jointIndices23)`，检查观测及复制字段并输出 `[tick; canonical_time; raw_time]`；`ObservationInstall` 调用 `g1_ocp_mex('install_observation', x58, identity3)`，检查调用连续性并登记观测。原有 MEX 入口仍保留兼容。可运行 `addpath tests; validate_observation_split` 检查独立提取、拒绝非法输入及完整策略回放；本次未重跑物理行走。

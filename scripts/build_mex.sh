@@ -8,4 +8,4 @@ cmake -S "$root" -B "$root/build/standalone" \
   -DCMAKE_PREFIX_PATH="${G1_NUMERICAL_PREFIX:-/opt/ros/jazzy}" \
   -DPYTHON_EXECUTABLE="${G1_BUILD_PYTHON:-/usr/bin/python3}" \
   -DMatlab_ROOT_DIR="${G1_MATLAB_ROOT:-/usr/local/MATLAB/R2025b}" "$@"
-cmake --build "$root/build/standalone" --target g1_ocp_mex g1_observation_mex --parallel 1
+cmake --build "$root/build/standalone" --target g1_ocp_mex g1_observation_mex g1_observation_extract_mex --parallel 1

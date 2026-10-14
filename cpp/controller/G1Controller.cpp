@@ -294,6 +294,36 @@ PlannerTick G1Controller::prepareOcpObservation(const Observation& raw, const st
   impl_->prepare(encoded.data(), state.data());
   return impl_->tickIdentity();
 }
+PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDimension>& state,
+                                               const std::array<double,3>& identity) {
+  requireFinite(state.data(),state.size());
+  requireFinite(identity.data(),identity.size());
+  auto& runtime=*impl_;
+  if(!runtime.controller) throw std::runtime_error("Initialize MEX first");
+  if(identity[0]<0 || identity[0]>static_cast<double>(uint64_t{1}<<53) || identity[0]!=std::floor(identity[0]))
+    throw std::runtime_error("Invalid extracted tick");
+  const auto tick=static_cast<uint64_t>(identity[0]);
+  if(identity[1]!=CanonicalControlTime::validate(tick,identity[2]))
+    throw std::runtime_error("Extracted canonical time identity mismatch");
+  if(runtime.preparedTick==tick) return runtime.tickIdentity();
+  if(runtime.preparedTick!=UINT64_MAX && runtime.preparedTick!=runtime.lastTick)
+    throw std::runtime_error("Query prepared observation before advancing tick");
+  if(runtime.lastTick!=UINT64_MAX && !runtime.actionReady)
+    throw std::runtime_error("Complete inverse dynamics before advancing policy tick");
+  if(runtime.lastTick!=UINT64_MAX && tick!=runtime.lastTick+1)
+    throw std::runtime_error("Nonsequential physical tick");
+  const double t=runtime.canonicalLog->accept(tick,identity[2],1,tick);
+  runtime.preparedObservation.state=Eigen::Map<const vector_t>(state.data(),StateDimension);
+  runtime.preparedObservation.time=t;
+  runtime.preparedObservation.input=vector_t::Zero(35);
+  runtime.preparedObservation.mode=3;
+  runtime.preparedTime=t;
+  runtime.preparedTick=tick;
+  runtime.expectedUpdate=runtime.lastTick==UINT64_MAX || runtime.controller->mpcUpdateDue(t);
+  runtime.updateReady=false;
+  runtime.lastRawTime=identity[2];
+  return runtime.tickIdentity();
+}
 std::array<double, StateDimension> G1Controller::convertObservation(const Observation& raw) const {
   if (!impl_->context) throw std::runtime_error("Initialize MEX first");
   const auto encoded = observation::encodeObservation(raw);
