@@ -288,7 +288,6 @@ add_library(humanoid_wb_mpc SHARED
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/cost/EndEffectorDynamicsFootCost.cpp"
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/cost/JointTorqueCostCppAd.cpp"
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/command/WBMpcTargetTrajectoriesCalculator.cpp"
-  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/mrt/WBMpcMrtJointController.cpp"
 )
 target_include_directories(humanoid_wb_mpc PUBLIC "${G1_CORE_DIR}/problem/humanoid_wb_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(humanoid_wb_mpc PUBLIC humanoid_common_mpc robot_model ocs2_sqp ocs2_ddp ocs2_centroidal_model)

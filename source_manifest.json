@@ -112,7 +112,7 @@
       "changed_source_files": [
         "cpp/problem/humanoid_common_mpc/include/humanoid_common_mpc/command/WalkingVelocityCommand.h",
         "cpp/problem/humanoid_common_mpc/include/humanoid_common_mpc/gait/GaitScheduleUpdater.h",
-        "cpp/problem/humanoid_wb_mpc/include/humanoid_wb_mpc/mrt/WBMpcMrtJointController.h",
+        "cpp/controller/WBMpcMrtJointController.h",
         "cpp/data/description/RobotDescription.cpp"
       ]
     },
