@@ -1,11 +1,12 @@
 add_library(g1_controller_core SHARED
-  controller/ControllerRuntime.cpp
+  controller/G1Controller.cpp
   controller/WBMpcController.cpp
   math/GeneratedFootCost.cpp
   math/GeometryInstallBridge.cpp)
 set_target_properties(g1_controller_core PROPERTIES OUTPUT_NAME g1_controller)
 target_include_directories(g1_controller_core
   PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/controller>"
          "$<INSTALL_INTERFACE:include>"
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
           "${CMAKE_CURRENT_SOURCE_DIR}/whole_body" ${math_includes})
@@ -18,6 +19,7 @@ if(UNIX AND NOT APPLE)
 endif()
 install(TARGETS g1_controller_core LIBRARY DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include)
+install(FILES controller/G1Controller.h DESTINATION include)
 option(G1_BUILD_TESTS "Build the public-API standalone replay driver" OFF)
 if(G1_BUILD_TESTS)
   add_executable(g1_core_replay "${PROJECT_SOURCE_DIR}/tests/core_replay.cpp")

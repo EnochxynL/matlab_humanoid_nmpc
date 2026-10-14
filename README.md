@@ -91,7 +91,7 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 python3 scripts/verify_dependencies.py
 ```
 
-公开入口为 `g1_controller::G1Controller`：`initialize`、`setReference`、`query`、`inverseDynamics`、`step`、`shutdown`。数据类型定义在 `cpp/include/g1_controller/G1Controller.h`，依赖只有标准 C++。保留的数学 authority 环境来自 `config/controller_environment.json`；standalone replay driver 给出了不借 MATLAB 设置该环境的示例。
+公开入口为 `g1_controller::G1Controller`：`initialize`、`setReference`、`query`、`inverseDynamics`、`step`、`shutdown`。控制器声明与实现位于 `cpp/controller/G1Controller.h` 和 `G1Controller.cpp`；公用数据类型定义在 `cpp/include/g1_controller/Types.h`，依赖只有标准 C++。保留的数学 authority 环境来自 `config/controller_environment.json`；standalone replay driver 给出了不借 MATLAB 设置该环境的示例。
 
 核心不包含 MATLAB SDK/MEX API；原生成数学文件未改写，项目独立类型头的标量类型与此前 SDK 通过静态断言核对。模型、协议、solver、权重和时间语义未改变。Pinocchio 等数值包当前仍安装于 `/opt/ros/jazzy`，这是发现安装包的前缀，不是 ROS 构建工具或通信依赖。
 

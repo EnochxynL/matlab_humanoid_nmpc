@@ -3,10 +3,10 @@
  * @brief MATLAB 与独立 G1 控制核心之间的薄适配层。
  * 只负责 mxArray 校验、固定长度向量编解码、实例生命周期及异常转换。
  * 机器人数学、求解调度和策略缓存均由 G1Controller 及其内部实现负责。
- * 阅读顺序：本文件 → G1Controller.h → ControllerRuntime.cpp。
+ * 阅读顺序：本文件 → G1Controller.h → G1Controller.cpp。
  * 下文数组偏移均为 C++ 从 0 开始的索引；MATLAB 索引需加 1。
  */
-#include "g1_controller/G1Controller.h"
+#include "G1Controller.h"
 #include "mex.h"
 
 #include <algorithm>
