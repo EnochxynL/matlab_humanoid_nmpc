@@ -2,7 +2,7 @@
 #include <humanoid_common_mpc/common/Types.h>
 #include <ocs2_core/misc/LinearInterpolation.h>
 #include <ocs2_sqp/SqpMpc.h>
-#include "interfaces/PolicyObserver.h"
+#include "diagnostics/PolicyObserver.h"
 #include <chrono>
 #include <filesystem>
 #include <fstream>
