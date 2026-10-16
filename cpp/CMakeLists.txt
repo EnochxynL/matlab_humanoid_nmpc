@@ -1,5 +1,6 @@
 add_library(g1_controller_core SHARED
   controller/G1Controller.cpp
+  controller/PlannerContext.cpp
   controller/WBMpcController.cpp)
 set_target_properties(g1_controller_core PROPERTIES OUTPUT_NAME g1_controller)
 target_include_directories(g1_controller_core

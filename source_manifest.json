@@ -307,6 +307,19 @@
         "adapter_consumption.csv": true
       },
       "physical_simulation": false
+    },
+    "planner_context_source_split": {
+      "declaration": "cpp/controller/PlannerContext.h",
+      "implementation": "cpp/controller/PlannerContext.cpp",
+      "reference_adapter": "cpp/controller/reference/ExternalReferenceAdapter.h",
+      "method_tokens_unchanged": true,
+      "adapter_tokens_unchanged": true,
+      "build_passed": true,
+      "ticks": 2401,
+      "mpc_updates": 289,
+      "exact_outputs": true,
+      "physical_simulation": false,
+      "evidence": "build/planner_context_split"
     }
   },
   "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",

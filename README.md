@@ -154,3 +154,5 @@ cmake --build build/observation --parallel 1
 独立观测 MEX 的辅助内核现与包装同放在 `adapters/matlab/`，拥有独立 CMake target；`cpp/` 仅保留控制核心。旧 `RobotState`、原始观测转换、关节映射容器及未使用的硬件接口占位代码已删除。机器人模型仍由原 Pinocchio/URDF OCP 路径加载，本次没有更改模型或数学定义。
 
 参考路径为 `ReferenceExtraction → ReferenceInstall`。独立 `g1_reference_extract_mex(reference428)` 检查字段并原样输出，不依赖核心、OCS2 或 Pinocchio；辅助源码与 MEX 包装位于 `adapters/matlab/`。安装节点调用 `g1_ocp_mex('install_reference', reference428)`，核心直接将具名参考转换为 OCS2 容器，不再通过428向量往返。旧 `reference` 命令和 `cpp/data/reference/ReferenceConversion` 已删除。OCP 消费适配器移至 `cpp/controller/reference/`，未使用的 CSV/二进制读取逻辑已移除。运行 `addpath tests; validate_reference_split` 可验证字段逐位一致、非法输入拒绝和完整策略回放；本次没有重跑物理行走。
+
+规划上下文声明与实现分别位于 `cpp/controller/PlannerContext.h` 和 `.cpp`：头文件展示成员依赖，构造、参考回调注册及诊断配置在实现文件中。`controller/reference/ExternalReferenceAdapter.h` 已按参考取得、校验、安装、委托更新和结果核对整理注释与格式；本轮未改名或调整状态归属。
