@@ -2,14 +2,14 @@
 #include <humanoid_common_mpc/common/Types.h>
 #include <ocs2_core/misc/LinearInterpolation.h>
 #include <ocs2_sqp/SqpMpc.h>
-#include "data/diagnostics/PolicyObserver.h"
+#include "controller/data/diagnostics/PolicyObserver.h"
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <mutex>
 inline double wallTime(){return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();}
-#include "data/diagnostics/FootLog.h"
+#include "controller/data/diagnostics/FootLog.h"
 class TimeLog final:public ocs2::SolverSynchronizedModule,public ocs2::DummyObserver {
  public:
  explicit TimeLog(const std::filesystem::path&root,bool heavy):feet_(root),heavy_(heavy),trace_(root/"timing_trace.csv"),solves_(root/"solver_timing.csv"),references_(root/"reference.csv"),queries_(root/"policy_queries.csv"),vectors_(root/"policy_vectors.csv"),knots_(root/"policy_knots.csv"),load_(root/"logging_load.csv"),gait_(root/"gait_schedule.csv"),modes_(root/"gait_queries.csv"){

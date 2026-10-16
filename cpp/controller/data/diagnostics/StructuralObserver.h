@@ -1,7 +1,7 @@
 #include "extensions/TermRegistry.h"
 #pragma once
 // Read-only clone evaluation: never writes an active solver OCP or reference.
-#include "data/diagnostics/TimeLog.h"
+#include "controller/data/diagnostics/TimeLog.h"
 #include <limits>
 #include <humanoid_wb_mpc/WBMpcInterface.h>
 #include <humanoid_wb_mpc/dynamics/DynamicsHelperFunctions.h>
@@ -9,7 +9,7 @@
 #include "extensions/G1StateSoftConstraint.h"
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/property_tree/json_parser.hpp>
-namespace task5b {
+namespace g1_controller::diagnostics {
 using namespace ocs2;using namespace ocs2::humanoid;
 inline void exportConfiguration(WBMpcInterface& i,const std::string&task,const std::string&folder){
  boost::property_tree::ptree raw,out;boost::property_tree::read_info(task,raw);out.add_child("source_config",raw);

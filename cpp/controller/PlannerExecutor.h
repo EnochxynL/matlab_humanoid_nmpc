@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <mutex>
 #include <limits>
-#include "data/time/ControlTime.h"
+#include "controller/data/time/ControlTime.h"
 #include <ocs2_mpc/MPC_MRT_Interface.h>
 
 #include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
@@ -42,16 +42,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "controller/data/diagnostics/PolicyObserver.h"
 #include "humanoid_common_mpc/reference_manager/ProceduralMpcMotionManager.h"
 
-namespace ocs2::humanoid {
+namespace g1_controller {
 
-class WaveBControlTimeWBMpcController final {
+class PlannerExecutor final {
  public:
  private:
-  void setObservation(const SystemObservation& observation);
-  SystemObservation latestObservation();
+  void setObservation(const ocs2::SystemObservation& observation);
+  ocs2::SystemObservation latestObservation();
   void advanceMpc();
   std::mutex observationCopyMutex_;
-  SystemObservation observationCopy_;
+  ocs2::SystemObservation observationCopy_;
 
  public:
   /**
@@ -61,16 +61,16 @@ class WaveBControlTimeWBMpcController final {
    * @param [in] topicPrefix: The robot's name.
    * @param [in] mpcDesiredFrequency: The max frequency to run the mpc at.
    */
-  WaveBControlTimeWBMpcController(const ModelSettings& modelSettings,
-                          MPC_BASE& mpc,
-                          PinocchioInterface pinocchioInterface,
-                          scalar_t mpcDesiredFrequency = -1,
-                          std::shared_ptr<DummyObserver> rVizVisualizerPtr = nullptr);
+  PlannerExecutor(const ocs2::humanoid::ModelSettings& modelSettings,
+                          ocs2::MPC_BASE& mpc,
+                          ocs2::PinocchioInterface pinocchioInterface,
+                          ocs2::scalar_t mpcDesiredFrequency = -1,
+                          std::shared_ptr<ocs2::DummyObserver> rVizVisualizerPtr = nullptr);
 
   /**
    * Destructor.
    */
-  ~WaveBControlTimeWBMpcController();
+  ~PlannerExecutor();
 
   enum class TimingMode { UNCONFIGURED, SIMULATION_TIME_DETERMINISTIC };
   void enableDeterministicSimulation();
@@ -78,14 +78,14 @@ class WaveBControlTimeWBMpcController final {
   void setTraceCallback(TraceCallback callback) { trace_ = std::move(callback); }
   bool ready() const { return mcpMrtInterface_.initialPolicyReceived(); }
 
-  void startMpcThread(const SystemObservation& observation);
+  void startMpcThread(const ocs2::SystemObservation& observation);
 
   // 显式阶段：更新资格判断/求解完成之后，才允许查询已准备观测对应的策略。
   // 仅用于校验外部调度决定；不推进 slot，也不触发求解。
   bool mpcUpdateDue(double time) const { return time + 1e-12 >= epoch_ + nextSlot_ * mpcControlPeriod_; }
-  void updatePolicy(const SystemObservation& observation);
-  void queryPolicy(vector_t& x, vector_t& u, size_t& mode);
-  vector_t inverseDynamics(const vector_t& x, const vector_t& u);
+  void updatePolicy(const ocs2::SystemObservation& observation);
+  void queryPolicy(ocs2::vector_t& x, ocs2::vector_t& u, size_t& mode);
+  ocs2::vector_t inverseDynamics(const ocs2::vector_t& x, const ocs2::vector_t& u);
 
  private:
   /**
@@ -94,14 +94,14 @@ class WaveBControlTimeWBMpcController final {
   void solverWorker();
   void deterministicSolverWorker();
   void waitForRequest(size_t request);
-  void deterministicUpdate(const SystemObservation& observation);
+  void deterministicUpdate(const ocs2::SystemObservation& observation);
   bool policyQueryPrepared_ = false;
   TimingMode timingMode_ = TimingMode::UNCONFIGURED;
   double mpcControlPeriod_;
   double epoch_ = 0, lastObservationTime_ = -std::numeric_limits<double>::infinity();
   size_t nextSlot_ = 1, requested_ = 0, completed_ = 0;
   double requestDeadline_ = 0;
-  SystemObservation requestObservation_;
+  ocs2::SystemObservation requestObservation_;
   std::mutex requestMutex_;
   std::condition_variable requestCv_, completionCv_;
   std::exception_ptr workerFailure_;
@@ -113,18 +113,18 @@ class WaveBControlTimeWBMpcController final {
    *
    * @param [in] msg: The observation message.
    */
-  TargetTrajectories currentObservationToResetTrajectory(const SystemObservation& currentMpcObservation);
+  ocs2::TargetTrajectories currentObservationToResetTrajectory(const ocs2::SystemObservation& currentMpcObservation);
 
-  MPC_MRT_Interface mcpMrtInterface_;
+  ocs2::MPC_MRT_Interface mcpMrtInterface_;
 
-  PinocchioInterface pinocchioInterface_;
+  ocs2::PinocchioInterface pinocchioInterface_;
   ocs2::SystemObservation currentMpcObservation_;
-  WBAccelMpcRobotModel<scalar_t> mpcRobotModel_;
+  ocs2::humanoid::WBAccelMpcRobotModel<ocs2::scalar_t> mpcRobotModel_;
 
   std::atomic_bool terminateThread_{false};
   std::jthread solver_worker_;
 
-  std::shared_ptr<DummyObserver> visualizerPtr_;
+  std::shared_ptr<ocs2::DummyObserver> visualizerPtr_;
 };
 
-}  // namespace ocs2::humanoid
+}  // namespace g1_controller

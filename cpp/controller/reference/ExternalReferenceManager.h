@@ -9,18 +9,18 @@
 #include <memory>
 #include <array>
 #include <algorithm>
-#include "data/time/CanonicalControlTime.h"
+#include "controller/data/time/CanonicalControlTime.h"
 #include <ocs2_oc/synchronized_module/ReferenceManagerDecorator.h>
 #include <humanoid_common_mpc/reference_manager/SwitchedModelReferenceManager.h>
 #include <functional>
 #include <fstream>
 #include <iomanip>
 
-namespace task5a {
+namespace g1_controller {
 
 /** @brief 一次参考发布：身份、目标轨迹、接触时间表及固定摆腿配置。 */
-struct Packet {
-  Packet() { schedule.clear(); }
+struct ReferencePacket {
+  ReferencePacket() { schedule.clear(); }
 
   uint64_t tick = 0, session = 1, epoch = 0, sequence = 0;
   ocs2::TargetTrajectories target;
@@ -37,21 +37,20 @@ struct Packet {
  * 每轮 preSolverRun 从 Provider 取得参考，检查身份与内容，再委托原管理器。
  * 原管理器的地形适配、摆腿样条及其他 OCP 参考计算继续保留。
  */
-// 我觉得应该叫 CustomReferenceManager
-class ExternalReferenceAdapter final : public ocs2::ReferenceManagerDecorator,
+class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
                                        public g1::MeasuredModeReceiver {
  public:
   /** @brief 将真实观测的接触模式传给既有参考管理器。 */
   void setMeasuredMode(size_t mode) override { ref_->setMeasuredMode(mode); }
 
   // 输入本轮求解初始时间，返回由外部数据流安装的参考包。
-  using Provider = std::function<Packet(double)>;
+  using Provider = std::function<ReferencePacket(double)>;
 
   /**
    * @brief 绑定原管理器、参考来源和消费日志；此时不读取参考、不执行求解。
    * 清空循环步态模板，避免 C++ 再次铺设外部已经给出的接触时间表。
    */
-  ExternalReferenceAdapter(
+  ExternalReferenceManager(
       std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> ref,
       Provider provider, const std::string& folder)
       : ReferenceManagerDecorator(ref),
@@ -72,7 +71,7 @@ class ExternalReferenceAdapter final : public ocs2::ReferenceManagerDecorator,
    * t/end 为本轮预测时域端点；x 为本轮真实观测提供的优化初始状态。
    */
   void preSolverRun(double t, double end, const ocs2::vector_t& x) override {
-    Packet p = provider_(t);
+    ReferencePacket p = provider_(t);
     validate(p, t, end);
 
     // 原 GaitSchedule 的读取过程会移除末尾标记，因此只补上可移除的结束标记。
@@ -112,7 +111,7 @@ class ExternalReferenceAdapter final : public ocs2::ReferenceManagerDecorator,
    * @brief 校验求解时刻的身份、发布顺序、目标维度和接触时间表。
    * t/end 相关检查需要实际求解窗口，所以保留在消费端。
    */
-  void validate(const Packet& p, double t, double end) {
+  void validate(const ReferencePacket& p, double t, double end) {
     if (p.session == 0 || p.sequence == 0 || CanonicalControlTime::time(p.tick) != t)
       throw std::runtime_error("G: Reference identity rejected");
     if (initialized_ &&
@@ -162,8 +161,8 @@ class ExternalReferenceAdapter final : public ocs2::ReferenceManagerDecorator,
   std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> ref_;
   Provider provider_;
   std::ofstream log_;
-  Packet previous_;
+  ReferencePacket previous_;
   bool initialized_ = false;
 };
 
-}  // namespace task5a
+}  // namespace g1_controller

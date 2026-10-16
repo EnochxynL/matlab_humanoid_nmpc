@@ -10,7 +10,9 @@
 #include <fstream>
 #include <stdexcept>
 
-Inputs::Inputs(const std::string &projectRoot, const std::string &logDirectory)
+namespace g1_controller {
+
+PlannerConfig::PlannerConfig(const std::string &projectRoot, const std::string &logDirectory)
     : backend("simscape"), task(projectRoot + "/config/task.info"),
       ref(projectRoot + "/config/reference.info"),
       urdf(projectRoot + "/assets/g1_29dof.urdf"),
@@ -18,7 +20,7 @@ Inputs::Inputs(const std::string &projectRoot, const std::string &logDirectory)
       root(logDirectory), recorded("unused"), horizon(4.8), pacingMs(0),
       startup(0), heavy(false) {}
 
-PlannerContext::PlannerContext(const Inputs &i)
+PlannerContext::PlannerContext(const PlannerConfig &i)
     : interface(i.task, i.urdf, i.ref),
       mpc(interface.mpcSettings(), interface.sqpSettings(),
           interface.getOptimalControlProblem(), interface.getInitializer()),
@@ -31,7 +33,7 @@ PlannerContext::PlannerContext(const Inputs &i)
     std::ofstream(i.root + "/loaded_process_maps.txt") << maps.rdbuf();
   }
   if (migrated) {
-    external = std::make_shared<task5a::ExternalReferenceAdapter>(
+    external = std::make_shared<ExternalReferenceManager>(
         interface.getSwitchedModelReferenceManagerPtr(),
         [this](double t) {
           uint64_t tick = std::llround(t / .002);
@@ -53,17 +55,19 @@ PlannerContext::PlannerContext(const Inputs &i)
   log->configure(interface.getPinocchioInterface(),
                  interface.getMpcRobotModel(),
                  interface.getSwitchedModelReferenceManagerPtr());
-  task5b::exportConfiguration(interface, i.task, i.root);
-  structure = std::make_shared<task5b::StructuralObserver>(interface, mpc,
+  diagnostics::exportConfiguration(interface, i.task, i.root);
+  structure = std::make_shared<diagnostics::StructuralObserver>(interface, mpc,
                                                            log, i.root);
   mpc.getSolverPtr()->addSynchronizedModule(structure);
   std::ofstream(i.root + "/reference_authority.txt")
       << (migrated ? "SIMULINK_REFERENCE" : "LEGACY_CPP_REFERENCE") << "\n";
 }
 
-void PlannerContext::configure(WaveBControlTimeWBMpcController &c) {
+void PlannerContext::configure(PlannerExecutor &c) {
   c.enableDeterministicSimulation();
   c.setTraceCallback([this](const char *e, double t, double d, double r) {
     log->trace(e, t, d, r);
   });
 }
+
+} // namespace g1_controller

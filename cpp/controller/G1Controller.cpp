@@ -12,6 +12,8 @@
 #include <stdexcept>
 
 namespace g1_controller {
+using ocs2::vector_t;
+using ocs2::SystemObservation;
 /**
  * @brief PImpl 私有状态。context 先创建、最后释放，确保被引用的模型和 MPC 存活。
  * lastPolicy 保存95元素策略；lastResult 保存含23关节力矩的118元素兼容结果。
@@ -19,7 +21,7 @@ namespace g1_controller {
  */
 struct G1Controller::Impl {
   std::unique_ptr<PlannerContext> context;
-  std::unique_ptr<WaveBControlTimeWBMpcController> controller;
+  std::unique_ptr<PlannerExecutor> controller;
   uint64_t lastTick = UINT64_MAX, sequence = 0;
   vector_t lastResult = vector_t::Zero(118);
   vector_t lastPolicy = vector_t::Zero(95);
@@ -54,7 +56,7 @@ struct G1Controller::Impl {
       throw std::runtime_error(
           "Close existing MEX controller before initialization");
     std::filesystem::create_directories(folder);
-    Inputs inputs(root, folder);
+    PlannerConfig inputs(root, folder);
     context = std::make_unique<PlannerContext>(inputs);
     context->expectedSession = 1;
     canonicalLog = std::make_unique<CanonicalControlTime>(folder);
@@ -64,7 +66,7 @@ struct G1Controller::Impl {
     for (int j = 0; j < 118; ++j)
       sampleLog << ",value" << j;
     sampleLog << "\n";
-    controller = std::make_unique<WaveBControlTimeWBMpcController>(
+    controller = std::make_unique<PlannerExecutor>(
         context->interface.modelSettings(), context->mpc,
         context->interface.getPinocchioInterface(),
         context->interface.mpcSettings().mpcDesiredFrequency_,
@@ -174,7 +176,7 @@ void G1Controller::setReference(const Reference &r) {
   if(!r.publish || (impl_->sequence && impl_->context->currentPacket.tick==r.tick)) return;
   if((r.targetCount!=1 && r.targetCount!=3)||r.eventCount<1||r.eventCount>64)
     throw std::runtime_error("Reference shape rejected");
-  task5a::Packet p;
+  ReferencePacket p;
   p.tick=r.tick;p.session=1;p.sequence=++impl_->sequence;
   for(size_t k=0;k<r.targetCount;++k){
     p.target.timeTrajectory.push_back(r.targetTimes[k]);

@@ -43,7 +43,7 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 | `cpp/include/g1_controller/` | 不暴露 MATLAB/ROS/OCS2 类型的公开数据类型 |
 | `cpp/controller/` | 核心实例、状态缓存、求解线程与原调度 |
 | `cpp/problem/humanoid_wb_mpc/src/dynamics/` | 原逆动力学辅助计算 |
-| `cpp/controller/reference/`、`cpp/data/time/` | OCP 参考消费与 canonical time |
+| `cpp/controller/reference/`、`cpp/controller/data/time/` | OCP 参考消费与 canonical time |
 | `cpp/data/diagnostics/` | 原控制链诊断 |
 | `assets/`、`config/`、`data/` | 网格、URDF、任务与物理参数 |
 | `cpp/problem/` | 原全身 OCP 数学和 composition root |
@@ -110,8 +110,8 @@ python3 scripts/verify_dependencies.py
 ### 控制数据流边界
 
 - 观测转换、检查与重排位于 Simulink 和独立观测 MEX；核心不再维护 `RobotState` 中间容器。
-- `controller/reference/ExternalReferenceAdapter`：求解前消费外部参考；参考检查位于独立 MATLAB adapter。
-- `controller/WBMpcController`：`updatePolicy` 判断更新时刻并等待必要的求解完成；
+- `controller/reference/ExternalReferenceManager`：求解前消费外部参考；参考检查位于独立 MATLAB adapter。
+- `controller/PlannerExecutor`：`updatePolicy` 判断更新时刻并等待必要的求解完成；
   `queryPolicy` 只查询已有策略，不触发求解；`inverseDynamics` 计算前馈力矩。
 - `controller/G1Controller`：按顺序协调上述阶段，保留 tick/策略身份、缓存和生命周期门禁。
 
@@ -155,4 +155,6 @@ cmake --build build/observation --parallel 1
 
 参考路径为 `ReferenceExtraction → ReferenceInstall`。独立 `g1_reference_extract_mex(reference428)` 检查字段并原样输出，不依赖核心、OCS2 或 Pinocchio；辅助源码与 MEX 包装位于 `adapters/matlab/`。安装节点调用 `g1_ocp_mex('install_reference', reference428)`，核心直接将具名参考转换为 OCS2 容器，不再通过428向量往返。旧 `reference` 命令和 `cpp/data/reference/ReferenceConversion` 已删除。OCP 消费适配器移至 `cpp/controller/reference/`，未使用的 CSV/二进制读取逻辑已移除。运行 `addpath tests; validate_reference_split` 可验证字段逐位一致、非法输入拒绝和完整策略回放；本次没有重跑物理行走。
 
-规划上下文声明与实现分别位于 `cpp/controller/PlannerContext.h` 和 `.cpp`：头文件展示成员依赖，构造、参考回调注册及诊断配置在实现文件中。`controller/reference/ExternalReferenceAdapter.h` 已按参考取得、校验、安装、委托更新和结果核对整理注释与格式；本轮未改名或调整状态归属。
+规划上下文声明与实现分别位于 `cpp/controller/PlannerContext.h` 和 `.cpp`：头文件展示成员依赖，构造、参考回调注册及诊断配置在实现文件中。`controller/reference/ExternalReferenceManager.h` 已按参考取得、校验、安装、委托更新和结果核对整理注释与格式；本轮未改名或调整状态归属。
+
+控制层使用 `g1_controller::PlannerExecutor`、`PlannerContext`、`PlannerConfig`、`ReferencePacket` 和 `ExternalReferenceManager`；结构诊断归入 `g1_controller::diagnostics`。`WaveBControlTime`、`task5a`、`task5b` 不再作为类名或命名空间；现有 `TASK5A_*` 环境配置保持兼容。

@@ -291,7 +291,7 @@
       "source_directory": "adapters/matlab",
       "core_entry": "install_reference",
       "removed_roundtrip": "Reference -> 428-vector -> OCS2 Packet",
-      "ocp_consumer": "cpp/controller/reference/ExternalReferenceAdapter.h",
+      "ocp_consumer": "cpp/controller/reference/ExternalReferenceManager.h",
       "removed_unused_readers": [
         "loadPackets CSV",
         "readBinaryPacket"
@@ -311,7 +311,7 @@
     "planner_context_source_split": {
       "declaration": "cpp/controller/PlannerContext.h",
       "implementation": "cpp/controller/PlannerContext.cpp",
-      "reference_adapter": "cpp/controller/reference/ExternalReferenceAdapter.h",
+      "reference_adapter": "cpp/controller/reference/ExternalReferenceManager.h",
       "method_tokens_unchanged": true,
       "adapter_tokens_unchanged": true,
       "build_passed": true,
@@ -320,6 +320,30 @@
       "exact_outputs": true,
       "physical_simulation": false,
       "evidence": "build/planner_context_split"
+    },
+    "controller_naming": {
+      "executor": "g1_controller::PlannerExecutor",
+      "executor_source": "cpp/controller/PlannerExecutor.cpp",
+      "context": "g1_controller::PlannerContext",
+      "configuration": "g1_controller::PlannerConfig",
+      "reference_packet": "g1_controller::ReferencePacket",
+      "reference_manager": "g1_controller::ExternalReferenceManager",
+      "diagnostics": "g1_controller::diagnostics",
+      "private_data_directory": "cpp/controller/data",
+      "runtime_environment_protocol": "unchanged",
+      "validation": {
+        "passed": true,
+        "evidence": "build/controller_naming",
+        "ticks": 2401,
+        "mpc_updates": 289,
+        "byte_identical": {
+          "planner_samples.csv": true,
+          "policy_knots.csv": true,
+          "gait_queries.csv": true,
+          "adapter_consumption.csv": true
+        },
+        "physical_simulation": false
+      }
     }
   },
   "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",
