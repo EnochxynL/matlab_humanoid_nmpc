@@ -1,27 +1,24 @@
-# This directory also builds independently: no controller, OCS2 or Pinocchio.
+# Standalone numerical MEX adapters: no controller, OCS2 or Pinocchio dependency.
 cmake_minimum_required(VERSION 3.16)
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  project(g1_observation LANGUAGES CXX)
+  project(g1_matlab_adapters LANGUAGES C CXX)
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-  option(G1_BUILD_MATLAB "Build the observation MEX adapter" ON)
-  find_package(Eigen3 REQUIRED)
+  option(G1_BUILD_MATLAB "Build the standalone numerical MEX adapters" ON)
   if(G1_BUILD_MATLAB)
+    find_package(Eigen3 REQUIRED)
     find_package(Matlab REQUIRED)
   endif()
 endif()
-add_library(g1_reference_extraction STATIC ReferenceExtraction.cpp)
-set_target_properties(g1_reference_extraction PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_include_directories(g1_reference_extraction PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-add_library(g1_observation_kernels STATIC ObservationKernels.cpp)
-set_target_properties(g1_observation_kernels PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_include_directories(g1_observation_kernels PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(g1_observation_kernels PUBLIC Eigen3::Eigen)
-if(G1_BUILD_MATLAB)
-  matlab_add_mex(NAME g1_reference_extract_mex SRC "${CMAKE_CURRENT_SOURCE_DIR}/ReferenceExtractionMex.cpp" LINK_TO g1_reference_extraction)
-  matlab_add_mex(NAME g1_observation_mex SRC "${CMAKE_CURRENT_SOURCE_DIR}/ObservationMex.cpp"
-    LINK_TO g1_observation_kernels)
-  matlab_add_mex(NAME g1_observation_extract_mex SRC "${CMAKE_CURRENT_SOURCE_DIR}/ObservationExtractionMex.cpp"
-    LINK_TO g1_observation_kernels)
+
+# No MATLAB-independent helper libraries remain: each MEX owns its implementation.
+if(NOT G1_BUILD_MATLAB)
+  return()
 endif()
+
+matlab_add_mex(NAME g1_observation_mex SRC ObservationMex.cpp
+  LINK_TO Eigen3::Eigen)
+matlab_add_mex(NAME g1_observation_extract_mex SRC ObservationExtractionMex.cpp
+  LINK_TO Eigen3::Eigen)
+matlab_add_mex(NAME g1_reference_extract_mex SRC ReferenceExtractionMex.cpp)
