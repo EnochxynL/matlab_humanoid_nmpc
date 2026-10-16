@@ -25,6 +25,7 @@ struct Packet {
 // raw schedule plus a removable terminal marker. Existing getModeSchedule pops
 // only this marker; no C++ template tiling, gait decision or filter runs.
 // The original terrain adaptation, swing splines and OCP consumers remain.
+// 我觉得应该叫 CustomReferenceManager
 class ExternalReferenceAdapter final:public ocs2::ReferenceManagerDecorator, public g1::MeasuredModeReceiver {
  public:
  void setMeasuredMode(size_t mode) override {ref_->setMeasuredMode(mode);}
