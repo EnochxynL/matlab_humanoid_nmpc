@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
-#include "data/diagnostics/PolicyObserver.h"
+#include "controller/data/diagnostics/PolicyObserver.h"
 #include "humanoid_common_mpc/reference_manager/ProceduralMpcMotionManager.h"
 
 namespace ocs2::humanoid {

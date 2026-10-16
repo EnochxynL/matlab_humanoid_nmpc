@@ -4,9 +4,9 @@
  * 本文件主要管理依赖关系，不是 SQP 算法实现。TASK5A 名称是保留的参考接入配置。
  */
 #pragma once
-#include "controller/WBMpcController.h"
-#include "data/diagnostics/StructuralObserver.h"
-#include "data/diagnostics/TimeLog.h"
+#include "controller/PlannerExecutor.h"
+#include "controller/data/diagnostics/StructuralObserver.h"
+#include "controller/data/diagnostics/TimeLog.h"
 #include "controller/reference/ExternalReferenceAdapter.h"
 #include "data/time/CanonicalControlTime.h"
 
