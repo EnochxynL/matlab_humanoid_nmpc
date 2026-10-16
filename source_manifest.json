@@ -198,7 +198,7 @@
       "field_selection_and_joint_mapping": "native Simulink Selector",
       "state_assembly": "native Simulink Mux",
       "sensitive_kernels": "g1_observation_mex",
-      "kernel_cpp": "adapters/matlab/ObservationKernels.cpp",
+      "kernel_cpp": "adapters/matlab/ObservationMex.cpp",
       "standalone_build": "cmake -S adapters/matlab -B build/observation",
       "strict_conversion_cases": 2441,
       "strict_replay_ticks": 2401,
@@ -344,6 +344,38 @@
         },
         "physical_simulation": false
       }
+    },
+    "single_file_mex": {
+      "source_commit": "84d2c0b",
+      "sources": [
+        "adapters/matlab/ObservationMex.cpp",
+        "adapters/matlab/ObservationExtractionMex.cpp",
+        "adapters/matlab/ReferenceExtractionMex.cpp"
+      ],
+      "helper_linkage": "anonymous namespace inside each MEX",
+      "removed_helper_libraries": [
+        "g1_observation_kernels",
+        "g1_reference_extraction"
+      ],
+      "math_and_validation_function_tokens_identical": true,
+      "evidence": "build/single_file_mex",
+      "validation": {
+        "passed": true,
+        "conversion_cases_exact": 2441,
+        "observation_ticks_exact": 2401,
+        "reference_packets_exact": 2401,
+        "mpc_updates": 289,
+        "negative_cases": 16,
+        "byte_identical": {
+          "planner_samples.csv": true,
+          "policy_knots.csv": true,
+          "gait_queries.csv": true,
+          "adapter_consumption.csv": true
+        },
+        "physical_simulation": false
+      },
+      "standalone_build_passed": true,
+      "standalone_dependencies": "build/single_file_mex/standalone_dependencies.json"
     }
   },
   "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",

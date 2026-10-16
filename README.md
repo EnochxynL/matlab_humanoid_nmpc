@@ -133,9 +133,13 @@ MPC 更新、策略查询和逆动力学。`g1_walking` 通过模型引用接入
 `g1_observation_mex`：四元数转 Euler ZYX、局部线速度转世界系、局部角速度转 Euler 导数。
 这些敏感计算继续使用已验证的 C++ 数学；不在 MATLAB 中维护另一套公式。
 
-小 MEX 的实现位于 `adapters/matlab/ObservationKernels.h/.cpp`，适配器为
-`adapters/matlab/ObservationMex.cpp`。它不初始化控制器，不链接 OCS2、Pinocchio 或控制核心。
-仅构建此内核可使用：
+每个独立 MEX 现在只有一个源文件，内部辅助函数位于匿名命名空间：
+
+- `ObservationMex.cpp`：三个坐标转换和命令分发。
+- `ObservationExtractionMex.cpp`：观测、映射和时间身份检查。
+- `ReferenceExtractionMex.cpp`：参考检查。
+
+它们不初始化控制器，不链接 OCS2、Pinocchio 或控制核心。仅构建三个独立 MEX 可使用：
 
 ```bash
 cmake -S adapters/matlab -B build/observation \
@@ -144,7 +148,7 @@ cmake -S adapters/matlab -B build/observation \
 cmake --build build/observation --parallel 1
 ```
 
-设置 `-DG1_BUILD_MATLAB=OFF` 可仅构建纯 C++ 静态库，不需要 MATLAB。
+不再生成独立辅助静态库；设置 `-DG1_BUILD_MATLAB=OFF` 时跳过这些 MEX。核心控制库仍可通过 `scripts/build_core.sh` 在没有 MATLAB 的环境构建。
 主工程的 `scripts/build_mex.sh` 会同时构建规划器、观测转换、观测提取和参考提取四个 MEX。
 
 纯 MATLAB 敏感公式候选的严格 FAIL 证据保留在忽略目录 `build/observation_dataflow/`。
@@ -158,3 +162,5 @@ cmake --build build/observation --parallel 1
 规划上下文声明与实现分别位于 `cpp/controller/PlannerContext.h` 和 `.cpp`：头文件展示成员依赖，构造、参考回调注册及诊断配置在实现文件中。`controller/reference/ExternalReferenceManager.h` 已按参考取得、校验、安装、委托更新和结果核对整理注释与格式；本轮未改名或调整状态归属。
 
 控制层使用 `g1_controller::PlannerExecutor`、`PlannerContext`、`PlannerConfig`、`ReferencePacket` 和 `ExternalReferenceManager`；结构诊断归入 `g1_controller::diagnostics`。`WaveBControlTime`、`task5a`、`task5b` 不再作为类名或命名空间；现有 `TASK5A_*` 环境配置保持兼容。
+
+原 `ObservationKernels.h/.cpp`、`ReferenceExtraction.h/.cpp` 已合入各自 MEX 源文件并删除，没有重复维护公式。`PlannerMex.cpp` 仍是独立核心库的包装。`validate_single_file_mex` 对冻结的转换样本、时间身份、拒绝非法输入和完整策略回放进行验证，不运行物理仿真。
