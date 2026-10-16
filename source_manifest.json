@@ -291,7 +291,7 @@
       "source_directory": "adapters/matlab",
       "core_entry": "install_reference",
       "removed_roundtrip": "Reference -> 428-vector -> OCS2 Packet",
-      "ocp_consumer": "cpp/problem/reference/ExternalReferenceAdapter.h",
+      "ocp_consumer": "cpp/controller/reference/ExternalReferenceAdapter.h",
       "removed_unused_readers": [
         "loadPackets CSV",
         "readBinaryPacket"

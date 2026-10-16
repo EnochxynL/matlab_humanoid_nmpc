@@ -43,7 +43,7 @@ out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
 | `cpp/include/g1_controller/` | 不暴露 MATLAB/ROS/OCS2 类型的公开数据类型 |
 | `cpp/controller/` | 核心实例、状态缓存、求解线程与原调度 |
 | `cpp/problem/humanoid_wb_mpc/src/dynamics/` | 原逆动力学辅助计算 |
-| `cpp/problem/reference/`、`cpp/data/time/` | OCP 参考消费与 canonical time |
+| `cpp/controller/reference/`、`cpp/data/time/` | OCP 参考消费与 canonical time |
 | `cpp/data/diagnostics/` | 原控制链诊断 |
 | `assets/`、`config/`、`data/` | 网格、URDF、任务与物理参数 |
 | `cpp/problem/` | 原全身 OCP 数学和 composition root |
@@ -110,7 +110,7 @@ python3 scripts/verify_dependencies.py
 ### 控制数据流边界
 
 - 观测转换、检查与重排位于 Simulink 和独立观测 MEX；核心不再维护 `RobotState` 中间容器。
-- `problem/reference/ExternalReferenceAdapter`：求解前消费外部参考；参考检查位于独立 MATLAB adapter。
+- `controller/reference/ExternalReferenceAdapter`：求解前消费外部参考；参考检查位于独立 MATLAB adapter。
 - `controller/WBMpcController`：`updatePolicy` 判断更新时刻并等待必要的求解完成；
   `queryPolicy` 只查询已有策略，不触发求解；`inverseDynamics` 计算前馈力矩。
 - `controller/G1Controller`：按顺序协调上述阶段，保留 tick/策略身份、缓存和生命周期门禁。
@@ -153,4 +153,4 @@ cmake --build build/observation --parallel 1
 
 独立观测 MEX 的辅助内核现与包装同放在 `adapters/matlab/`，拥有独立 CMake target；`cpp/` 仅保留控制核心。旧 `RobotState`、原始观测转换、关节映射容器及未使用的硬件接口占位代码已删除。机器人模型仍由原 Pinocchio/URDF OCP 路径加载，本次没有更改模型或数学定义。
 
-参考路径为 `ReferenceExtraction → ReferenceInstall`。独立 `g1_reference_extract_mex(reference428)` 检查字段并原样输出，不依赖核心、OCS2 或 Pinocchio；辅助源码与 MEX 包装位于 `adapters/matlab/`。安装节点调用 `g1_ocp_mex('install_reference', reference428)`，核心直接将具名参考转换为 OCS2 容器，不再通过428向量往返。旧 `reference` 命令和 `cpp/data/reference/ReferenceConversion` 已删除。OCP 消费适配器移至 `cpp/problem/reference/`，未使用的 CSV/二进制读取逻辑已移除。运行 `addpath tests; validate_reference_split` 可验证字段逐位一致、非法输入拒绝和完整策略回放；本次没有重跑物理行走。
+参考路径为 `ReferenceExtraction → ReferenceInstall`。独立 `g1_reference_extract_mex(reference428)` 检查字段并原样输出，不依赖核心、OCS2 或 Pinocchio；辅助源码与 MEX 包装位于 `adapters/matlab/`。安装节点调用 `g1_ocp_mex('install_reference', reference428)`，核心直接将具名参考转换为 OCS2 容器，不再通过428向量往返。旧 `reference` 命令和 `cpp/data/reference/ReferenceConversion` 已删除。OCP 消费适配器移至 `cpp/controller/reference/`，未使用的 CSV/二进制读取逻辑已移除。运行 `addpath tests; validate_reference_split` 可验证字段逐位一致、非法输入拒绝和完整策略回放；本次没有重跑物理行走。

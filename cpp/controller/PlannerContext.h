@@ -7,7 +7,7 @@
 #include "controller/WBMpcController.h"
 #include "data/diagnostics/StructuralObserver.h"
 #include "data/diagnostics/TimeLog.h"
-#include "problem/reference/ExternalReferenceAdapter.h"
+#include "controller/reference/ExternalReferenceAdapter.h"
 #include "data/time/CanonicalControlTime.h"
 
 #include <humanoid_wb_mpc/WBMpcInterface.h>

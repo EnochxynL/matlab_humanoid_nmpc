@@ -5,7 +5,7 @@
  * 不在这里定义 OCP 方程；OCP 组装见 PlannerContext 和 WBMpcInterface。
  */
 #include "G1Controller.h"
-#include "problem/PlannerContext.h"
+#include "controller/PlannerContext.h"
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
