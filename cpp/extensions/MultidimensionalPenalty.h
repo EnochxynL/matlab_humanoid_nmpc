@@ -34,10 +34,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ocs2_core/Types.h>
 
-#include "extensions/G1PenaltyBase.h"
-#include "extensions/G1AugmentedPenaltyBase.h"
+#include "extensions/PenaltyBase.h"
+#include "extensions/AugmentedPenaltyBase.h"
 
-namespace ocs2 {
+namespace humanoid::ocp_extensions {
+using namespace ocs2;
 
 /**
  *   A helper class that implements the penalty for multidimensional constraint
@@ -49,7 +50,7 @@ namespace ocs2 {
  *   second-order approximation of constraint is not provided, it employs a Gauss-Newton approximation technique which only
  *   relies on the first-order approximation. In general, the penalty function can be a function of time.
  */
-class G1MultidimensionalPenalty final {
+class MultidimensionalPenalty final {
  public:
   /**
    * Constructor
@@ -57,7 +58,7 @@ class G1MultidimensionalPenalty final {
    * @param [in] penaltyPtrArray: An array of pointers to the penalty function on the constraint.
    */
   template <class PenaltyType>
-  G1MultidimensionalPenalty(std::vector<std::unique_ptr<PenaltyType>> penaltyPtrArray);
+  MultidimensionalPenalty(std::vector<std::unique_ptr<PenaltyType>> penaltyPtrArray);
 
   /**
    * Constructor with s single penalty function
@@ -65,13 +66,13 @@ class G1MultidimensionalPenalty final {
    * @param [in] penaltyPtr: A pointer to the penalty function on the constraint.
    */
   template <class PenaltyType>
-  G1MultidimensionalPenalty(std::unique_ptr<PenaltyType> penaltyPtr);
+  MultidimensionalPenalty(std::unique_ptr<PenaltyType> penaltyPtr);
 
   /** Default destructor */
-  ~G1MultidimensionalPenalty() = default;
+  ~MultidimensionalPenalty() = default;
 
   /** Copy constructor */
-  G1MultidimensionalPenalty(const G1MultidimensionalPenalty& other);
+  MultidimensionalPenalty(const MultidimensionalPenalty& other);
 
   /**
    * Get the penalty cost.
@@ -127,12 +128,12 @@ class G1MultidimensionalPenalty final {
    *
    * @return The penalty function array.
    */
-  std::vector<std::unique_ptr<augmented::G1AugmentedPenaltyBase>>& getPenaltyPtrArray() { return penaltyPtrArray_; }
+  std::vector<std::unique_ptr<augmented::AugmentedPenaltyBase>>& getPenaltyPtrArray() { return penaltyPtrArray_; }
 
  private:
   std::tuple<scalar_t, vector_t, vector_t> getPenaltyValue1stDev2ndDev(scalar_t t, const vector_t& h, const vector_t* l) const;
 
-  std::vector<std::unique_ptr<augmented::G1AugmentedPenaltyBase>> penaltyPtrArray_;
+  std::vector<std::unique_ptr<augmented::AugmentedPenaltyBase>> penaltyPtrArray_;
 };
 
-}  // namespace ocs2
+}  // namespace humanoid::ocp_extensions

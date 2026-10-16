@@ -1,6 +1,6 @@
 // Application-owned extension extracted from the pinned fork. Upstream remains unmodified.
 /******************************************************************************
-Copyright (c) 2017, Farbod Farshidian. All rights reserved.
+Copyright (c) 2020, Farbod Farshidian. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -28,71 +28,66 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#include "extensions/G1PieceWisePolynomialBarrierPenalty.h"
+#include "extensions/StateSoftConstraint.h"
 
-namespace ocs2 {
+namespace humanoid::ocp_extensions {
+using namespace ocs2;
 
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-scalar_t G1PieceWisePolynomialBarrierPenalty::getValue(scalar_t t, scalar_t h) const {
-  if (h <= 0) {
-    scalar_t penalty = 0.5 * h * h - config_.delta * h / 2 + config_.delta * config_.delta / 6;
-    return penalty * config_.mu;
-  } else if (h > 0 && h < config_.delta) {
-    scalar_t penalty = -h * h * h / (6 * config_.delta) + 0.5 * h * h - config_.delta * h / 2 + config_.delta * config_.delta / 6;
-    return penalty * config_.mu;
-  } else {
-    return 0;
-  };
+StateSoftConstraint::StateSoftConstraint(std::unique_ptr<StateConstraint> constraintPtr,
+                                         std::vector<std::unique_ptr<PenaltyBase>> penaltyPtrArray)
+    : constraintPtr_(std::move(constraintPtr)), penalty_(std::move(penaltyPtrArray)) {}
+
+/******************************************************************************************************/
+/******************************************************************************************************/
+/******************************************************************************************************/
+StateSoftConstraint::StateSoftConstraint(std::unique_ptr<StateConstraint> constraintPtr, std::unique_ptr<PenaltyBase> penaltyFunction)
+    : constraintPtr_(std::move(constraintPtr)), penalty_(std::move(penaltyFunction)) {}
+
+/******************************************************************************************************/
+/******************************************************************************************************/
+/******************************************************************************************************/
+StateSoftConstraint::StateSoftConstraint(const StateSoftConstraint& other)
+    : StateCost(other), constraintPtr_(other.constraintPtr_->clone()), penalty_(other.penalty_) {}
+
+/******************************************************************************************************/
+/******************************************************************************************************/
+/******************************************************************************************************/
+StateSoftConstraint* StateSoftConstraint::clone() const {
+  return new StateSoftConstraint(*this);
 }
 
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-scalar_t G1PieceWisePolynomialBarrierPenalty::getDerivative(scalar_t t, scalar_t h) const {
-  if (h <= 0) {
-    scalar_t penalty = h - config_.delta / 2;
-    return penalty * config_.mu;
-  } else if (h > 0 && h < config_.delta) {
-    scalar_t penalty = -h * h / (2 * config_.delta) + h - config_.delta / 2;
-    return penalty * config_.mu;
-  } else {
-    return 0;
-  };
+bool StateSoftConstraint::isActive(scalar_t time) const {
+  return constraintPtr_->isActive(time);
 }
 
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-scalar_t G1PieceWisePolynomialBarrierPenalty::getSecondDerivative(scalar_t t, scalar_t h) const {
-  if (h <= 0) {
-    return config_.mu;
-  } else if (h > 0 && h < config_.delta) {
-    return config_.mu * (-h / config_.delta + 1);
-  } else {
-    return 0;
-  };
+scalar_t StateSoftConstraint::getValue(scalar_t time, const vector_t& state, const TargetTrajectories&,
+                                       const PreComputation& preComp) const {
+  return penalty_.getValue(time, constraintPtr_->getValue(time, state, preComp));
 }
 
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-void G1PieceWisePolynomialBarrierPenalty::setParameters(const vector_t& parameters) {
-  if (parameters.size() != 2) {
-    throw std::runtime_error("G1PieceWisePolynomialBarrierPenalty::setParameters: Invalid number of parameters.");
+ScalarFunctionQuadraticApproximation StateSoftConstraint::getQuadraticApproximation(scalar_t time, const vector_t& state,
+                                                                                    const TargetTrajectories&,
+                                                                                    const PreComputation& preComp) const {
+  switch (constraintPtr_->getOrder()) {
+    case ConstraintOrder::Linear:
+      return penalty_.getQuadraticApproximation(time, constraintPtr_->getLinearApproximation(time, state, preComp));
+    case ConstraintOrder::Quadratic:
+      return penalty_.getQuadraticApproximation(time, constraintPtr_->getQuadraticApproximation(time, state, preComp));
+    default:
+      throw std::runtime_error("[StateSoftConstraint] Unknown constraint Order");
   }
-  config_.mu = parameters[0];
-  config_.delta = parameters[1];
 }
 
-/******************************************************************************************************/
-/******************************************************************************************************/
-/******************************************************************************************************/
-void G1PieceWisePolynomialBarrierPenalty::getParameters(vector_t& parameters) const {
-  parameters.resize(2);
-  parameters[0] = config_.mu;
-  parameters[1] = config_.delta;
-}
-
-}  // namespace ocs2
+}  // namespace humanoid::ocp_extensions

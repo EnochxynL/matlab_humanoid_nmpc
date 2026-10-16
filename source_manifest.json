@@ -376,6 +376,30 @@
       },
       "standalone_build_passed": true,
       "standalone_dependencies": "build/single_file_mex/standalone_dependencies.json"
+    },
+    "ocp_extension_naming": {
+      "namespace": "humanoid::ocp_extensions",
+      "geometry_namespace": "humanoid::ocp_extensions::geometry",
+      "augmented_namespace": "humanoid::ocp_extensions::augmented",
+      "library_target": "humanoid_ocp_extensions",
+      "rename_map": "build/ocp_extension_naming/rename_map.json",
+      "reference_upstream_unchanged": true,
+      "math_semantics": "unchanged",
+      "validation": {
+        "passed": true,
+        "ticks": 2401,
+        "mpc_updates": 289,
+        "byte_identical": {
+          "planner_samples.csv": true,
+          "policy_knots.csv": true,
+          "gait_queries.csv": true,
+          "adapter_consumption.csv": true
+        },
+        "evidence": "build/ocp_extension_naming",
+        "public_mex_protocol_unchanged": true,
+        "official_dependencies_unchanged": true,
+        "physical_simulation": false
+      }
     }
   },
   "historical_source_route": "OCS2 + Pinocchio + CppAD; 16 accepted MATLAB-authored mathematical boundaries",

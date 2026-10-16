@@ -45,7 +45,7 @@ namespace ocs2::humanoid {
 /**
  * Manages the ModeSchedule and the TargetTrajectories for switched model.
  */
-class SwitchedModelReferenceManager : public ReferenceManager, public g1::MeasuredModeReceiver {
+class SwitchedModelReferenceManager : public ReferenceManager, public ::humanoid::ocp_extensions::MeasuredModeReceiver {
  public:
   void setMeasuredMode(size_t mode) override { measuredMode_ = mode; }
 

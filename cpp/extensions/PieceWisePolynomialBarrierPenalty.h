@@ -30,9 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include "extensions/G1PenaltyBase.h"
+#include "extensions/PenaltyBase.h"
 
-namespace ocs2 {
+namespace humanoid::ocp_extensions {
+using namespace ocs2;
 
 /**
  * Implements the relaxed barrier function for a single inequality constraint \f$ h \geq 0 \f$
@@ -49,7 +50,7 @@ namespace ocs2 {
  *
  * where \f$ \mu \geq 0 \f$, and \f$ \delta \geq 0 \f$ are user defined parameters.
  */
-class G1PieceWisePolynomialBarrierPenalty final : public G1PenaltyBase {
+class PieceWisePolynomialBarrierPenalty final : public PenaltyBase {
  public:
   /**
    * Configuration object for the relaxed barrier penalty.
@@ -69,10 +70,10 @@ class G1PieceWisePolynomialBarrierPenalty final : public G1PenaltyBase {
    * Constructor
    * @param [in] config: Configuration object containing mu and delta.
    */
-  explicit G1PieceWisePolynomialBarrierPenalty(Config config) : config_(std::move(config)) {}
+  explicit PieceWisePolynomialBarrierPenalty(Config config) : config_(std::move(config)) {}
 
-  ~G1PieceWisePolynomialBarrierPenalty() override = default;
-  G1PieceWisePolynomialBarrierPenalty* clone() const override { return new G1PieceWisePolynomialBarrierPenalty(*this); }
+  ~PieceWisePolynomialBarrierPenalty() override = default;
+  PieceWisePolynomialBarrierPenalty* clone() const override { return new PieceWisePolynomialBarrierPenalty(*this); }
   std::string name() const override { return "PieceWisePolynomialBarrierPenalty"; }
 
   scalar_t getValue(scalar_t t, scalar_t h) const override;
@@ -86,9 +87,9 @@ class G1PieceWisePolynomialBarrierPenalty final : public G1PenaltyBase {
   void getParameters(vector_t& parameters) const override;
 
  private:
-  G1PieceWisePolynomialBarrierPenalty(const G1PieceWisePolynomialBarrierPenalty& other) = default;
+  PieceWisePolynomialBarrierPenalty(const PieceWisePolynomialBarrierPenalty& other) = default;
 
   Config config_;
 };
 
-}  // namespace ocs2
+}  // namespace humanoid::ocp_extensions

@@ -252,7 +252,7 @@ ocs2::SystemObservation PlannerExecutor::latestObservation() {
  */
 void PlannerExecutor::advanceMpc() {
  auto observation = latestObservation();
- auto* receiver = dynamic_cast<g1::MeasuredModeReceiver*>(&mcpMrtInterface_.getReferenceManager());
+ auto* receiver = dynamic_cast<::humanoid::ocp_extensions::MeasuredModeReceiver*>(&mcpMrtInterface_.getReferenceManager());
  if (!receiver) throw std::runtime_error("G1 reference manager lacks measured-mode receiver");
  receiver->setMeasuredMode(observation.mode);
  mcpMrtInterface_.advanceMpc();

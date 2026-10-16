@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ocs2_core/constraint/StateInputConstraint.h>
 #include <ocs2_core/cost/StateCost.h>
 #include <ocs2_core/cost/StateInputCost.h>
-#include "extensions/G1EndEffectorKinematics.h" // TODO:
+#include "extensions/EndEffectorKinematics.h" // TODO:
 
 #include "humanoid_common_mpc/common/ModelSettings.h"
 #include "humanoid_common_mpc/common/MpcRobotModelBase.h"

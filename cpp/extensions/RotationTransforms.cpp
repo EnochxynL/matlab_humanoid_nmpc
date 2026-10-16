@@ -27,9 +27,9 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#include "extensions/G1RotationTransforms.h"
+#include "extensions/RotationTransforms.h"
 
-namespace g1::geometry {
+namespace humanoid::ocp_extensions::geometry {
 using namespace ocs2;
 using ad_quaternion_t = Eigen::Quaternion<ad_scalar_t>;
 
@@ -64,4 +64,4 @@ scalar_t moduloAngleWithReference(scalar_t x, scalar_t reference) {
   return x;
 }
 
-}  // namespace ocs2
+}  // namespace humanoid::ocp_extensions::geometry

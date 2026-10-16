@@ -1,4 +1,4 @@
-#include "extensions/G1RotationTransforms.h"
+#include "extensions/RotationTransforms.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -107,7 +107,7 @@ ad_vector_t EndEffectorDynamicsQuadraticCost::costVectorFunction(ad_scalar_t tim
 
   ad_vector3_t position = frameData.translation();
   ad_vector3_t linearVelocity = pinocchio::getFrameVelocity(model, data, frameID_, rf).linear();
-  Eigen::Quaternion<ad_scalar_t> orientation = g1::geometry::matrixToQuaternion(frameData.rotation());
+  Eigen::Quaternion<ad_scalar_t> orientation = ::humanoid::ocp_extensions::geometry::matrixToQuaternion(frameData.rotation());
   ad_vector3_t angularVelocity = pinocchio::getFrameVelocity(model, data, frameID_, rf).angular();
   auto accel = pinocchio::getFrameClassicalAcceleration(model, data, frameID_, rf);
   ad_vector3_t linearAccel = accel.linear();
@@ -116,7 +116,7 @@ ad_vector_t EndEffectorDynamicsQuadraticCost::costVectorFunction(ad_scalar_t tim
   const ad_vector_t refOrientationCoeffs = parameters.segment(3, 4);
   const Eigen::Quaternion<ad_scalar_t> refQuat(refOrientationCoeffs[0], refOrientationCoeffs[1], refOrientationCoeffs[2], refOrientationCoeffs[3]);
 
-  const ad_vector_t orientationError = g1::geometry::quaternionDistance<ad_scalar_t>(orientation, refQuat);
+  const ad_vector_t orientationError = ::humanoid::ocp_extensions::geometry::quaternionDistance<ad_scalar_t>(orientation, refQuat);
 
   ad_vector_t errors(12);
   errors << (position - parameters.head(3)), orientationError, (linearVelocity - parameters.segment(7, 3)),

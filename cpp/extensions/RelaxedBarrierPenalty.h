@@ -30,9 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include "extensions/G1PenaltyBase.h"
+#include "extensions/PenaltyBase.h"
 
-namespace ocs2 {
+namespace humanoid::ocp_extensions {
+using namespace ocs2;
 
 /**
  * Implements the relaxed barrier function for a single inequality constraint \f$ h \geq 0 \f$
@@ -48,7 +49,7 @@ namespace ocs2 {
  *
  * where \f$ \mu \geq 0 \f$, and \f$ \delta \geq 0 \f$ are user defined parameters.
  */
-class G1RelaxedBarrierPenalty final : public G1PenaltyBase {
+class RelaxedBarrierPenalty final : public PenaltyBase {
  public:
   /**
    * Configuration object for the relaxed barrier penalty.
@@ -66,10 +67,10 @@ class G1RelaxedBarrierPenalty final : public G1PenaltyBase {
    * Constructor
    * @param [in] config: Configuration object containing mu and delta.
    */
-  explicit G1RelaxedBarrierPenalty(Config config) : config_(std::move(config)) {}
+  explicit RelaxedBarrierPenalty(Config config) : config_(std::move(config)) {}
 
-  ~G1RelaxedBarrierPenalty() override = default;
-  G1RelaxedBarrierPenalty* clone() const override { return new G1RelaxedBarrierPenalty(*this); }
+  ~RelaxedBarrierPenalty() override = default;
+  RelaxedBarrierPenalty* clone() const override { return new RelaxedBarrierPenalty(*this); }
   std::string name() const override { return "RelaxedBarrierPenalty"; }
 
   scalar_t getValue(scalar_t t, scalar_t h) const override;
@@ -83,9 +84,9 @@ class G1RelaxedBarrierPenalty final : public G1PenaltyBase {
   void getParameters(vector_t& parameters) const override;
 
  private:
-  G1RelaxedBarrierPenalty(const G1RelaxedBarrierPenalty& other) = default;
+  RelaxedBarrierPenalty(const RelaxedBarrierPenalty& other) = default;
 
   Config config_;
 };
 
-}  // namespace ocs2
+}  // namespace humanoid::ocp_extensions

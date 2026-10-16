@@ -35,11 +35,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ocs2_core/Types.h>
 
-namespace ocs2 {
+namespace humanoid::ocp_extensions {
+using namespace ocs2;
 
 /** The Kinematics function which maps state-input pair to the end-effector (position, velocity, orientation error) */
 template <typename SCALAR_T>
-class G1EndEffectorKinematics : public EndEffectorKinematics<SCALAR_T> {
+class EndEffectorKinematics : public ocs2::EndEffectorKinematics<SCALAR_T> {
  public:
   using vector3_t = Eigen::Matrix<SCALAR_T, 3, 1>;
   using matrix3x_t = Eigen::Matrix<SCALAR_T, 3, Eigen::Dynamic>;
@@ -48,10 +49,10 @@ class G1EndEffectorKinematics : public EndEffectorKinematics<SCALAR_T> {
   using vector_t = Eigen::Matrix<SCALAR_T, Eigen::Dynamic, 1>;
   using quaternion_t = Eigen::Quaternion<SCALAR_T>;
 
-  G1EndEffectorKinematics() = default;
-  virtual ~G1EndEffectorKinematics() = default;
-  virtual G1EndEffectorKinematics* clone() const = 0;
-  G1EndEffectorKinematics& operator=(const G1EndEffectorKinematics&) = delete;
+  EndEffectorKinematics() = default;
+  virtual ~EndEffectorKinematics() = default;
+  virtual EndEffectorKinematics* clone() const = 0;
+  EndEffectorKinematics& operator=(const EndEffectorKinematics&) = delete;
 
   /** Get end-effector IDs (names) */
   virtual const std::vector<std::string>& getIds() const = 0;
@@ -193,7 +194,7 @@ class G1EndEffectorKinematics : public EndEffectorKinematics<SCALAR_T> {
       const vector_t& state, const std::vector<vector3_t>& planeNormals) const = 0;
 
  protected:
-  G1EndEffectorKinematics(const G1EndEffectorKinematics&) = default;
+  EndEffectorKinematics(const EndEffectorKinematics&) = default;
 };
 
-}  // namespace ocs2
+}  // namespace humanoid::ocp_extensions

@@ -53,7 +53,7 @@ namespace ocs2::humanoid {
  * sqrt(regularization) instead of Fz = 0
  *
  */
-class FrictionForceConeConstraint final : public StateInputConstraint, public g1::ActiveConstraint {
+class FrictionForceConeConstraint final : public StateInputConstraint, public ::humanoid::ocp_extensions::ActiveConstraint {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

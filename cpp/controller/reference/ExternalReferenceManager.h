@@ -38,7 +38,7 @@ struct ReferencePacket {
  * 原管理器的地形适配、摆腿样条及其他 OCP 参考计算继续保留。
  */
 class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
-                                       public g1::MeasuredModeReceiver {
+                                       public ::humanoid::ocp_extensions::MeasuredModeReceiver {
  public:
   /** @brief 将真实观测的接触模式传给既有参考管理器。 */
   void setMeasuredMode(size_t mode) override { ref_->setMeasuredMode(mode); }

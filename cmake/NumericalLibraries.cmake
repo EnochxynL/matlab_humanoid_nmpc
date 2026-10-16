@@ -1,8 +1,8 @@
 include("${PROJECT_SOURCE_DIR}/cmake/PinocchioCompatibility.cmake")
-file(GLOB g1_extension_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/cpp/extensions/*.cpp")
-add_library(g1_ocp_extensions SHARED ${g1_extension_sources})
-target_include_directories(g1_ocp_extensions PUBLIC "${PROJECT_SOURCE_DIR}/cpp")
-target_link_libraries(g1_ocp_extensions PUBLIC ocs2_core ocs2_robotic_tools)
+file(GLOB humanoid_extension_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/cpp/extensions/*.cpp")
+add_library(humanoid_ocp_extensions SHARED ${humanoid_extension_sources})
+target_include_directories(humanoid_ocp_extensions PUBLIC "${PROJECT_SOURCE_DIR}/cpp")
+target_link_libraries(humanoid_ocp_extensions PUBLIC ocs2_core ocs2_robotic_tools)
 # Plain-CMake build adapter. Vendored OCS2 sources and original build files remain unchanged.
 add_library(ocs2_thirdparty INTERFACE)
 target_include_directories(ocs2_thirdparty SYSTEM INTERFACE "${G1_OCS2_SOURCE_DIR}/ocs2_thirdparty/include")
@@ -257,7 +257,7 @@ add_library(humanoid_common_mpc SHARED
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/initialization/WeightCompInitializer.cpp"
 )
 target_include_directories(humanoid_common_mpc PUBLIC "${G1_CORE_DIR}/problem/humanoid_common_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
-target_link_libraries(humanoid_common_mpc PUBLIC g1_ocp_extensions ocs2_core ocs2_mpc ocs2_pinocchio_interface pinocchio::pinocchio)
+target_link_libraries(humanoid_common_mpc PUBLIC humanoid_ocp_extensions ocs2_core ocs2_mpc ocs2_pinocchio_interface pinocchio::pinocchio)
 target_compile_options(humanoid_common_mpc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
 add_library(humanoid_wb_mpc SHARED

@@ -1,6 +1,6 @@
 #pragma once
 #include <ocs2_core/constraint/StateInputConstraint.h>
-namespace g1 {
+namespace humanoid::ocp_extensions {
 class ActiveConstraint {
 public:
  virtual ~ActiveConstraint() = default;

@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // CppAD
 #include <ocs2_core/automatic_differentiation/Types.h>
 
-namespace g1::geometry {
+namespace humanoid::ocp_extensions::geometry {
 using namespace ocs2;
 using ad_quaternion_t = Eigen::Quaternion<ad_scalar_t>;
 
@@ -296,7 +296,7 @@ Eigen::Matrix<SCALAR_T, 3, 1> rotationMatrixToRotationVector(const Eigen::Matrix
   const Eigen::Matrix<SCALAR_T, 3, 1> normalSol = (SCALAR_T(0.5) * theta / sqrt(SCALAR_T(1.0) - tmp * tmp)) * skewVector;
 
   // Quaternion solution, when close to pi, use when trace < -1.0 + eps
-  auto q = g1::geometry::matrixToQuaternion(R);
+  auto q = ::humanoid::ocp_extensions::geometry::matrixToQuaternion(R);
 
   // Correct sign to make qw positive
   q.vec() = selectSolutionGt(q.w(), SCALAR_T(0.0), q.vec(), -q.vec());
@@ -407,4 +407,4 @@ Eigen::Matrix<SCALAR_T, 3, 1> rotationMatrixDistanceToPlane(const Eigen::Matrix<
   return quaternionDistance<SCALAR_T>(quaternion_correction, Eigen::Quaternion<SCALAR_T>::Identity());
 }
 
-}  // namespace ocs2
+}  // namespace humanoid::ocp_extensions::geometry

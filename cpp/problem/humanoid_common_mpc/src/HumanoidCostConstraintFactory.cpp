@@ -1,4 +1,4 @@
-#include "extensions/G1RelaxedBarrierPenalty.h"
+#include "extensions/RelaxedBarrierPenalty.h"
 /******************************************************************************
 Copyright (c) 2025, Manuel Yves Galliker. All rights reserved.
 Copyright (c) 2024, 1X Technologies. All rights reserved.
@@ -37,10 +37,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/property_tree/ptree.hpp>
 
 #include <ocs2_core/constraint/StateInputConstraint.h>
-#include "extensions/G1QuadraticStateCost.h"
-#include "extensions/G1PieceWisePolynomialBarrierPenalty.h"
-#include "extensions/G1StateInputSoftConstraint.h"
-#include "extensions/G1StateSoftConstraint.h"
+#include "extensions/QuadraticStateCost.h"
+#include "extensions/PieceWisePolynomialBarrierPenalty.h"
+#include "extensions/StateInputSoftConstraint.h"
+#include "extensions/StateSoftConstraint.h"
 
 #include <humanoid_common_mpc/constraint/FrictionForceConeConstraint.h>
 #include <humanoid_common_mpc/constraint/ZeroWrenchConstraint.h>
@@ -103,18 +103,18 @@ std::unique_ptr<StateCost> HumanoidCostConstraintFactory::getFootCollisionConstr
   const std::string prefix = "collision_constraint.";
 
   FootCollisionConstraint::Config collisionConfig = FootCollisionConstraint::loadFootCollisionConstraintConfig(taskFile_, verbose_);
-  G1PieceWisePolynomialBarrierPenalty::Config barrierPenaltyConfig;
+  ::humanoid::ocp_extensions::PieceWisePolynomialBarrierPenalty::Config barrierPenaltyConfig;
 
   loadData::loadPtreeValue(pt, barrierPenaltyConfig.mu, prefix + "mu", verbose_);
   loadData::loadPtreeValue(pt, barrierPenaltyConfig.delta, prefix + "delta", verbose_);
 
-  std::unique_ptr<G1PieceWisePolynomialBarrierPenalty> penalty(new G1PieceWisePolynomialBarrierPenalty(barrierPenaltyConfig));
+  std::unique_ptr<::humanoid::ocp_extensions::PieceWisePolynomialBarrierPenalty> penalty(new ::humanoid::ocp_extensions::PieceWisePolynomialBarrierPenalty(barrierPenaltyConfig));
 
   std::unique_ptr<FootCollisionConstraint> footCollisionConstraintPtr(
       new FootCollisionConstraint(*referenceManagerPtr_, *pinocchioInterfacePtr_, *mpcRobotModelADPtr_, std::move(collisionConfig),
                                   "FootCollisionConstraint", modelSettings_));
 
-  return std::unique_ptr<StateCost>(new G1StateSoftConstraint(std::move(footCollisionConstraintPtr), std::move(penalty)));
+  return std::unique_ptr<StateCost>(new ::humanoid::ocp_extensions::StateSoftConstraint(std::move(footCollisionConstraintPtr), std::move(penalty)));
 }
 
 /******************************************************************************************************/
@@ -126,7 +126,7 @@ std::unique_ptr<StateCost> HumanoidCostConstraintFactory::getJointLimitsConstrai
   boost::property_tree::read_info(taskFile_, pt);
   const std::string prefix = "jointLimits.";
 
-  G1PieceWisePolynomialBarrierPenalty::Config barrierPenaltyConfig;
+  ::humanoid::ocp_extensions::PieceWisePolynomialBarrierPenalty::Config barrierPenaltyConfig;
 
   if (verbose_) {
     std::cerr << "\n #### Joint Limit Barrier Penalty Config: ";
@@ -160,7 +160,7 @@ std::unique_ptr<StateInputCost> HumanoidCostConstraintFactory::getContactMomentX
   boost::property_tree::read_info(taskFile_, pt);
   const std::string prefix = "contacts.contactMomentXYSoftConstraint.";
 
-  G1RelaxedBarrierPenalty::Config barrierPenaltyConfig;
+  ::humanoid::ocp_extensions::RelaxedBarrierPenalty::Config barrierPenaltyConfig;
   loadData::loadPtreeValue(pt, barrierPenaltyConfig.mu, prefix + "mu", verbose_);
   loadData::loadPtreeValue(pt, barrierPenaltyConfig.delta, prefix + "delta", verbose_);
 
@@ -168,9 +168,9 @@ std::unique_ptr<StateInputCost> HumanoidCostConstraintFactory::getContactMomentX
       *referenceManagerPtr_, ContactRectangle::loadContactRectangle(taskFile_, mpcRobotModelPtr_->modelSettings, contactPointIndex),
       contactPointIndex, *pinocchioInterfacePtr_, *mpcRobotModelADPtr_, name, modelSettings_));
 
-  std::unique_ptr<G1PenaltyBase> penalty(new G1RelaxedBarrierPenalty(barrierPenaltyConfig));
+  std::unique_ptr<::humanoid::ocp_extensions::PenaltyBase> penalty(new ::humanoid::ocp_extensions::RelaxedBarrierPenalty(barrierPenaltyConfig));
 
-  return std::unique_ptr<StateInputCost>(new G1StateInputSoftConstraint(std::move(contactMomentXYConstraintPtr), std::move(penalty)));
+  return std::unique_ptr<StateInputCost>(new ::humanoid::ocp_extensions::StateInputSoftConstraint(std::move(contactMomentXYConstraintPtr), std::move(penalty)));
 }
 
 /******************************************************************************************************/
@@ -191,7 +191,7 @@ std::unique_ptr<StateInputCost> HumanoidCostConstraintFactory::getFrictionForceC
   const std::string prefix = "contacts.frictionForceConeSoftConstraint.";
 
   scalar_t frictionCoefficient = 1.0;
-  G1RelaxedBarrierPenalty::Config barrierPenaltyConfig;
+  ::humanoid::ocp_extensions::RelaxedBarrierPenalty::Config barrierPenaltyConfig;
   if (verbose_) {
     std::cerr << "\n #### Friction Cone Settings: ";
     std::cerr << "\n #### =============================================================================\n";
@@ -207,9 +207,9 @@ std::unique_ptr<StateInputCost> HumanoidCostConstraintFactory::getFrictionForceC
   std::unique_ptr<FrictionForceConeConstraint> frictionForceConeConstraintPtr(
       new FrictionForceConeConstraint(*referenceManagerPtr_, std::move(frictionConeConConfig), contactPointIndex, *mpcRobotModelPtr_));
 
-  std::unique_ptr<G1PenaltyBase> penalty(new G1RelaxedBarrierPenalty(barrierPenaltyConfig));
+  std::unique_ptr<::humanoid::ocp_extensions::PenaltyBase> penalty(new ::humanoid::ocp_extensions::RelaxedBarrierPenalty(barrierPenaltyConfig));
 
-  return std::unique_ptr<StateInputCost>(new G1StateInputSoftConstraint(std::move(frictionForceConeConstraintPtr), std::move(penalty)));
+  return std::unique_ptr<StateInputCost>(new ::humanoid::ocp_extensions::StateInputSoftConstraint(std::move(frictionForceConeConstraintPtr), std::move(penalty)));
 }
 
 /******************************************************************************************************/
@@ -225,7 +225,7 @@ std::unique_ptr<StateCost> HumanoidCostConstraintFactory::getTerminalCost() cons
   loadData::loadEigenMatrix(taskFile_, "Q_final", Qf);
   Qf *= terminalCostScaling;
   if (verbose_) std::cerr << "Q_final:\n" << Qf << std::endl;
-  return std::unique_ptr<StateCost>(new G1QuadraticStateCost(Qf));
+  return std::unique_ptr<StateCost>(new ::humanoid::ocp_extensions::QuadraticStateCost(Qf));
 }
 
 /******************************************************************************************************/

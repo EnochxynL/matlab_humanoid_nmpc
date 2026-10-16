@@ -37,7 +37,7 @@ namespace ocs2::humanoid {
 /******************************************************************************************************/
 /******************************************************************************************************/
 
-EndEffectorKinematicsTwistConstraint::EndEffectorKinematicsTwistConstraint(const G1EndEffectorKinematics<scalar_t>& endEffectorKinematics,
+EndEffectorKinematicsTwistConstraint::EndEffectorKinematicsTwistConstraint(const ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>& endEffectorKinematics,
                                                                            size_t numConstraints,
                                                                            Config config)
     : StateInputConstraint(ConstraintOrder::Linear),

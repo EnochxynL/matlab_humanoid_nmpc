@@ -5,8 +5,8 @@
 #include <limits>
 #include <humanoid_wb_mpc/WBMpcInterface.h>
 #include <humanoid_wb_mpc/dynamics/DynamicsHelperFunctions.h>
-#include "extensions/G1StateInputSoftConstraint.h"
-#include "extensions/G1StateSoftConstraint.h"
+#include "extensions/StateInputSoftConstraint.h"
+#include "extensions/StateSoftConstraint.h"
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/property_tree/json_parser.hpp>
 namespace g1_controller::diagnostics {
@@ -21,7 +21,7 @@ inline void exportConfiguration(WBMpcInterface& i,const std::string&task,const s
  out.put("loaded.sqp.integrator",sensitivity_integrator::toString(s.integratorType));
  boost::property_tree::ptree names;for(auto&n:i.modelSettings().mpcModelJointNames){boost::property_tree::ptree item;item.put("",n);names.push_back({"",item});}out.add_child("joint_names_mpc_order",names);
  auto&ocp=i.getOptimalControlProblem();
- auto inventory=[&](const char*name,auto&collection){boost::property_tree::ptree rows;for(auto&[n,index]:g1::termNames(*collection)){boost::property_tree::ptree row;row.put("name",n);row.put("index",index);rows.push_back({"",row});}out.add_child(name,rows);};
+ auto inventory=[&](const char*name,auto&collection){boost::property_tree::ptree rows;for(auto&[n,index]: ::humanoid::ocp_extensions::termNames(*collection)){boost::property_tree::ptree row;row.put("name",n);row.put("index",index);rows.push_back({"",row});}out.add_child(name,rows);};
  inventory("running_cost",ocp.costPtr);inventory("terminal_cost",ocp.finalCostPtr);inventory("state_soft",ocp.stateSoftConstraintPtr);inventory("input_soft",ocp.softConstraintPtr);inventory("hard_equality",ocp.equalityConstraintPtr);
  boost::property_tree::write_json(folder+"/loaded_configuration.json",out);
 }
@@ -55,15 +55,15 @@ class StructuralObserver final:public SolverSynchronizedModule,public DummyObser
   auto lin=clone_.dynamicsPtr->linearApproximation(t,x,u,pc);lastDerivative_=lin.f;lastSampleTime_=t;
   for(int j=0;j<lin.f.size();++j)dynamics_<<target_<<','<<t<<','<<j<<','<<lin.f[j]<<','<<lin.dfdx.rows()<<','<<lin.dfdx.cols()<<','<<lin.dfdu.rows()<<','<<lin.dfdu.cols()<<'\n';
   double total=0;
-  auto inputCosts=[&](const char*group,auto&collection){for(auto&[name,index]:g1::termNames(*collection)){auto&term=collection->get(name);double v=term.isActive(t)?term.getValue(t,x,u,*clone_.targetTrajectoriesPtr,pc):0;scalarCost(group,name,t,v);total+=v;}};
+  auto inputCosts=[&](const char*group,auto&collection){for(auto&[name,index]: ::humanoid::ocp_extensions::termNames(*collection)){auto&term=collection->get(name);double v=term.isActive(t)?term.getValue(t,x,u,*clone_.targetTrajectoriesPtr,pc):0;scalarCost(group,name,t,v);total+=v;}};
   inputCosts("running",clone_.costPtr);inputCosts("input_soft",clone_.softConstraintPtr);
-  for(auto&[name,index]:g1::termNames(*clone_.stateSoftConstraintPtr)){auto&term=clone_.stateSoftConstraintPtr->get(name);double v=term.isActive(t)?term.getValue(t,x,*clone_.targetTrajectoriesPtr,pc):0;scalarCost("state_soft",name,t,v);total+=v;}
+  for(auto&[name,index]: ::humanoid::ocp_extensions::termNames(*clone_.stateSoftConstraintPtr)){auto&term=clone_.stateSoftConstraintPtr->get(name);double v=term.isActive(t)?term.getValue(t,x,*clone_.targetTrajectoriesPtr,pc):0;scalarCost("state_soft",name,t,v);total+=v;}
   scalarCost("running_total","sum_running_and_soft",t,total);
-  for(auto&[name,index]:g1::termNames(*clone_.equalityConstraintPtr)){auto&term=clone_.equalityConstraintPtr->get(name);bool active=term.isActive(t);auto dim=active?term.getNumConstraints(t):0;if(active){auto r=term.getValue(t,x,u,pc);for(int j=0;j<r.size();++j)constraints_<<target_<<','<<t<<','<<name<<",1,"<<dim<<','<<j<<','<<r[j]<<'\n';}else constraints_<<target_<<','<<t<<','<<name<<",0,0,-1,0\n";}
-  for(auto&[name,index]:g1::termNames(*clone_.softConstraintPtr)){auto&wrapper=clone_.softConstraintPtr->get<G1StateInputSoftConstraint>(name);auto&term=wrapper.get();bool active=term.isActive(t);if(active){auto r=term.getValue(t,x,u,pc);for(int j=0;j<r.size();++j)constraints_<<target_<<','<<t<<','<<name<<",1,"<<r.size()<<','<<j<<','<<r[j]<<'\n';}else constraints_<<target_<<','<<t<<','<<name<<",0,0,-1,0\n";}
+  for(auto&[name,index]: ::humanoid::ocp_extensions::termNames(*clone_.equalityConstraintPtr)){auto&term=clone_.equalityConstraintPtr->get(name);bool active=term.isActive(t);auto dim=active?term.getNumConstraints(t):0;if(active){auto r=term.getValue(t,x,u,pc);for(int j=0;j<r.size();++j)constraints_<<target_<<','<<t<<','<<name<<",1,"<<dim<<','<<j<<','<<r[j]<<'\n';}else constraints_<<target_<<','<<t<<','<<name<<",0,0,-1,0\n";}
+  for(auto&[name,index]: ::humanoid::ocp_extensions::termNames(*clone_.softConstraintPtr)){auto&wrapper=clone_.softConstraintPtr->get<::humanoid::ocp_extensions::StateInputSoftConstraint>(name);auto&term=wrapper.get();bool active=term.isActive(t);if(active){auto r=term.getValue(t,x,u,pc);for(int j=0;j<r.size();++j)constraints_<<target_<<','<<t<<','<<name<<",1,"<<r.size()<<','<<j<<','<<r[j]<<'\n';}else constraints_<<target_<<','<<t<<','<<name<<",0,0,-1,0\n";}
   // Terminal contribution is separately evaluated, never added to instantaneous running total.
   double tf=p.timeTrajectory_.back();auto&xf=p.stateTrajectory_.back();pc.requestFinal(Request::Cost,tf,xf);
-  for(auto&[name,index]:g1::termNames(*clone_.finalCostPtr))scalarCost("terminal",name,tf,clone_.finalCostPtr->get(name).getValue(tf,xf,*clone_.targetTrajectoriesPtr,pc));
+  for(auto&[name,index]: ::humanoid::ocp_extensions::termNames(*clone_.finalCostPtr))scalarCost("terminal",name,tf,clone_.finalCostPtr->get(name).getValue(tf,xf,*clone_.targetTrajectoriesPtr,pc));
   dynamics_<<std::flush;costs_<<std::flush;constraints_<<std::flush;
  }
  void update(const SystemObservation&o,const PrimalSolution&p,const CommandData&c)override{

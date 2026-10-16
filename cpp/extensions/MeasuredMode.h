@@ -1,6 +1,6 @@
 #pragma once
 #include <cstddef>
-namespace g1 {
+namespace humanoid::ocp_extensions {
 class MeasuredModeReceiver {
 public:
  virtual ~MeasuredModeReceiver() = default;

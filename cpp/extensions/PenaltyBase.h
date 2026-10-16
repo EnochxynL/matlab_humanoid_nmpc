@@ -29,30 +29,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #pragma once
-#include <ocs2_core/penalties/augmented/AugmentedPenaltyBase.h>
+#include <ocs2_core/penalties/penalties/PenaltyBase.h>
 
 #include <string>
 
 #include <ocs2_core/Types.h>
 
-namespace ocs2 {
-namespace augmented {
+namespace humanoid::ocp_extensions {
+using namespace ocs2;
 
 /**
  * The penalty function interface class is used to penalize constraint violation by adding a penalty term to the cost function.
- * We assume that the penalty function is convex. In general, the penalty is a function of time, Lagrange multiplier, and
- * constraint violation.
+ * We assume that the penalty function is convex. In general, the penalty is a function of time and constraint violation.
  */
-class G1AugmentedPenaltyBase : public AugmentedPenaltyBase {
+class PenaltyBase : public ocs2::PenaltyBase {
  public:
   /** Default constructor */
-  G1AugmentedPenaltyBase() = default;
+  PenaltyBase() = default;
 
   /** Default destructor */
-  virtual ~G1AugmentedPenaltyBase() = default;
+  virtual ~PenaltyBase() = default;
 
   /** Clones the class */
-  virtual G1AugmentedPenaltyBase* clone() const = 0;
+  virtual PenaltyBase* clone() const = 0;
 
   /** Get the name of the penalty function. This method is only used during error handling. */
   virtual std::string name() const = 0;
@@ -61,66 +60,41 @@ class G1AugmentedPenaltyBase : public AugmentedPenaltyBase {
    * Compute the penalty value at a certain constraint value.
    *
    * @param [in] t: The time that the constraint is evaluated.
-   * @param [in] l: The Lagrange multiplier.
    * @param [in] h: Constraint value.
    * @return penalty cost.
    */
-  virtual scalar_t getValue(scalar_t t, scalar_t l, scalar_t h) const = 0;
+  virtual scalar_t getValue(scalar_t t, scalar_t h) const = 0;
 
   /**
    * Compute the penalty derivative at a certain constraint value.
    *
    * @param [in] t: The time that the constraint is evaluated.
-   * @param [in] l: The Lagrange multiplier.
    * @param [in] h: Constraint value.
    * @return penalty derivative with respect to constraint value.
    */
-  virtual scalar_t getDerivative(scalar_t t, scalar_t l, scalar_t h) const = 0;
+  virtual scalar_t getDerivative(scalar_t t, scalar_t h) const = 0;
 
   /**
    * Compute the penalty second derivative at a certain constraint value.
    *
    * @param [in] t: The time that the constraint is evaluated.
-   * @param [in] l: The Lagrange multiplier.
    * @param [in] h: Constraint value.
    * @return penalty second derivative with respect to constraint value.
    */
-  virtual scalar_t getSecondDerivative(scalar_t t, scalar_t l, scalar_t h) const = 0;
+  virtual scalar_t getSecondDerivative(scalar_t t, scalar_t h) const = 0;
 
   /**
    * Set custom parameters of the penalty function.
-   *
-   * @param [in] parameters: The parameters of the penalty function.
    */
   virtual void setParameters(const vector_t& /*parameters*/) {}
 
   /**
    * Get the number of parameters of the penalty function.
-   *
-   * @return number of parameters.
    */
   virtual void getParameters(vector_t& /*parameters*/) const {}
 
-  /**
-   * Updates the Lagrange multiplier.
-   *
-   * @param [in] t: The time stamp.
-   * @param [in] l: The Lagrange multiplier.
-   * @param [in] h: Constraint values.
-   * @return updated Lagrange multiplier.
-   */
-  virtual scalar_t updateMultiplier(scalar_t t, scalar_t l, scalar_t h) const = 0;
-
-  /**
-   * Initializes the Lagrange multiplier.
-   *
-   * @return initial value of the Lagrange multiplier.
-   */
-  virtual scalar_t initializeMultiplier() const = 0;
-
  protected:
-  G1AugmentedPenaltyBase(const G1AugmentedPenaltyBase& other) = default;
+  PenaltyBase(const PenaltyBase& other) = default;
 };
 
-}  // namespace augmented
-}  // namespace ocs2
+}  // namespace humanoid::ocp_extensions

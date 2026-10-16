@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace ocs2::humanoid {
 
-class JointMimicDynamicsConstraint final : public StateInputConstraint, public g1::ActiveConstraint {
+class JointMimicDynamicsConstraint final : public StateInputConstraint, public ::humanoid::ocp_extensions::ActiveConstraint {
  public:
   struct Config {
     Config() = delete;

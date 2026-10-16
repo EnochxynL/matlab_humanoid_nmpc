@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 #include <ocs2_core/constraint/StateInputConstraint.h>
-#include "extensions/G1EndEffectorKinematics.h" // TODO:
+#include "extensions/EndEffectorKinematics.h" // TODO:
 
 #include "humanoid_common_mpc/common/Types.h"
 
@@ -63,7 +63,7 @@ class EndEffectorKinematicsTwistConstraint final : public StateInputConstraint {
    * @param [in] numConstraints: The number of constraints {1, 2, 3, 4, 5, 6}
    * @param [in] config: The constraint coefficients, g(xee, vee) = Ax * xee + Av * vee + b
    */
-  EndEffectorKinematicsTwistConstraint(const G1EndEffectorKinematics<scalar_t>& endEffectorKinematics,
+  EndEffectorKinematicsTwistConstraint(const ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>& endEffectorKinematics,
                                        size_t numConstraints,
                                        Config config = Config());
 
@@ -78,7 +78,7 @@ class EndEffectorKinematicsTwistConstraint final : public StateInputConstraint {
   Config& getConfig() { return config_; }
 
   /** Gets the underlying end-effector kinematics interface. */
-  G1EndEffectorKinematics<scalar_t>& getEndEffectorKinematics() { return *endEffectorKinematicsPtr_; }
+  ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>& getEndEffectorKinematics() { return *endEffectorKinematicsPtr_; }
 
   size_t getNumConstraints(scalar_t time) const override { return numConstraints_; }
   vector_t getValue(scalar_t time, const vector_t& state, const vector_t& input, const PreComputation& preComp) const override;
@@ -90,7 +90,7 @@ class EndEffectorKinematicsTwistConstraint final : public StateInputConstraint {
  private:
   EndEffectorKinematicsTwistConstraint(const EndEffectorKinematicsTwistConstraint& rhs);
   vector3_t ground_plane_normal_;
-  std::unique_ptr<G1EndEffectorKinematics<scalar_t>> endEffectorKinematicsPtr_;
+  std::unique_ptr<::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>> endEffectorKinematicsPtr_;
   const size_t numConstraints_;
   Config config_;
 };

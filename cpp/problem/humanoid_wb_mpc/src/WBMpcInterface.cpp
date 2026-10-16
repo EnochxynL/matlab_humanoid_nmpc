@@ -47,7 +47,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ocs2_core/misc/LoadData.h>
 #include <ocs2_core/misc/Numerics.h>
 #include <ocs2_core/penalties/Penalties.h>
-#include "extensions/G1StateInputSoftConstraint.h"
+#include "extensions/StateInputSoftConstraint.h"
 #include <ocs2_oc/synchronized_module/SolverSynchronizedModule.h>
 #include <ocs2_pinocchio_interface/PinocchioEndEffectorKinematicsCppAd.h>
 
@@ -164,13 +164,13 @@ void WBMpcInterface::setupOptimalControlProblem() {
   problemPtr_->dynamicsPtr = std::move(dynamicsPtr);
 
   // Cost terms
-  g1::addTerm(*problemPtr_->costPtr,"stateInputQuadraticCost", factory.getStateInputQuadraticCost());
-  // g1::addTerm(*problemPtr_->costPtr,"jointTorqueCost", getJointTorqueCost(taskFile_));
-  g1::addTerm(*problemPtr_->finalCostPtr,"terminalCost", factory.getTerminalCost());
+  ::humanoid::ocp_extensions::addTerm(*problemPtr_->costPtr,"stateInputQuadraticCost", factory.getStateInputQuadraticCost());
+  // ::humanoid::ocp_extensions::addTerm(*problemPtr_->costPtr,"jointTorqueCost", getJointTorqueCost(taskFile_));
+  ::humanoid::ocp_extensions::addTerm(*problemPtr_->finalCostPtr,"terminalCost", factory.getTerminalCost());
 
   // Constraints
-  g1::addTerm(*problemPtr_->stateSoftConstraintPtr,"jointLimits", factory.getJointLimitsConstraint());
-  g1::addTerm(*problemPtr_->stateSoftConstraintPtr,"FootCollisionSoftConstraint", factory.getFootCollisionConstraint());
+  ::humanoid::ocp_extensions::addTerm(*problemPtr_->stateSoftConstraintPtr,"jointLimits", factory.getJointLimitsConstraint());
+  ::humanoid::ocp_extensions::addTerm(*problemPtr_->stateSoftConstraintPtr,"FootCollisionSoftConstraint", factory.getFootCollisionConstraint());
   // Constraint terms
 
   EndEffectorDynamicsWeights footTrackingCostWeights =
@@ -189,20 +189,20 @@ void WBMpcInterface::setupOptimalControlProblem() {
                                                               modelSettings_.modelFolderCppAd, modelSettings_.recompileLibrariesCppAd,
                                                               modelSettings_.verboseCppAd));
 
-    g1::addTerm(*problemPtr_->softConstraintPtr,footName + "_frictionForceCone", factory.getFrictionForceConeConstraint(i));
-    g1::addTerm(*problemPtr_->softConstraintPtr,footName + "_contactMomentXY",
+    ::humanoid::ocp_extensions::addTerm(*problemPtr_->softConstraintPtr,footName + "_frictionForceCone", factory.getFrictionForceConeConstraint(i));
+    ::humanoid::ocp_extensions::addTerm(*problemPtr_->softConstraintPtr,footName + "_contactMomentXY",
                                         factory.getContactMomentXYConstraint(i, footName + "_contact_moment_XY_constraint"));
-    g1::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_zeroWrench", factory.getZeroWrenchConstraint(i));
-    g1::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_zeroVelocity", getStanceFootConstraint(*eeDynamicsPtr, i));
-    g1::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_normalVelocity", getNormalVelocityConstraint(*eeDynamicsPtr, i));
+    ::humanoid::ocp_extensions::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_zeroWrench", factory.getZeroWrenchConstraint(i));
+    ::humanoid::ocp_extensions::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_zeroVelocity", getStanceFootConstraint(*eeDynamicsPtr, i));
+    ::humanoid::ocp_extensions::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_normalVelocity", getNormalVelocityConstraint(*eeDynamicsPtr, i));
 
     if (hasMimicJoints) {
-      g1::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_kneeJointMimic", getJointMimicConstraint(i));
+      ::humanoid::ocp_extensions::addTerm(*problemPtr_->equalityConstraintPtr,footName + "_kneeJointMimic", getJointMimicConstraint(i));
     }
 
     std::string footTrackingCostName = footName + "_TaskSpaceTrackingCost";
 
-    g1::addTerm(*problemPtr_->costPtr,footTrackingCostName, std::unique_ptr<StateInputCost>(new EndEffectorDynamicsFootCost(
+    ::humanoid::ocp_extensions::addTerm(*problemPtr_->costPtr,footTrackingCostName, std::unique_ptr<StateInputCost>(new EndEffectorDynamicsFootCost(
                                                         *referenceManagerPtr_, footTrackingCostWeights, *pinocchioInterfacePtr_,
                                                         *eeDynamicsPtr, *mpcRobotModelADPtr_, i, footTrackingCostName, modelSettings_)));
   }

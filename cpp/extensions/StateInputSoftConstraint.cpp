@@ -1,6 +1,6 @@
 // Application-owned extension extracted from the pinned fork. Upstream remains unmodified.
 /******************************************************************************
-Copyright (c) 2017, Farbod Farshidian. All rights reserved.
+Copyright (c) 2020, Farbod Farshidian. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -28,62 +28,67 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#include "extensions/G1RelaxedBarrierPenalty.h"
+#include "extensions/StateInputSoftConstraint.h"
 
-namespace ocs2 {
+namespace humanoid::ocp_extensions {
+using namespace ocs2;
 
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-scalar_t G1RelaxedBarrierPenalty::getValue(scalar_t t, scalar_t h) const {
-  if (h > config_.delta) {
-    return -config_.mu * log(h);
-  } else {
-    const scalar_t delta_h = (h - 2.0 * config_.delta) / config_.delta;
-    return config_.mu * (-log(config_.delta) + 0.5 * delta_h * delta_h - 0.5);
-  };
+StateInputSoftConstraint::StateInputSoftConstraint(std::unique_ptr<StateInputConstraint> constraintPtr,
+                                                   std::vector<std::unique_ptr<PenaltyBase>> penaltyPtrArray)
+    : constraintPtr_(std::move(constraintPtr)), penalty_(std::move(penaltyPtrArray)) {}
+
+/******************************************************************************************************/
+/******************************************************************************************************/
+/******************************************************************************************************/
+StateInputSoftConstraint::StateInputSoftConstraint(std::unique_ptr<StateInputConstraint> constraintPtr,
+                                                   std::unique_ptr<PenaltyBase> penaltyFunction)
+    : constraintPtr_(std::move(constraintPtr)), penalty_(std::move(penaltyFunction)) {}
+
+/******************************************************************************************************/
+/******************************************************************************************************/
+/******************************************************************************************************/
+StateInputSoftConstraint::StateInputSoftConstraint(const StateInputSoftConstraint& other)
+    : StateInputCost(other), constraintPtr_(other.constraintPtr_->clone()), penalty_(other.penalty_) {}
+
+/******************************************************************************************************/
+/******************************************************************************************************/
+/******************************************************************************************************/
+StateInputSoftConstraint* StateInputSoftConstraint::clone() const {
+  return new StateInputSoftConstraint(*this);
 }
 
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-scalar_t G1RelaxedBarrierPenalty::getDerivative(scalar_t t, scalar_t h) const {
-  if (h > config_.delta) {
-    return -config_.mu / h;
-  } else {
-    return config_.mu * ((h - 2.0 * config_.delta) / (config_.delta * config_.delta));
-  };
+bool StateInputSoftConstraint::isActive(scalar_t time) const {
+  return constraintPtr_->isActive(time);
 }
 
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-scalar_t G1RelaxedBarrierPenalty::getSecondDerivative(scalar_t t, scalar_t h) const {
-  if (h > config_.delta) {
-    return config_.mu / (h * h);
-  } else {
-    return config_.mu / (config_.delta * config_.delta);
-  };
+scalar_t StateInputSoftConstraint::getValue(scalar_t time, const vector_t& state, const vector_t& input, const TargetTrajectories&,
+                                            const PreComputation& preComp) const {
+  return penalty_.getValue(time, constraintPtr_->getValue(time, state, input, preComp));
 }
 
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-void G1RelaxedBarrierPenalty::setParameters(const vector_t& parameters) {
-  if (parameters.size() != 2) {
-    throw std::runtime_error("G1RelaxedBarrierPenalty::setParameters: Invalid number of parameters.");
+ScalarFunctionQuadraticApproximation StateInputSoftConstraint::getQuadraticApproximation(scalar_t time, const vector_t& state,
+                                                                                         const vector_t& input, const TargetTrajectories&,
+                                                                                         const PreComputation& preComp) const {
+  switch (constraintPtr_->getOrder()) {
+    case ConstraintOrder::Linear:
+      return penalty_.getQuadraticApproximation(time, constraintPtr_->getLinearApproximation(time, state, input, preComp));
+    case ConstraintOrder::Quadratic:
+      return penalty_.getQuadraticApproximation(time, constraintPtr_->getQuadraticApproximation(time, state, input, preComp));
+    default:
+      throw std::runtime_error("[StateInputSoftConstraint] Unknown constraint Order");
   }
-  config_.mu = parameters[0];
-  config_.delta = parameters[1];
 }
 
-/******************************************************************************************************/
-/******************************************************************************************************/
-/******************************************************************************************************/
-void G1RelaxedBarrierPenalty::getParameters(vector_t& parameters) const {
-  parameters.resize(2);
-  parameters[0] = config_.mu;
-  parameters[1] = config_.delta;
-}
-
-}  // namespace ocs2
+}  // namespace humanoid::ocp_extensions

@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ocs2_core/cost/StateInputGaussNewtonCostAd.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
-#include "extensions/G1EndEffectorKinematics.h" // TODO:
+#include "extensions/EndEffectorKinematics.h" // TODO:
 #include <pinocchio/algorithm/frames.hpp>
 
 #include "humanoid_common_mpc/common/ModelSettings.h"

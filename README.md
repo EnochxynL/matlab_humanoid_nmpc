@@ -164,3 +164,5 @@ cmake --build build/observation --parallel 1
 控制层使用 `g1_controller::PlannerExecutor`、`PlannerContext`、`PlannerConfig`、`ReferencePacket` 和 `ExternalReferenceManager`；结构诊断归入 `g1_controller::diagnostics`。`WaveBControlTime`、`task5a`、`task5b` 不再作为类名或命名空间；现有 `TASK5A_*` 环境配置保持兼容。
 
 原 `ObservationKernels.h/.cpp`、`ReferenceExtraction.h/.cpp` 已合入各自 MEX 源文件并删除，没有重复维护公式。`PlannerMex.cpp` 仍是独立核心库的包装。`validate_single_file_mex` 对冻结的转换样本、时间身份、拒绝非法输入和完整策略回放进行验证，不运行物理仿真。
+
+`cpp/extensions/` 的通用 OCP 扩展使用 `humanoid::ocp_extensions` 命名空间，类型和文件名不再使用 `G1` 前缀；旋转辅助函数位于其 `geometry` 子命名空间，增广罚函数接口位于 `augmented`。扩展库目标为 `humanoid_ocp_extensions`，调用点显式限定扩展类型，避免与官方 OCS2 同名类型混淆。`G1Controller` 等真实机器人入口保持原名。

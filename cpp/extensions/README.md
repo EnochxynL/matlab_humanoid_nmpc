@@ -1,32 +1,33 @@
-# G1 application extensions for unmodified official OCS2
+# Application-owned OCP extensions
 
-These classes are owned and compiled by this application; no official source or
-header is shadowed. Prefix `G1` distinguishes them from official OCS2 types.
-The public controller API does not expose these classes.
+These files belong to `humanoid::ocp_extensions`, not the official `ocs2`
+namespace. Geometry helpers use its `geometry` child namespace; augmented
+penalty interfaces use its `augmented` child namespace. Files and types are
+named by capability because these implementations contain no G1 joint names,
+robot dimensions or G1-specific parameter choices.
 
-- `G1PieceWisePolynomialBarrierPenalty`: original G1 polynomial definition,
-  implementing the official penalty interface.
-- `G1PenaltyBase`, `G1AugmentedPenaltyBase`: application parameter metadata
-  interfaces derived from official penalty interfaces.
-- `G1RelaxedBarrierPenalty`: preserved scalar formula and configuration metadata.
-- `G1MultidimensionalPenalty`, `G1StateSoftConstraint`,
-  `G1StateInputSoftConstraint`: application owning-cost implementations, retaining
-  the original reduction and chain rule. They implement official cost interfaces;
-  MATLAB-generated replacement wrappers have been removed.
-- `G1QuadraticStateCost`, `G1QuadraticStateInputCost`: metadata-only subclasses;
-  values and derivatives are evaluated by the official quadratic cost methods.
-- `ActiveConstraint`: application activation interface. Its default behavior for
-  an official constraint without that interface matches the former base methods.
-- `TermRegistry`: records names when application terms are constructed, and uses
-  official `getTermIndex` to recover each collection's current ordering.
-- `G1EndEffectorKinematics`, `G1RotationTransforms`: original 6D application
-  interfaces and rotation math, separated from the official library.
-- `MeasuredModeReceiver`: conveys observation mode to application reference
-  updates without changing official MPC/SQP signatures.
+The extensions are compiled as `humanoid_ocp_extensions`. Official OCS2 source
+and headers remain unmodified. The public controller API does not expose these
+types; application consumers explicitly qualify them to distinguish them from
+similarly named official classes.
 
-The preserved penalty and owning-cost implementations originated at
-manumerous/ocs2_ros2 commit bf9ae46f3c6dc751348d8002c03aa2f4a7cc17e7.
-Their BSD copyright/license notices remain in each extracted file. This is an
-explicit application extension, not an allegedly unmodified official class.
-No cost weight, constraint, formula, solver iteration limit or physical model
-was intentionally changed. Full output replay is the acceptance criterion.
+- `PieceWisePolynomialBarrierPenalty`: preserved application polynomial formula;
+  this is not an alias to the official implementation.
+- `PenaltyBase`, `augmented::AugmentedPenaltyBase`: application parameter
+  metadata interfaces derived from their explicitly qualified official bases.
+- `RelaxedBarrierPenalty`: preserved scalar formula and configuration metadata.
+- `MultidimensionalPenalty`, `StateSoftConstraint`, `StateInputSoftConstraint`:
+  preserved reduction, owning-cost and chain-rule implementations.
+- `QuadraticStateCost`, `QuadraticStateInputCost`: metadata subclasses;
+  numerical evaluation remains in the official quadratic cost base methods.
+- `ActiveConstraint`, `MeasuredModeReceiver`: application interfaces for
+  constraint activation and measured contact-mode propagation.
+- `TermRegistry`: application term names mapped to official collection indices.
+- `EndEffectorKinematics`, `geometry` in `RotationTransforms`: retained 6D
+  interfaces and rotation math with no robot-specific assumptions.
+
+The penalty and owning-cost implementations originated at manumerous/ocs2_ros2
+commit bf9ae46f3c6dc751348d8002c03aa2f4a7cc17e7. Their BSD notices remain in the
+source files. This naming change does not alter formulas, parameters, operation
+order, constraints or solver settings. Full fixed-input replay remains the
+acceptance criterion; this does not establish a new physical walking result.

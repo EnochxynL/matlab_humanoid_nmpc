@@ -55,12 +55,12 @@ namespace ocs2::humanoid {
  */
 class PinocchioEndEffectorDynamicsCppAd final : public EndEffectorDynamics<scalar_t> {
  public:
-  using G1EndEffectorKinematics<scalar_t>::vector3_t;
-  using G1EndEffectorKinematics<scalar_t>::matrix3x_t;
-  using G1EndEffectorKinematics<scalar_t>::vector6_t;
-  using G1EndEffectorKinematics<scalar_t>::matrix6x_t;
-  using G1EndEffectorKinematics<scalar_t>::quaternion_t;
-  using G1EndEffectorKinematics<scalar_t>::vector_t;
+  using ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>::vector3_t;
+  using ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>::matrix3x_t;
+  using ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>::vector6_t;
+  using ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>::matrix6x_t;
+  using ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>::quaternion_t;
+  using ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>::vector_t;
   using update_pinocchio_interface_callback =
       std::function<void(const ad_vector_t& state, PinocchioInterfaceTpl<ad_scalar_t>& pinocchioInterface)>;
 

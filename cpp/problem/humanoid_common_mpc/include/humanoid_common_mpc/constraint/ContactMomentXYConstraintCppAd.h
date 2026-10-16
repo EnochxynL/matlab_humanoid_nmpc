@@ -46,7 +46,7 @@ namespace ocs2::humanoid {
  * Implements the constraint h(t,x,u) >= 0 to constrain the contact moment in the x-y plane.
  */
 
-class ContactMomentXYConstraintCppAd final : public StateInputConstraintCppAd, public g1::ActiveConstraint {
+class ContactMomentXYConstraintCppAd final : public StateInputConstraintCppAd, public ::humanoid::ocp_extensions::ActiveConstraint {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   ContactMomentXYConstraintCppAd(const SwitchedModelReferenceManager& referenceManager,

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ocs2_core/cost/StateInputGaussNewtonCostAd.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
-#include "extensions/G1EndEffectorKinematics.h" // TODO:
+#include "extensions/EndEffectorKinematics.h" // TODO:
 #include <pinocchio/algorithm/frames.hpp>
 
 #include "humanoid_common_mpc/common/ModelSettings.h"
@@ -46,7 +46,7 @@ class EndEffectorKinematicsQuadraticCost : public ocs2::StateInputCostGaussNewto
  public:
   EndEffectorKinematicsQuadraticCost(EndEffectorKinematicsWeights weights,
                                      const PinocchioInterface& pinocchioInterface,
-                                     const G1EndEffectorKinematics<scalar_t>& endEffectorKinematics,
+                                     const ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>& endEffectorKinematics,
                                      const MpcRobotModelBase<ad_scalar_t>& mpcRobotModelAD,
                                      std::string endEffectorName,
                                      const ModelSettings& modelSettings);
@@ -72,7 +72,7 @@ class EndEffectorKinematicsQuadraticCost : public ocs2::StateInputCostGaussNewto
 
   static EndEffectorKinematicsCostElement<scalar_t> getReferenceCostElement(const vector_t& state,
                                                                             const vector_t& input,
-                                                                            const G1EndEffectorKinematics<scalar_t>& endEffectorKinematics);
+                                                                            const ::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>& endEffectorKinematics);
 
   ad_vector_t costVectorFunction(ad_scalar_t time,
                                  const ad_vector_t& state,
@@ -83,7 +83,7 @@ class EndEffectorKinematicsQuadraticCost : public ocs2::StateInputCostGaussNewto
   size_t n_parameters_ = 25;
   pinocchio::FrameIndex frameID_;
   mutable PinocchioInterfaceCppAd pinocchioInterfaceCppAd_;
-  const std::unique_ptr<G1EndEffectorKinematics<scalar_t>> endEffectorKinematicsPtr_;
+  const std::unique_ptr<::humanoid::ocp_extensions::EndEffectorKinematics<scalar_t>> endEffectorKinematicsPtr_;
   std::unique_ptr<MpcRobotModelBase<ad_scalar_t>> mpcRobotModelADPtr;
   bool isActive_ = true;
 };

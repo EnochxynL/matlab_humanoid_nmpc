@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <memory>
-namespace g1 {
+namespace humanoid::ocp_extensions {
 inline std::mutex termMutex;
 inline std::unordered_set<std::string> registeredTermNames;
 template<class Collection, class Term>
