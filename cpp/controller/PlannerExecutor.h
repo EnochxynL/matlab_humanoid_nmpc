@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #pragma once
+#include <atomic>
 #include <condition_variable>
 #include <thread>
 #include <exception>
@@ -122,7 +123,7 @@ class PlannerExecutor final {
   ocs2::humanoid::WBAccelMpcRobotModel<ocs2::scalar_t> mpcRobotModel_;
 
   std::atomic_bool terminateThread_{false};
-  std::jthread solver_worker_;
+  std::thread solver_worker_;
 
   std::shared_ptr<ocs2::DummyObserver> visualizerPtr_;
 };

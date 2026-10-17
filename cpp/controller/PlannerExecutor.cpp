@@ -79,6 +79,8 @@ PlannerExecutor::~PlannerExecutor() {
 }
 
 void PlannerExecutor::startMpcThread(const ocs2::SystemObservation& observation) {
+  if (solver_worker_.joinable())
+    throw std::runtime_error("Solver worker already started");
   if (timingMode_ != TimingMode::SIMULATION_TIME_DETERMINISTIC)
     throw std::runtime_error("Enable deterministic scheduling before starting solver");
   currentMpcObservation_ = observation;
@@ -92,7 +94,7 @@ void PlannerExecutor::startMpcThread(const ocs2::SystemObservation& observation)
     if (trace_) trace_("observation_arrived", epoch_, epoch_, 0);
     if (trace_) trace_("update_eligible", epoch_, epoch_, 1);
   }
-  solver_worker_ = std::jthread(&PlannerExecutor::solverWorker, this);
+  solver_worker_ = std::thread(&PlannerExecutor::solverWorker, this);
   if (timingMode_ == TimingMode::SIMULATION_TIME_DETERMINISTIC) waitForRequest(1);
 }
 
