@@ -5,6 +5,7 @@ ros2_ws/src/matlab_msg_gen/
 slprj/
 *.slxc
 *.mexa64
+*.mexw64
 __pycache__/
 *.pyc
 

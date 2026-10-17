@@ -4,6 +4,8 @@
  * 初始化和 configure 不直接求解；工作线程由控制调度器启动。
  */
 #include "controller/PlannerContext.h"
+#include "controller/data/LoadedLibraries.h"
+#include "extensions/Environment.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -25,13 +27,9 @@ PlannerContext::PlannerContext(const PlannerConfig &i)
       mpc(interface.mpcSettings(), interface.sqpSettings(),
           interface.getOptimalControlProblem(), interface.getInitializer()),
       log(std::make_shared<TimeLog>(i.root, i.heavy)),
-      migrated(std::getenv("TASK5A_AUTHORITY") &&
-               std::string(std::getenv("TASK5A_AUTHORITY")) ==
+      migrated(g1_platform::environmentVariable("TASK5A_AUTHORITY") ==
                    "SIMULINK_REFERENCE") {
-  {
-    std::ifstream maps("/proc/self/maps");
-    std::ofstream(i.root + "/loaded_process_maps.txt") << maps.rdbuf();
-  }
+  writeLoadedLibraries(i.root + "/loaded_process_maps.txt");
   if (migrated) {
     external = std::make_shared<ExternalReferenceManager>(
         interface.getSwitchedModelReferenceManagerPtr(),

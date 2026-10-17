@@ -34,6 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/property_tree/ptree.hpp>
 
 #include <stdexcept>
+#include <cstdlib>
+#include "extensions/Environment.h"
 
 #include <ocs2_core/misc/LoadData.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
@@ -121,6 +123,11 @@ ModelSettings::ModelSettings(const std::string& configFile, const std::string& u
   loadData::loadPtreeValue(pt, this->j_l_elbow_y_name, prefix + "armJointNames.left_elbow_y", verbose);
   loadData::loadPtreeValue(pt, this->j_r_elbow_y_name, prefix + "armJointNames.right_elbow_y", verbose);
   modelFolderCppAd = "cppad_code_gen/cppad_" + mpcName + robotName;
+#ifdef _WIN32
+  const auto windowsCache = g1_platform::environmentVariable("G1_AD_CACHE_ROOT");
+  modelFolderCppAd = (windowsCache.empty() ? "build/windows/ad-cache" : windowsCache) +
+                    "/cppad_" + mpcName + robotName;
+#endif
 
   loadData::loadStdVector(configFile, prefix + "fixedJointNames", fixedJointNames, verbose);
   loadData::loadStdVector(configFile, prefix + "contactNames6DoF", contactNames6DoF, verbose);

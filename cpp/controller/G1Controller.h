@@ -9,6 +9,16 @@
 #include "g1_controller/Types.h"
 #include <memory>
 
+#if defined(_WIN32)
+#if defined(g1_controller_core_EXPORTS)
+#define G1_CONTROLLER_API __declspec(dllexport)
+#else
+#define G1_CONTROLLER_API __declspec(dllimport)
+#endif
+#else
+#define G1_CONTROLLER_API
+#endif
+
 namespace g1_controller {
 /**
  * @brief 一个实例拥有一套运行时、求解工作线程及当前策略缓存。
@@ -16,7 +26,7 @@ namespace g1_controller {
  * 同 tick 的重复策略查询使用缓存。
  * 接口不承诺可由多个调用线程同时操作；内部工作线程同步由实现负责。
  */
-class G1Controller {
+class G1_CONTROLLER_API G1Controller {
 public:
   G1Controller();
   ~G1Controller();

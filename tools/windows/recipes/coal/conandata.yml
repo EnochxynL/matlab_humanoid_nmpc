@@ -1,0 +1,4 @@
+sources:
+  "3.0.3":
+    url: "https://github.com/coal-library/coal/releases/download/v3.0.3/coal-3.0.3.tar.gz"
+    sha256: "d1afcc0c22477a61e93e070a01cc8ed1d256a96ec65d308844d24b9caf771d36"

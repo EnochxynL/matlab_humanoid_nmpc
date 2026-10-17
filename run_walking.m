@@ -10,12 +10,17 @@ env.TASK5A_AUTHORITY='SIMULINK_REFERENCE';env.TASK5A_PACKET_FILE='IN_PROCESS_ONL
 keys=fieldnames(env);old=cell(size(keys));for k=1:numel(keys),old{k}=getenv(keys{k});setenv(keys{k},env.(keys{k}));end
 cleanup=onCleanup(@()finish(keys,old));diary(fullfile(folder,'matlab.log'));
 g1log.writeJson(fullfile(root,'runtime/current_run.json'),struct('folder',folder,'status','STARTING'));
-[~,mem]=system('cat /proc/meminfo');fid=fopen(fullfile(folder,'memory_before.txt'),'w');fprintf(fid,'%s',mem);fclose(fid);
+if ispc
+ [~,memorySystem]=memory;mem=jsonencode(memorySystem);
+else
+ [~,mem]=system('cat /proc/meminfo');
+end
+fid=fopen(fullfile(folder,'memory_before.txt'),'w');fprintf(fid,'%s',mem);fclose(fid);
 
 session=struct('root',root,'folder',folder,'duration',4.8,'transport','IN_PROCESS_MEX','ocp','accepted OCS2 SQP','query_lead_s',.005,'physical_period_s',.002,'environment',env,'baseline_sha','7565b42006be8b0f8c7b21f441f50c7b773431d9');
 g1log.writeJson(fullfile(folder,'configuration.json'),session);
 wall=tic;g1_ocp_mex('init',root,folder);startup=toc(wall);session.startup_wall_s=startup;
-open_system(fullfile(root,'models',[cfg.modelName '.slx']));
+if ~ispc,open_system(fullfile(root,'models',[cfg.modelName '.slx']));end
 in=Simulink.SimulationInput(cfg.modelName);
 in=in.setModelParameter('StopTime','4.8','OutputOption','SpecifiedOutputTimes', ...
  'OutputTimes',mat2str(0:cfg.driveTs:4.8,17));

@@ -1,19 +1,26 @@
 include("${PROJECT_SOURCE_DIR}/cmake/PinocchioCompatibility.cmake")
+set(G1_NUMERICAL_LIBRARY_TYPE SHARED)
+if(WIN32)
+  # CppAD's template-local tape state must live in one PE image. ELF unifies
+  # these symbols across DSOs; Windows does not. Keep all internal AD users
+  # inside the public controller DLL without changing the controller API.
+  set(G1_NUMERICAL_LIBRARY_TYPE STATIC)
+endif()
 file(GLOB humanoid_extension_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/cpp/extensions/*.cpp")
-add_library(humanoid_ocp_extensions SHARED ${humanoid_extension_sources})
+add_library(humanoid_ocp_extensions ${G1_NUMERICAL_LIBRARY_TYPE} ${humanoid_extension_sources})
 target_include_directories(humanoid_ocp_extensions PUBLIC "${PROJECT_SOURCE_DIR}/cpp")
 target_link_libraries(humanoid_ocp_extensions PUBLIC ocs2_core ocs2_robotic_tools)
 # Plain-CMake build adapter. Vendored OCS2 sources and original build files remain unchanged.
 add_library(ocs2_thirdparty INTERFACE)
 target_include_directories(ocs2_thirdparty SYSTEM INTERFACE "${G1_OCS2_SOURCE_DIR}/ocs2_thirdparty/include")
-add_library(ocs2_core SHARED
+add_library(ocs2_core ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/Types.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/augmented_lagrangian/AugmentedLagrangian.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/augmented_lagrangian/StateAugmentedLagrangian.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/augmented_lagrangian/StateInputAugmentedLagrangian.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/augmented_lagrangian/StateAugmentedLagrangianCollection.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/augmented_lagrangian/StateInputAugmentedLagrangianCollection.cpp"
-  "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/automatic_differentation/CppAdInterface.cpp"
+  "${G1_CPPAD_INTERFACE_SOURCE}"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/automatic_differentation/CppAdSparsity.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/automatic_differentation/FiniteDifferenceMethods.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_core/src/constraint/StateConstraintCppAd.cpp"
@@ -95,7 +102,7 @@ target_include_directories(ocs2_core PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_core/inc
 target_link_libraries(ocs2_core PUBLIC ocs2_thirdparty ${Boost_LIBRARIES} $<LINK_ONLY:Boost::log> $<LINK_ONLY:Boost::log_setup> $<LINK_ONLY:Boost::system> Eigen3::Eigen OpenMP::OpenMP_CXX Threads::Threads ${CMAKE_DL_LIBS})
 target_compile_options(ocs2_core PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(ocs2_oc SHARED
+add_library(ocs2_oc ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_OCS2_SOURCE_DIR}/ocs2_oc/src/approximate_model/ChangeOfInputVariables.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_oc/src/approximate_model/LinearQuadraticApproximator.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_oc/src/multiple_shooting/Helpers.cpp"
@@ -133,7 +140,7 @@ target_include_directories(ocs2_oc PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_oc/include
 target_link_libraries(ocs2_oc PUBLIC ocs2_core)
 target_compile_options(ocs2_oc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(ocs2_mpc SHARED
+add_library(ocs2_mpc ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_OCS2_SOURCE_DIR}/ocs2_mpc/src/LoopshapingSystemObservation.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_mpc/src/MPC_BASE.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_mpc/src/MPC_Settings.cpp"
@@ -145,7 +152,7 @@ target_include_directories(ocs2_mpc PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_mpc/inclu
 target_link_libraries(ocs2_mpc PUBLIC ocs2_core ocs2_oc)
 target_compile_options(ocs2_mpc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(ocs2_qp_solver SHARED
+add_library(ocs2_qp_solver ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_OCS2_SOURCE_DIR}/ocs2_test_tools/ocs2_qp_solver/src/Ocs2QpSolver.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_test_tools/ocs2_qp_solver/src/QpDiscreteTranscription.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_test_tools/ocs2_qp_solver/src/QpSolver.cpp"
@@ -155,7 +162,7 @@ target_include_directories(ocs2_qp_solver PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_tes
 target_link_libraries(ocs2_qp_solver PUBLIC ocs2_core ocs2_oc)
 target_compile_options(ocs2_qp_solver PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(ocs2_ddp SHARED
+add_library(ocs2_ddp ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_OCS2_SOURCE_DIR}/ocs2_ddp/src/riccati_equations/ContinuousTimeRiccatiEquations.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_ddp/src/riccati_equations/DiscreteTimeRiccatiEquations.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_ddp/src/riccati_equations/RiccatiModification.cpp"
@@ -174,15 +181,19 @@ target_include_directories(ocs2_ddp PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_ddp/inclu
 target_link_libraries(ocs2_ddp PUBLIC ocs2_core ocs2_oc ocs2_mpc ocs2_qp_solver)
 target_compile_options(ocs2_ddp PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(ocs2_robotic_tools SHARED
+add_library(ocs2_robotic_tools ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_OCS2_SOURCE_DIR}/ocs2_robotic_tools/src/common/RotationTransforms.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_robotic_tools/src/common/LoopshapingRobotInterface.cpp"
 )
 target_include_directories(ocs2_robotic_tools PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_robotic_tools/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(ocs2_robotic_tools PUBLIC ocs2_oc ocs2_core ocs2_thirdparty)
+if(WIN32)
+  # Expose the CRT's standard math constants in strict C++ mode.
+  target_compile_definitions(ocs2_robotic_tools PUBLIC _USE_MATH_DEFINES)
+endif()
 target_compile_options(ocs2_robotic_tools PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(ocs2_pinocchio_interface SHARED
+add_library(ocs2_pinocchio_interface ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_PINOCCHIO_INTERFACE_COMPAT_SOURCE}"
   "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_pinocchio_interface/src/PinocchioInterfaceCppAd.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_pinocchio_interface/src/PinocchioEndEffectorKinematics.cpp"
@@ -193,7 +204,7 @@ target_include_directories(ocs2_pinocchio_interface PUBLIC "${G1_OCS2_SOURCE_DIR
 target_link_libraries(ocs2_pinocchio_interface PUBLIC ocs2_core ocs2_oc ocs2_robotic_tools pinocchio::pinocchio ${urdfdom_LIBRARIES})
 target_compile_options(ocs2_pinocchio_interface PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(ocs2_centroidal_model SHARED
+add_library(ocs2_centroidal_model ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_centroidal_model/src/PinocchioCentroidalDynamics.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_pinocchio/ocs2_centroidal_model/src/PinocchioCentroidalDynamicsAD.cpp"
   "${G1_CENTROIDAL_COMPAT_SOURCE}"
@@ -206,7 +217,7 @@ target_include_directories(ocs2_centroidal_model PUBLIC "${G1_OCS2_SOURCE_DIR}/o
 target_link_libraries(ocs2_centroidal_model PUBLIC ocs2_core ocs2_robotic_tools ocs2_pinocchio_interface)
 target_compile_options(ocs2_centroidal_model PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(hpipm_catkin SHARED
+add_library(hpipm_catkin ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/hpipm_catkin/src/HpipmInterface.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/hpipm_catkin/src/HpipmInterfaceSettings.cpp"
 )
@@ -214,7 +225,7 @@ target_include_directories(hpipm_catkin PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/h
 target_link_libraries(hpipm_catkin PUBLIC ocs2_core ocs2_oc ocs2_qp_solver hpipm blasfeo)
 target_compile_options(hpipm_catkin PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(ocs2_sqp SHARED
+add_library(ocs2_sqp ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/ocs2_sqp/src/SqpLogging.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/ocs2_sqp/src/SqpSettings.cpp"
   "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/ocs2_sqp/src/SqpSolver.cpp"
@@ -223,7 +234,7 @@ target_include_directories(ocs2_sqp PUBLIC "${G1_OCS2_SOURCE_DIR}/ocs2_sqp/ocs2_
 target_link_libraries(ocs2_sqp PUBLIC ocs2_core ocs2_mpc ocs2_oc ocs2_qp_solver hpipm_catkin)
 target_compile_options(ocs2_sqp PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(humanoid_common_mpc SHARED
+add_library(humanoid_common_mpc ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactCenterPoint.cpp"
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactPolygon.cpp"
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactRectangle.cpp"
@@ -260,7 +271,7 @@ target_include_directories(humanoid_common_mpc PUBLIC "${G1_CORE_DIR}/problem/hu
 target_link_libraries(humanoid_common_mpc PUBLIC humanoid_ocp_extensions ocs2_core ocs2_mpc ocs2_pinocchio_interface pinocchio::pinocchio)
 target_compile_options(humanoid_common_mpc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
-add_library(humanoid_wb_mpc SHARED
+add_library(humanoid_wb_mpc ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/dynamics/DynamicsHelperFunctions.cpp"
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/dynamics/WBAccelDynamicsAD.cpp"
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/end_effector/PinocchioEndEffectorDynamicsCppAd.cpp"

@@ -8,7 +8,7 @@
 #include "controller/PlannerContext.h"
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
+#include "controller/data/Filesystem.h"
 #include <stdexcept>
 
 namespace g1_controller {
@@ -55,7 +55,7 @@ struct G1Controller::Impl {
     if (context)
       throw std::runtime_error(
           "Close existing MEX controller before initialization");
-    std::filesystem::create_directories(folder);
+    g1_filesystem::create_directories(folder);
     PlannerConfig inputs(root, folder);
     context = std::make_unique<PlannerContext>(inputs);
     context->expectedSession = 1;

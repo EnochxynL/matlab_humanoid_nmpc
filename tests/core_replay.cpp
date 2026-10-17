@@ -5,6 +5,14 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <cmath>
 #include <cstdlib>
+#ifdef _WIN32
+#include <windows.h>
+static int setenv(const char* name, const char* value, int overwrite) {
+  if (!overwrite && GetEnvironmentVariableA(name,nullptr,0)) return 0;
+  if (_putenv_s(name, value) != 0) return -1;
+  return SetEnvironmentVariableA(name,value) ? 0 : -1;
+}
+#endif
 #include <cstring>
 #include <fstream>
 #include <iostream>

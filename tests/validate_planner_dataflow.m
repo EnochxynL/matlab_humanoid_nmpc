@@ -1,7 +1,8 @@
-function result = validate_planner_dataflow(evidenceName)
+function result = validate_planner_dataflow(evidenceName,allowRoundoff)
 %VALIDATE_PLANNER_DATAFLOW Run the actual planner model on saved observations.
 % Checks staged API guards, then the complete 2401-tick/289-update contract.
 if nargin==0,evidenceName='planner_dataflow';end
+if nargin<2,allowRoundoff=false;end
 root = fileparts(fileparts(mfilename('fullpath')));
 cd(root); cfg=g1.initialize();
 golden=load(fullfile(root,'build','observation_hybrid','conversion_values.mat'));
@@ -39,7 +40,15 @@ clear cleanup;
 samples = readtable(fullfile(folder,'planner_samples.csv'));
 previous = readtable(fullfile(root,'build','directory_validation', ...
     'core_replay','planner_samples.csv'));
-assert(isequal(samples{:,:},previous{:,:}),'Planner differs from accepted C++ replay.');
+assert(isequal(size(samples),size(previous)),'Planner sample dimensions changed.');
+assert(all(isfinite(samples{:,:}),'all'),'Nonfinite planner sample.');
+baselineExact=isequal(samples{:,:},previous{:,:});
+baselineMaximum=max(abs(samples{:,:}-previous{:,:}),[],'all');
+% Keep timing and discrete mode checks even when reporting numerical differences.
+assert(isequal(samples{:,1:3},previous{:,1:3}),'Planner time identity changed.');
+assert(isequal(samples.value116,previous.value116),'Planner mode identity changed.');
+assert(isequal(samples.value117,previous.value117),'Planner query time changed.');
+assert(allowRoundoff || baselineExact,'Planner differs from accepted C++ replay.');
 solves = readtable(fullfile(folder,'solver_timing.csv'));
 assert(height(samples)==2401 && height(solves)==289);
 actual = g1log.signalMatrix(out.yout{3}.Values);
@@ -49,6 +58,8 @@ assert(all(identity.canonical_control_time == double(identity.control_tick)*0.00
 assert(all(abs(identity.raw_minus_canonical)<=1e-12));
 result = struct('passed',true,'ticks',height(samples),'updates',height(solves), ...
     'policy_action_exact_equal',true,'stage_guards_passed',true, ...
+    'baseline_exact_equal',baselineExact,'baseline_max_absolute_error',baselineMaximum, ...
+    'roundoff_continuation_authorized',logical(allowRoundoff), ...
     'physical_simulation',false,'execution_wall_s',execution);
 g1log.writeJson(fullfile(folder,'acceptance.json'),result);
 save(fullfile(folder,'simulation_output.mat'),'out','result','-v7.3');

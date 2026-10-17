@@ -4,7 +4,7 @@
 #include <ocs2_sqp/SqpMpc.h>
 #include "controller/data/diagnostics/PolicyObserver.h"
 #include <chrono>
-#include <filesystem>
+#include "controller/data/Filesystem.h"
 #include <fstream>
 #include <iomanip>
 #include <mutex>
@@ -12,7 +12,7 @@ inline double wallTime(){return std::chrono::duration<double>(std::chrono::stead
 #include "controller/data/diagnostics/FootLog.h"
 class TimeLog final:public ocs2::SolverSynchronizedModule,public ocs2::DummyObserver {
  public:
- explicit TimeLog(const std::filesystem::path&root,bool heavy):feet_(root),heavy_(heavy),trace_(root/"timing_trace.csv"),solves_(root/"solver_timing.csv"),references_(root/"reference.csv"),queries_(root/"policy_queries.csv"),vectors_(root/"policy_vectors.csv"),knots_(root/"policy_knots.csv"),load_(root/"logging_load.csv"),gait_(root/"gait_schedule.csv"),modes_(root/"gait_queries.csv"){
+ explicit TimeLog(const g1_filesystem::path&root,bool heavy):feet_(root),heavy_(heavy),trace_((root/"timing_trace.csv").string()),solves_((root/"solver_timing.csv").string()),references_((root/"reference.csv").string()),queries_((root/"policy_queries.csv").string()),vectors_((root/"policy_vectors.csv").string()),knots_((root/"policy_knots.csv").string()),load_((root/"logging_load.csv").string()),gait_((root/"gait_schedule.csv").string()),modes_((root/"gait_queries.csv").string()){
   trace_<<"event,control_time_s,scheduled_update_control_time_s,request_id,wall_monotonic_time_s\n";
   solves_<<"solver_target_control_time_s,wall_solver_start_s,wall_solver_end_s,solver_module_wall_duration_s,policy_start_time_s,policy_end_time_s\n";
   references_<<"control_time_s,v_x,v_y,height,yaw_rate\n";

@@ -1,4 +1,5 @@
 #pragma once
+#include "controller/data/Filesystem.h"
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
 #include <humanoid_common_mpc/common/MpcRobotModelBase.h>
 #include <humanoid_common_mpc/reference_manager/SwitchedModelReferenceManager.h>
@@ -10,7 +11,7 @@ class FootLog {
  std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> ref_;
  std::ofstream out_;std::array<pinocchio::FrameIndex,2> ids_;
  public:
- explicit FootLog(const std::filesystem::path&root):out_(root/"foot_kinematics.csv"){
+ explicit FootLog(const g1_filesystem::path&root):out_((root/"foot_kinematics.csv").string()){
   out_<<std::setprecision(17)<<"solver_target_time,observation_time,sample_time,kind,leg,mode,planned_support,z_reference,x,y,z,vx,vy,vz,min_sole_z\n";
  }
  void configure(const ocs2::PinocchioInterface&pin,const ocs2::humanoid::MpcRobotModelBase<double>&m,std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager>ref){
