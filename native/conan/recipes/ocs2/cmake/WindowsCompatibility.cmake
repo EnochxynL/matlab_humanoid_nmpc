@@ -48,7 +48,7 @@ file(READ "${_dst}/model/functor_generic_model.hpp" _text)
 string(REPLACE "#ifdef CPPAD_CG_SYSTEM_LINUX" "#if CPPAD_CG_SYSTEM_LINUX || CPPAD_CG_SYSTEM_WIN" _text "${_text}")
 file(CONFIGURE OUTPUT "${_dst}/model/functor_generic_model.hpp" CONTENT "${_text}" @ONLY)
 file(READ "${_dst}/model/compiler/gcc_compiler.hpp" _text)
-string(REPLACE "/usr/bin/gcc" "${CMAKE_C_COMPILER}" _text "${_text}")
+string(REPLACE "/usr/bin/gcc" "gcc" _text "${_text}")
 string(REPLACE "this->_compileLibFlags.push_back(\"-rdynamic\");" "this->_compileLibFlags.push_back(\"-Wl,--export-all-symbols\");" _text "${_text}")
 string(REPLACE "#if CPPAD_CG_SYSTEM_APPLE" "#if CPPAD_CG_SYSTEM_WIN\n        std::string linkerName;\n#elif CPPAD_CG_SYSTEM_APPLE" _text "${_text}")
 string(REPLACE "std::string linkerFlags = \"-Wl,\" + linkerName + \",\" + system::filenameFromPath(library);"

@@ -19,9 +19,9 @@ Simulink/Simscape 实现观测转换、Reference/Gait、动作生成和物理系
 
 ## 构建与运行
 
-克隆后直接按平台执行构建脚本；依赖由 Conan 配方获取固定上游提交，无需初始化 Git 子模块。
+克隆后直接按平台执行构建脚本；依赖由 Conan 配方获取固定上游提交或校验过的发行包，无需初始化 Git 子模块。
 
-Windows 使用已验证的 MinGW 8.1 + Conan，具体工具准备见原生子项目说明：
+Windows 使用 PATH 中的 MSYS2 UCRT64 GCC 和 Conan，项目不下载或维护编译器。当前验证版本为 GCC 16.2.0；先进入相应编译器环境，再执行：
 
 ```powershell
 .\native\scripts\build_windows.ps1 -Stage All
@@ -41,12 +41,13 @@ open_project;       % 只打开模型
 out = run_walking;  % 初始化 MEX，运行原 4.8 s 物理闭环并清理
 ```
 
-Windows 可使用 `addpath tools/windows; out=run_windows_walking`，将 Simulink 生成文件隔离到 `build/matlab/`。不要仅打开模型后直接点击 Run；控制器生命周期由 runner 管理。
+MATLAB 也应从相同编译器环境启动。Windows 可使用 `addpath tools/windows; out=run_windows_walking`，将 Simulink 生成文件隔离到 `build/matlab/<工具链标记>/`。不要仅打开模型后直接点击 Run；控制器生命周期由 runner 管理。
 
 构建中间产物位于 `native/build/`；MATLAB 使用部署目录：Windows `install/windows/lib/`，Linux `install/linux/lib/`。Conan 管理 OCS2、HPIPM、BLASFEO 及其依赖，详情见[依赖与产物边界](docs/dependency_artifact_layout.md)。MPC 60 Hz、策略查询 500 Hz，canonical time 为 `double(tick)*0.002`，查询提前量 5 ms。日志和物理证据写入 `runtime/walking_*/`，状态文件为 `runtime/current_run.json`。
 
 ## 验证与历史
 
+- [系统 UCRT64 GCC 迁移与验证](docs/ucrt64_toolchain_migration.md)
 - [Windows 迁移检查点](docs/windows_checkpoint_20261017.md)
 - [转换内核内联及行走验证](docs/native_matlab_adapters.md)
 - [原生子项目整理与旧 gait 调用链审计](docs/native_subproject_migration.md)

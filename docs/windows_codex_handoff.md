@@ -1,5 +1,7 @@
 # Windows Codex 交接：G1 Simulink + 原生 C++ OCS2
 
+> 已迁移到 PATH 中的系统 MSYS2 UCRT64 GCC 16.2.0：依赖、控制器、Planner MEX、AD 生成/重载、两条回放及 4.8 s 真实行走均通过，用户已确认人工 PASS。默认部署为 `install/windows/lib/`，现有 MATLAB 会话已验证新版 MEX；不再引用项目内旧 GCC。详见 [系统 GCC 迁移](ucrt64_toolchain_migration.md)。下方 MinGW 8.1 记录属于旧工具链验收。
+
 > 旧子模块依赖管理已移除：`native/third_party/`、`.gitmodules`、旧清单和检查脚本均已删除，配方直接获取固定上游提交。下方子模块和镜像说明属于历史记录。
 
 > 当前依赖与产物边界见 [Conan 与产物布局](dependency_artifact_layout.md)：公开头文件在 `native/include/`，实现和 MEX 在 `native/src/`；三个数值子模块改由 Conan 配方构建。构建文件、工具链与 AD 缓存在 `native/build/`，MATLAB 运行库部署到 `install/windows/lib/`，历史验收记录移至 `runtime/evidence/`。下方保留上一轮迁移记录和原始路径。

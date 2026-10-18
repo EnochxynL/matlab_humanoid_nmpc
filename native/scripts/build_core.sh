@@ -4,7 +4,7 @@ native_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 root="$(cd "$native_root/.." && pwd)"
 build="$native_root/build/linux"
 profile="${G1_CONAN_HOST_PROFILE:-default}"
-for dependency in blasfeo hpipm ocs2; do
+for dependency in blasfeo hpipm ocs2 urdfdom; do
   conan export "$native_root/conan/recipes/$dependency"
 done
 conan export "$native_root/conan/recipes/coal" --version=3.0.3

@@ -1,7 +1,6 @@
 param([Parameter(Mandatory=$true)][string]$Directory)
 $ErrorActionPreference='Stop'
-$root=Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$objdump=Join-Path $root 'native/build/windows/toolchains/mingw64/bin/objdump.exe'
+$objdump=(Get-Command objdump -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
 $records=@()
 $missing=@()
 foreach($binary in Get-ChildItem -LiteralPath $Directory -File | Where-Object { $_.Extension -in @('.dll','.mexw64','.exe') }) {

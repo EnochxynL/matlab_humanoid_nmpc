@@ -5,14 +5,29 @@ param(
   [string]$Ninja,
   [string]$MatlabRoot = 'C:\Program Files\MATLAB\R2025b',
   [ValidatePattern('^[D-Z]$')][string]$CacheDrive = 'G',
+  [string]$InstallPrefix,
   [switch]$WithoutMatlab
 )
 $ErrorActionPreference = 'Stop'
 $native = Split-Path $PSScriptRoot -Parent
 $root = Split-Path $native -Parent
 $build = Join-Path $native 'build/windows'
-$coreBuild = Join-Path $build 'native-core'
-$mingw = Join-Path $build 'toolchains/mingw64'
+$cc = (Get-Command gcc -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+$cxx = (Get-Command g++ -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+if ((Split-Path $cc) -ine (Split-Path $cxx)) { throw 'gcc and g++ must come from the same toolchain on PATH' }
+$compilerBin = Split-Path $cc
+$compilerVersion = (& $cc '-dumpfullversion').Trim()
+$compilerMajor = $compilerVersion.Split('.')[0]
+$target = (& $cc '-dumpmachine').Trim()
+$crtMacros = '' | & $cc '-dM' '-E' '-include' '_mingw.h' '-xc' '-'
+if ($LASTEXITCODE -ne 0 -or $target -ne 'x86_64-w64-mingw32' -or !($crtMacros -match '^#define _UCRT')) {
+  throw 'Run with the native x64 MSYS2 UCRT64 gcc/g++ on PATH'
+}
+$toolchainTag = "gcc$compilerMajor-ucrt64"
+$toolchainBuild = Join-Path $build $toolchainTag
+$coreBuild = Join-Path $toolchainBuild 'core'
+if (!$InstallPrefix) { $InstallPrefix = Join-Path $root 'install/windows' }
+Write-Output "Compiler: $cxx ($compilerVersion, $toolchainTag)"
 $drivePrefix = "$CacheDrive`:"
 $mapping = (& subst.exe) | Where-Object { $_ -like "$drivePrefix\:*" }
 if ($mapping) {
@@ -24,7 +39,6 @@ if ($mapping) {
   & subst.exe $drivePrefix $build
   if ($LASTEXITCODE -ne 0) { throw 'Cannot create short Conan cache mapping' }
 }
-if (!(Test-Path "$mingw/bin/g++.exe")) { throw "Missing isolated MinGW 8.1 toolchain: $mingw" }
 if (!(Test-Path $Conan)) { $Conan = (Get-Command conan -ErrorAction Stop).Source }
 if (!$CMake) {
   $candidates = @(Get-ChildItem "$build/conan-home/p/cmake*/p/bin/cmake.exe" -ErrorAction SilentlyContinue)
@@ -58,10 +72,11 @@ Push-Location $root
 try {
   # Keep this mapping for generated CMake package paths; reruns verify its target.
   $env:CONAN_HOME = "$drivePrefix\conan-home"
-  $env:PATH = "$mingw/bin;$(Split-Path $CMake);$(Split-Path $Ninja);$previousPath"
-  $profile = 'native/conan/profiles/mingw81'
+  $env:PATH = "$compilerBin;$(Split-Path $CMake);$(Split-Path $Ninja);$previousPath"
+  $profile = 'native/conan/profiles/gcc-ucrt64'
+  $buildProfile = 'native/conan/profiles/gcc'
   & {
-    foreach ($dependency in @('blasfeo','hpipm','ocs2')) {
+    foreach ($dependency in @('blasfeo','hpipm','ocs2','urdfdom')) {
       Invoke-Checked $Conan @('export',"native/conan/recipes/$dependency")
     }
     Invoke-Checked $Conan @('export','native/conan/recipes/coal','--version=3.0.3')
@@ -70,34 +85,38 @@ try {
     if (Test-Path 'native/conan.lock') {
       $coreLockArguments = @('--lockfile=native/conan.lock')
     }
-    Invoke-Checked $Conan (@('install','native/conanfile.txt','-pr:h',$profile,'-pr:b',$profile,
-      '-of',"$build/native-core-deps",'--build=missing',
+    Invoke-Checked $Conan (@('install','native/conanfile.txt','-pr:h',$profile,'-pr:b',$buildProfile,
+      '-of',"$toolchainBuild/deps",'--build=missing',
       '--deployer=native/conan/deploy_runtime.py',"--deployer-folder=$coreBuild/lib") + $coreLockArguments)
-    Copy-Item "$mingw/bin/libgcc_s_seh-1.dll","$mingw/bin/libstdc++-6.dll","$mingw/bin/libwinpthread-1.dll","$mingw/bin/libgomp-1.dll" "$coreBuild/lib"
+    foreach ($runtime in @('libgcc_s_seh-1.dll','libstdc++-6.dll','libwinpthread-1.dll','libgomp-1.dll')) {
+      Copy-Item (Join-Path $compilerBin $runtime) "$coreBuild/lib"
+    }
+    $metadata = @{ compiler='gcc'; version=$compilerVersion; crt='ucrt64'; tag=$toolchainTag } | ConvertTo-Json
+    [IO.File]::WriteAllText("$coreBuild/lib/compiler-info.json", $metadata, (New-Object Text.UTF8Encoding($false)))
     if ($coreLockArguments.Count -eq 0) {
-      Invoke-Checked $Conan @('lock','create','native/conanfile.txt','-pr:h',$profile,'-pr:b',$profile,
+      Invoke-Checked $Conan @('lock','create','native/conanfile.txt','-pr:h',$profile,'-pr:b',$buildProfile,
         '--lockfile-out=native/conan.lock')
     }
   }
   if ($Stage -in @('Platform','All')) {
-    Invoke-Checked $CMake @('-S','native/tests/windows','-B',"$build/native-platform",'-G','Ninja',
-      "-DCMAKE_TOOLCHAIN_FILE=$build/native-core-deps/conan_toolchain.cmake","-DCMAKE_C_COMPILER=$mingw/bin/gcc.exe","-DCMAKE_CXX_COMPILER=$mingw/bin/g++.exe",'-DCMAKE_BUILD_TYPE=Release')
-    Invoke-Checked $CMake @('--build',"$build/native-platform")
-    Invoke-Checked (Join-Path (Split-Path $CMake) 'ctest.exe') @('--test-dir',"$build/native-platform",'--output-on-failure')
+    Invoke-Checked $CMake @('-S','native/tests/windows','-B',"$toolchainBuild/platform",'-G','Ninja',
+      "-DCMAKE_TOOLCHAIN_FILE=$toolchainBuild/deps/conan_toolchain.cmake",'-DCMAKE_BUILD_TYPE=Release')
+    Invoke-Checked $CMake @('--build',"$toolchainBuild/platform")
+    Invoke-Checked (Join-Path (Split-Path $CMake) 'ctest.exe') @('--test-dir',"$toolchainBuild/platform",'--output-on-failure')
   }
   if ($Stage -in @('Core','All')) {
     $matlab = if ($WithoutMatlab) { 'OFF' } else { 'ON' }
     Invoke-Checked $CMake @('-S','native','-B',"$coreBuild",'-G','Ninja',
-      "-DCMAKE_TOOLCHAIN_FILE=$build/native-core-deps/conan_toolchain.cmake",'-DCMAKE_BUILD_TYPE=Release',
+      "-DCMAKE_TOOLCHAIN_FILE=$toolchainBuild/deps/conan_toolchain.cmake",'-DCMAKE_BUILD_TYPE=Release',
       '-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG',"-DG1_BUILD_MATLAB=$matlab",'-DG1_BUILD_TESTS=ON',"-DMatlab_ROOT_DIR=$MatlabRoot")
     # Pinocchio/CppAD template units are memory-heavy on this 16 GB host.
     Invoke-Checked $CMake @('--build',"$coreBuild",'--parallel','2')
-    Invoke-Checked $CMake @('--install',"$coreBuild",'--prefix',"$root/install/windows")
-    Copy-Item "$coreBuild/lib/*.dll" "$root/install/windows/lib" -Force
-    Copy-Item "$coreBuild/lib/conan-runtime.json" "$root/install/windows/lib" -Force
+    Invoke-Checked $CMake @('--install',"$coreBuild",'--prefix',"$InstallPrefix")
+    Copy-Item "$coreBuild/lib/*.dll" "$InstallPrefix/lib" -Force
+    Copy-Item "$coreBuild/lib/conan-runtime.json","$coreBuild/lib/compiler-info.json" "$InstallPrefix/lib" -Force
     & "$root/native/scripts/verify_runtime.ps1" -Directory "$coreBuild/lib"
-    Invoke-Checked "$coreBuild/lib/g1_windows_ocs2_ad_smoke.exe" @("$build/ocs2 ad integration",'create')
-    Invoke-Checked "$coreBuild/lib/g1_windows_ocs2_ad_smoke.exe" @("$build/ocs2 ad integration",'reload')
+    Invoke-Checked "$coreBuild/lib/g1_windows_ocs2_ad_smoke.exe" @("$toolchainBuild/ocs2 ad integration",'create')
+    Invoke-Checked "$coreBuild/lib/g1_windows_ocs2_ad_smoke.exe" @("$toolchainBuild/ocs2 ad integration",'reload')
   }
 } finally {
   Pop-Location

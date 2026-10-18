@@ -11,15 +11,16 @@ assets and configuration stay in the application root.
 - `src/g1_controller_mex/`: MATLAB adapter.
 - `conanfile.txt`, `conan.lock`: dependency declarations and recipe revisions.
 - `conan/profiles/`: compiler configurations.
-- `conan/recipes/`: local Coal, Pinocchio, BLASFEO, HPIPM and OCS2 recipes.
+- `conan/recipes/`: local Coal, Pinocchio, URDFDOM, BLASFEO, HPIPM and OCS2 recipes.
 
 OCS2's recipe owns the selected upstream numerical modules and compatibility
 adaptations. `cmake/NumericalLibraries.cmake` builds only this project's own
 extensions and humanoid modules. The main project consumes OCS2 with
 `find_package(ocs2 CONFIG REQUIRED)`.
 
-The recipes fetch fixed upstream Git commits directly. No Git submodule, local
-mirror environment variable or separate source lock is required. Sources are
+The recipes fetch fixed upstream Git commits or checksum-verified release
+archives. No Git submodule, local mirror environment variable or separate source
+lock is required. Sources are
 pinned in each recipe's `conandata.yml`; recipe revisions are in `conan.lock`.
 
 ## Windows
@@ -32,9 +33,18 @@ pinned in each recipe's `conandata.yml`; recipe revisions are in `conan.lock`.
 `-Stage Platform` builds the AD smoke tests. Both stages first resolve Conan
 packages. `-Conan`, `-CMake`, `-Ninja` and `-MatlabRoot` override tool locations.
 
-The retained compiler is MinGW GCC 8.1, x64 POSIX threads and SEH, at
-`native/build/windows/toolchains/mingw64`. Archive provenance/checksums are in
-`../docs/windows_checkpoint_20261017.md`; the script does not install a compiler.
+Run from an environment with native MSYS2 UCRT64 `gcc`, `g++` and `objdump`
+on `PATH` (for example, launch PowerShell from the UCRT64 terminal). The script
+checks the compiler target and UCRT headers and detects the GCC version; compiler
+paths are not stored in project configuration. GCC is installed and updated by
+MSYS2, not downloaded or maintained by this project.
+
+The host profile `conan/profiles/gcc-ucrt64` includes the PATH-based
+`gcc` profile. UCRT is included in package IDs to separate its binaries from
+other CRTs. Tool packages use the build profile without that host ABI marker.
+Builds use `native/build/windows/gcc<major>-ucrt64/`, with separate core, dependency
+and platform test directories. `-InstallPrefix` selects a trial deployment;
+the normal default remains `install/windows/`.
 The project-local Conan cache uses a verified `G:` mapping to
 `native/build/windows` to avoid long Boost paths. `-CacheDrive` selects another
 free drive. Keep that mapping while using generated CMake files.
@@ -46,7 +56,10 @@ Windows DLLs is unsafe. The recipe retains the Eigen/GCC 8 compatibility overlay
 
 Coal 3.0.3 and Pinocchio 4.1.0 recipes derive from Conan Center Index commit
 `1c90a5cb2e6353488efefa7d16020c19f9fae0c5` (MIT notice under `conan/recipes/`).
-Other retained dependencies include Eigen 3.4, Boost 1.88 and Abseil 20240116.2.
+URDFDOM 4.0.0 derives from locked ConanCenter revision
+`e68d7aed7dbdd349a77e7430fe7f1f8c`, with explicit `<cstdint>` includes for GCC 16.
+Other retained dependencies include Eigen 3.4 and Boost 1.88.
+Abseil was unused by the retained targets and is no longer a root dependency.
 `G1_PINOCCHIO_ARCHIVE` can supply a previously downloaded, checksum-verified
 release archive.
 
@@ -77,3 +90,10 @@ Floating-point roundoff is not a stopping gate. Same-run protocol identities,
 2401 control ticks, 289 updates and stage rejection checks remain required.
 Historical walking passes are recorded in `../docs/windows_checkpoint_20261017.md`
 and `../docs/native_matlab_adapters.md`.
+
+MATLAB must be launched with the same compiler environment on PATH. Deployed
+`compiler-info.json` records the compiler version and ABI, not its install path.
+Initialization verifies the compiler and derives `MW_MINGW64_LOC` from PATH for
+MATLAB's compiler integration. `G1_RUNTIME_DIRECTORY` selects a trial runtime;
+AD and Simulink caches are separated by compiler/ABI, and CppAD invokes `gcc` from PATH.
+An explicit external `G1_AD_CACHE_ROOT` override is still honored.

@@ -108,7 +108,9 @@ inline void callExecutable(const std::string& executable, const std::vector<std:
   startup.hStdInput = in.handle;
   startup.hStdOutput = startup.hStdError = out.handle;
   PROCESS_INFORMATION process{};
-  if (!CreateProcessA(executable.c_str(),&command[0],nullptr,nullptr,1,CREATE_NO_WINDOW,
+  // A null application name lets Windows resolve a bare compiler name via PATH.
+  // command already quotes the executable, including absolute paths with spaces.
+  if (!CreateProcessA(nullptr,&command[0],nullptr,nullptr,1,CREATE_NO_WINDOW,
                       nullptr,nullptr,&startup,&process))
     throw CGException("Cannot launch AD compiler: ",executable," Windows error ",GetLastError());
   CloseHandle(process.hThread);

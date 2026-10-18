@@ -7,8 +7,10 @@ application CMake owns only the humanoid problem, extensions, controller and MEX
 
 `native/conanfile.txt` declares dependencies and `native/conan.lock` pins recipe
 revisions. `native/conan/profiles/` selects the compiler. Local recipes are under
-`native/conan/recipes/`. Windows retains GCC 8.1, GENERIC BLASFEO, static BLASFEO/HPIPM
-backend dependencies and static OCS2 modules inside the controller DLL.
+`native/conan/recipes/`. Windows selects GCC from the MSYS2 UCRT64 environment.
+GENERIC BLASFEO and static BLASFEO/HPIPM/OCS2 modules remain inside the controller
+DLL. The GCC 16 migration and walking acceptance are recorded in
+[the toolchain report](ucrt64_toolchain_migration.md).
 
 All three recipes fetch their fixed upstream commits directly. The former
 `native/third_party/` submodules, `dependencies.lock.json`, mirror audit script
@@ -19,12 +21,12 @@ build inputs.
 
 | Location | Purpose |
 | --- | --- |
-| `native/build/windows/` | Windows build trees, compiler and Conan cache |
+| `native/build/windows/` | Compiler-specific Windows build trees, tools and Conan cache; GCC comes from MSYS2 |
 | `native/build/linux/` | Linux build tree and generated Conan files |
-| `native/build/cppad_code_gen/` | Runtime-generated C/C++ and AD libraries |
+| `native/build/cppad_code_gen/<toolchain>/` | Runtime-generated C/C++ and AD libraries |
 | `install/windows/lib/` | Deployed MEX, controller DLL and runtime dependencies |
 | `install/linux/lib/` | Deployed MEX, controller and runtime shared libraries |
-| `build/matlab/` | Simulink caches and temporary MATLAB test functions |
+| `build/matlab/` | Compiler-specific Simulink caches and temporary MATLAB test functions |
 | `runtime/evidence/` | Historical validation, fixtures and replay evidence |
 | `runtime/walking_*/` | Walking logs and visual validation evidence |
 
@@ -37,8 +39,11 @@ reports preserve their original paths and timestamps.
 Windows: `./native/scripts/build_windows.ps1 -Stage All`.
 Linux: `bash native/scripts/build_mex.sh` (or `build_core.sh` without MATLAB).
 Linux requires an explicitly prepared Conan profile; `G1_CONAN_HOST_PROFILE`
-and `G1_CONAN_BUILD_PROFILE` select it. Windows uses the committed `mingw81`
-profile and a short `G:` cache mapping to avoid Boost path-length failures.
+and `G1_CONAN_BUILD_PROFILE` select it. Windows uses the PATH-based `gcc-ucrt64`
+host and `gcc` build profiles, with UCRT recorded in host package IDs.
+A short `G:` cache mapping avoids Boost
+path-length failures. Compiler paths and versions are discovered, not pinned in
+the project profile.
 
 ## Initial migration validation on Windows, 2026-10-18
 

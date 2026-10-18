@@ -1,0 +1,20 @@
+{% set cc = subprocess.check_output(['where.exe', 'gcc'], text=True).splitlines()[0].strip().replace('\\', '/') %}
+{% set cxx = subprocess.check_output(['where.exe', 'g++'], text=True).splitlines()[0].strip().replace('\\', '/') %}
+{% set version = subprocess.check_output(['gcc', '-dumpfullversion']).decode().strip().split('.')[0] %}
+[settings]
+os=Windows
+arch=x86_64
+compiler=gcc
+compiler.version={{ version }}
+compiler.libcxx=libstdc++11
+compiler.cppstd=17
+compiler.cstd=11
+compiler.threads=posix
+compiler.exception=seh
+build_type=Release
+
+[conf]
+tools.build:compiler_executables={"c": {{ cc | tojson }}, "cpp": {{ cxx | tojson }}}
+tools.cmake.cmaketoolchain:generator=Ninja
+tools.build:jobs=2
+tools.build:cxxflags=["-Wa,-mbig-obj"]

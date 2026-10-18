@@ -22,6 +22,8 @@ class Recipe(ConanFile):
         info = self.conan_data["sources"][str(self.version)]
         Git(self).run("init upstream")
         repository = Git(self, folder="upstream")
+        # Upstream example paths exceed Windows Git's legacy path limit.
+        repository.run("config core.longpaths true")
         repository.run("remote add origin " + info["url"])
         repository.run("fetch --depth=1 origin " + info["commit"])
         repository.checkout(info["commit"])

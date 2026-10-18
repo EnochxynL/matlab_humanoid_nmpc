@@ -1,0 +1,16 @@
+patches:
+  4.0.0:
+  - patch_description: Disable building of apps by default
+    patch_file: patches/4.0.0/001-optional-build-apps.patch
+    patch_type: conan
+  - patch_description: Use dependencies from Conan, use merged urdfdom_headers
+    patch_file: patches/4.0.0/002-use-conan-dependencies.patch
+    patch_type: conan
+sources:
+  4.0.0:
+    urdfdom:
+      sha256: 9848d106dc88dc0b907d5667c09da3ca53241fbcf17e982d8c234fe3e0d6ddcc
+      url: https://github.com/ros/urdfdom/archive/refs/tags/4.0.0.tar.gz
+    urdfdom_headers:
+      sha256: dde77e3dd96ffa41e2ee0a20bddcd6ef05863e95ce0143ede77130d8cd46c644
+      url: https://github.com/ros/urdfdom_headers/archive/refs/tags/1.1.1.zip

@@ -1,6 +1,7 @@
 #include "extensions/TermRegistry.h"
 #pragma once
 // Read-only clone evaluation: never writes an active solver OCP or reference.
+#include "controller/data/Filesystem.h"
 #include "controller/data/diagnostics/TimeLog.h"
 #include <limits>
 #include <humanoid_wb_mpc/WBMpcInterface.h>
@@ -74,7 +75,7 @@ class StructuralObserver final:public SolverSynchronizedModule,public DummyObser
   for(auto*v:{&x,&u,&tau,&accel})for(int j=0;j<v->size();++j)snapshot.push_back((*v)[j]);for(auto v:lastSolver_)snapshot.push_back(v);snapshot.push_back(lastSampleTime_);for(int j=0;j<58;++j)snapshot.push_back(lastDerivative_[j]);
   if(snapshot.size()!=218)throw std::runtime_error("Structural snapshot shape");
   {std::ofstream out(root_+"/structural_snapshot.tmp",std::ios::binary);out.write(reinterpret_cast<const char*>(snapshot.data()),snapshot.size()*sizeof(double));}
-  g1_filesystem::rename(root_+"/structural_snapshot.tmp",root_+"/structural_snapshot.bin");
+  g1_controller::data::replaceFile(root_+"/structural_snapshot.tmp",root_+"/structural_snapshot.bin");
  }
 };
 }

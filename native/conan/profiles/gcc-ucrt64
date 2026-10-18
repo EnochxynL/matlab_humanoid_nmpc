@@ -1,0 +1,5 @@
+include(gcc)
+
+[conf]
+user.g1:crt=ucrt64
+tools.info.package_id:confs=["user.g1:crt"]
