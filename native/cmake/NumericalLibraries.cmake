@@ -6,9 +6,9 @@ if(WIN32)
   # inside the public controller DLL without changing the controller API.
   set(G1_NUMERICAL_LIBRARY_TYPE STATIC)
 endif()
-file(GLOB humanoid_extension_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/cpp/extensions/*.cpp")
+file(GLOB humanoid_extension_sources CONFIGURE_DEPENDS "${G1_CORE_DIR}/extensions/*.cpp")
 add_library(humanoid_ocp_extensions ${G1_NUMERICAL_LIBRARY_TYPE} ${humanoid_extension_sources})
-target_include_directories(humanoid_ocp_extensions PUBLIC "${PROJECT_SOURCE_DIR}/cpp")
+target_include_directories(humanoid_ocp_extensions PUBLIC "${G1_CORE_DIR}")
 target_link_libraries(humanoid_ocp_extensions PUBLIC ocs2_core ocs2_robotic_tools)
 # Plain-CMake build adapter. Vendored OCS2 sources and original build files remain unchanged.
 add_library(ocs2_thirdparty INTERFACE)

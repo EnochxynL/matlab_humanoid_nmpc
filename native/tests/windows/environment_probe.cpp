@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <cstdlib>
 #include "mex.h"
-#include "../../cpp/extensions/Environment.h"
+#include "../../src/g1_controller/extensions/Environment.h"
 void mexFunction(int outputs, mxArray** result, int, const mxArray**) {
   const char* crt = std::getenv("G1_WINDOWS_ENV_PROBE");
   char native[256]{};
