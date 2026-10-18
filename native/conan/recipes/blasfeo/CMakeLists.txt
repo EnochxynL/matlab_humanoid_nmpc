@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.18)
+project(blasfeo LANGUAGES C)
+set(TARGET GENERIC CACHE STRING "Pinned numerical architecture" FORCE)
+set(BLASFEO_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BLASFEO_TESTING OFF CACHE BOOL "" FORCE)
+set(BLASFEO_CROSSCOMPILING ON CACHE BOOL "" FORCE)
+set(HPIPM_TESTING OFF CACHE BOOL "" FORCE)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/upstream" upstream-build)

@@ -122,12 +122,9 @@ ModelSettings::ModelSettings(const std::string& configFile, const std::string& u
   loadData::loadPtreeValue(pt, this->j_r_shoulder_y_name, prefix + "armJointNames.right_shoulder_y", verbose);
   loadData::loadPtreeValue(pt, this->j_l_elbow_y_name, prefix + "armJointNames.left_elbow_y", verbose);
   loadData::loadPtreeValue(pt, this->j_r_elbow_y_name, prefix + "armJointNames.right_elbow_y", verbose);
-  modelFolderCppAd = "cppad_code_gen/cppad_" + mpcName + robotName;
-#ifdef _WIN32
-  const auto windowsCache = g1_platform::environmentVariable("G1_AD_CACHE_ROOT");
-  modelFolderCppAd = (windowsCache.empty() ? "build/windows/ad-cache" : windowsCache) +
+  const auto cacheRoot = g1_platform::environmentVariable("G1_AD_CACHE_ROOT");
+  modelFolderCppAd = (cacheRoot.empty() ? "native/build/cppad_code_gen" : cacheRoot) +
                     "/cppad_" + mpcName + robotName;
-#endif
 
   loadData::loadStdVector(configFile, prefix + "fixedJointNames", fixedJointNames, verbose);
   loadData::loadStdVector(configFile, prefix + "contactNames6DoF", contactNames6DoF, verbose);

@@ -31,7 +31,7 @@ Windows 使用已验证的 MinGW 8.1 + Conan，具体工具准备见原生子项
 .\native\scripts\build_windows.ps1 -Stage All
 ```
 
-Linux 使用普通 CMake 与预安装数值依赖：
+Linux 使用 Conan 管理数值依赖，再由 CMake 构建；需先准备对应编译器的 Conan profile：
 
 ```sh
 bash native/scripts/build_mex.sh
@@ -45,9 +45,9 @@ open_project;       % 只打开模型
 out = run_walking;  % 初始化 MEX，运行原 4.8 s 物理闭环并清理
 ```
 
-Windows 可使用 `addpath tools/windows; out=run_windows_walking`，将生成文件隔离到 Windows 缓存。不要仅打开模型后直接点击 Run；控制器生命周期由 runner 管理。
+Windows 可使用 `addpath tools/windows; out=run_windows_walking`，将 Simulink 生成文件隔离到 `build/matlab/`。不要仅打开模型后直接点击 Run；控制器生命周期由 runner 管理。
 
-构建输出：Windows `build/windows/native-core/lib/`，Linux `build/native-linux/lib/`。MPC 60 Hz、策略查询 500 Hz，canonical time 为 `double(tick)*0.002`，查询提前量 5 ms。日志和物理证据写入 `runtime/walking_*/`，状态文件为 `runtime/current_run.json`。
+构建中间产物位于 `native/build/`；MATLAB 使用部署目录：Windows `install/windows/lib/`，Linux `install/linux/lib/`。Conan 管理 OCS2、HPIPM、BLASFEO 及其依赖，详情见[依赖与产物边界](docs/dependency_artifact_layout.md)。MPC 60 Hz、策略查询 500 Hz，canonical time 为 `double(tick)*0.002`，查询提前量 5 ms。日志和物理证据写入 `runtime/walking_*/`，状态文件为 `runtime/current_run.json`。
 
 ## 验证与历史
 

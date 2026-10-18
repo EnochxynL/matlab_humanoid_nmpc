@@ -3,7 +3,7 @@ function result = validate_observation_conversion(evidenceName)
 [kernels,blockCleanup]=planner_block_functions();
 if nargin==0,evidenceName='observation_dataflow';end
 root=fileparts(fileparts(mfilename('fullpath')));cd(root);cfg=g1.initialize();
-folder=fullfile(root,'build',evidenceName);
+folder=fullfile(root,'runtime','evidence',evidenceName);
 if ~isfolder(folder),mkdir(folder);end
 contract=jsondecode(fileread(fullfile(root,'build/observation_dataflow/conversion_contract.json')));
 f=load(fullfile(root,'build/core_extraction/fixture.mat'));raw=f.raw;
@@ -22,7 +22,7 @@ ds=Simulink.SimulationData.Dataset;ds{1}=timeseries(raw,t);
 in=Simulink.SimulationInput('g1_observation_check');in=in.setExternalInput(ds);
 in=in.setModelParameter('StopTime',num2str(t(end),17),'SaveOutput','on','OutputSaveName','yout','SaveFormat','Dataset');
 out=sim(in);actual=g1log.signalMatrix(out.yout{1}.Values);
-golden=load(fullfile(root,'build','observation_hybrid','conversion_values.mat'));
+golden=load(fullfile(root,'runtime','evidence','observation_hybrid','conversion_values.mat'));
 assert(isequal(raw,golden.raw),'Frozen reference input changed');
 expected=golden.expected;
 assert(isequal(actual(:,[1:3,7:29,36:58]),expected(:,[1:3,7:29,36:58])),'Copied fields/joint mapping differs.');

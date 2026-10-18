@@ -1,0 +1,4 @@
+sources:
+  cci.26386754b8bf:
+    url: https://github.com/leggedrobotics/ocs2.git
+    commit: 26386754b8bf31ab78b503971d0cbf4fdbcd7cb4

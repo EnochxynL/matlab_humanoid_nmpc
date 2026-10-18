@@ -3,9 +3,9 @@ function result = validate_observation_split(evidenceName)
 if nargin==0,evidenceName='observation_split';end
 %VALIDATE_OBSERVATION_SPLIT Independent extraction, install guards and full replay.
 root=fileparts(fileparts(mfilename('fullpath')));cd(root);cfg=g1.initialize();
-folder=fullfile(root,'build',evidenceName);
-fixture=load(fullfile(root,'build','core_extraction','fixture.mat'));
-golden=load(fullfile(root,'build','observation_hybrid','conversion_values.mat'));
+folder=fullfile(root,'runtime','evidence',evidenceName);
+fixture=load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
+golden=load(fullfile(root,'runtime','evidence','observation_hybrid','conversion_values.mat'));
 indices=double(cfg.mpcIndices(:)');
 % Extraction must work before controller initialization, across the complete sequence.
 for j=1:2401

@@ -4,7 +4,7 @@ function result = validate_matlab_adapters()
 root=fileparts(fileparts(mfilename('fullpath')));
 addpath(fullfile(root,'matlab'),fullfile(root,'tools'));
 cfg=g1.loadConfiguration();
-golden=load(fullfile(root,'build','observation_hybrid','conversion_values.mat'));
+golden=load(fullfile(root,'runtime','evidence','observation_hybrid','conversion_values.mat'));
 maximum=0; different=0;
 for j=1:size(golden.raw,1)
     raw=golden.raw(j,:)';
@@ -33,7 +33,7 @@ reject(@()kernels.quaternionToEulerZyx(single(raw(5:8))));
 reject(@()kernels.quaternionToEulerZyx([1;0;1;0]));
 reject(@()kernels.rotateLinearVelocity(raw(5:8),[NaN;0;0]));
 reject(@()kernels.localAngularVelocityToEulerRates([0;0;0],[0;0]));
-fixture=load(fullfile(root,'build','core_extraction','fixture.mat'));
+fixture=load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
 for j=1:size(fixture.ref,1)
     reference=fixture.ref(j,:)'; actual=kernels.extractReference(reference);
     assert(isequal(typecast(actual,'uint64'),typecast(reference,'uint64')));
@@ -54,7 +54,7 @@ result=struct('passed',true,'conversion_cases',size(golden.raw,1), ...
     'observation_ticks',2401,'reference_cases',size(fixture.ref,1), ...
     'negative_cases',18,'max_absolute_error',maximum,'different_double_bits',different, ...
     'reference_bits_exact',true,'physical_simulation',false);
-folder=fullfile(root,'build','inline_matlab_migration');
+folder=fullfile(root,'runtime','evidence','inline_matlab_migration');
 if ~isfolder(folder),mkdir(folder);end
 g1log.writeJson(fullfile(folder,'adapters.json'),result);
 disp(result);

@@ -5,7 +5,7 @@ root=fileparts(fileparts(mfilename('fullpath')));
 if ~bdIsLoaded('g1_planner')
     open_system(fullfile(root,'models','g1_planner.slx'));
 end
-parent=fullfile(root,'build','block_function_tests');
+parent=fullfile(root,'build','matlab','block_function_tests');
 if ~isfolder(parent),mkdir(parent);end
 folder=tempname(parent);mkdir(folder);
 cleanup=onCleanup(@()removeTemporaryFunctions(folder,parent));

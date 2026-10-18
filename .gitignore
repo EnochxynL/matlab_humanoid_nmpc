@@ -8,5 +8,6 @@ slprj/
 *.mexw64
 __pycache__/
 *.pyc
+CMakeUserPresets.json
 
 cppad_code_gen/

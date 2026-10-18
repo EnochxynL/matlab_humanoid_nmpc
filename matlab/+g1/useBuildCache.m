@@ -1,0 +1,16 @@
+function cleanup = useBuildCache()
+%USEBUILDCACHE Scope generated Simulink files to this application's build tree.
+root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
+config = Simulink.fileGenControl('getConfig');
+cleanup = onCleanup(@()restore(config));
+Simulink.fileGenControl('set', ...
+    'CacheFolder',fullfile(root,'build','matlab','simulink-cache'), ...
+    'CodeGenFolder',fullfile(root,'build','matlab','simulink-codegen'), ...
+    'keepPreviousPath',true,'createDir',true);
+end
+
+function restore(config)
+Simulink.fileGenControl('set','CacheFolder',config.CacheFolder, ...
+    'CodeGenFolder',config.CodeGenFolder, ...
+    'CodeGenFolderStructure',config.CodeGenFolderStructure,'keepPreviousPath',true);
+end

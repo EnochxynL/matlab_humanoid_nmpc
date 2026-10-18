@@ -1,4 +1,5 @@
 [requires]
+ocs2/cci.26386754b8bf
 pinocchio/4.1.0
 abseil/20240116.2
 boost/1.88.0

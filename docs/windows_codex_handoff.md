@@ -1,5 +1,7 @@
 # Windows Codex 交接：G1 Simulink + 原生 C++ OCS2
 
+> 当前依赖与产物边界见 [Conan 与产物布局](dependency_artifact_layout.md)：公开头文件在 `native/include/`，实现和 MEX 在 `native/src/`；三个数值子模块改由 Conan 配方构建。构建文件、工具链与 AD 缓存在 `native/build/`，MATLAB 运行库部署到 `install/windows/lib/`，历史验收记录移至 `runtime/evidence/`。下方保留上一轮迁移记录和原始路径。
+
 > 原生子项目整理完成：C++、MEX、子模块、CMake、Conan、构建脚本和 C++ 测试统一位于 `native/`。新入口 `native/scripts/build_windows.ps1`，Windows 运行目录为 `build/windows/native-core/lib`；新构建、AD 与两条回放均通过，回放输出与整理前逐字节一致。旧 gait 命令生成链经审计成组移除。见 [整理与审计记录](native_subproject_migration.md)。后文旧源码路径及旧构建目录是历史记录。
 
 > 2026-10-18 更新：三个纯转换 MEX 已替换为五个 MATLAB Function 块内实现，独立转换 `.m` 文件已删除，Planner MEX 保留。转换检查、模型回放及 4.8 s 行走自动检查通过；内联版四份行走 CSV 与已人工 PASS 的独立函数版逐字节一致。本次内联版人工标记仍待确认。见 [原生 MATLAB 转换迁移](native_matlab_adapters.md)。下方四个 MEX 的记录属于上一轮 Windows 迁移验收。

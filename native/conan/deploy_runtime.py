@@ -15,7 +15,9 @@ def deploy(graph, output_folder, **kwargs):
         # MinGW recipes may install DLLs in lib alongside their import libraries.
         for bindir in dict.fromkeys(dependency.cpp_info.bindirs + dependency.cpp_info.libdirs):
             directory = Path(dependency.package_folder) / bindir
-            for source in directory.glob('*.dll'):
+            for source in directory.iterdir() if directory.is_dir() else []:
+                if not (source.name.lower().endswith('.dll') or '.so' in source.name or source.name.endswith('.dylib')):
+                    continue
                 digest = hashlib.sha256(source.read_bytes()).hexdigest()
                 key = source.name.lower()
                 if key in files and files[key]['sha256'] != digest:

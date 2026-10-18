@@ -1,4 +1,4 @@
-{% set mingw = os.path.abspath(os.path.join(profile_dir, '../../../build/windows/toolchains/mingw64')).replace('\\', '/') %}
+{% set mingw = os.path.abspath(os.path.join(profile_dir, '../../build/windows/toolchains/mingw64')).replace('\\', '/') %}
 [settings]
 os=Windows
 arch=x86_64
@@ -11,5 +11,5 @@ build_type=Release
 [conf]
 tools.build:compiler_executables={"c": "{{ mingw }}/bin/gcc.exe", "cpp": "{{ mingw }}/bin/g++.exe"}
 tools.cmake.cmaketoolchain:generator=Ninja
-tools.build:jobs=4
+tools.build:jobs=2
 tools.build:cxxflags=["-Wa,-mbig-obj"]

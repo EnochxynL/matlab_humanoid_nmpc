@@ -3,8 +3,8 @@ function result=validate_reference_split(evidenceName)
 if nargin==0,evidenceName='reference_split';end
 %VALIDATE_REFERENCE_SPLIT Stateless reference contract, rejection cases and full policy replay.
 root=fileparts(fileparts(mfilename('fullpath')));cd(root);g1.initialize();
-folder=fullfile(root,'build',evidenceName);
-f=load(fullfile(root,'build','core_extraction','fixture.mat'));
+folder=fullfile(root,'runtime','evidence',evidenceName);
+f=load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
 % No planner init: the native function must operate on its own.
 for j=1:size(f.ref,1)
     actual=kernels.extractReference(f.ref(j,:)');

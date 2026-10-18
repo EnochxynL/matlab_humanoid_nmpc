@@ -1,13 +1,16 @@
-# Numerical dependencies
+# Optional pinned source mirrors
 
-OCS2, BLASFEO and HPIPM are unmodified, commit-pinned Git submodules.
-Initialize after cloning with `git submodule update --init --recursive`.
-The parent repository tracks gitlinks, not copies of the vendor source files.
-Versions and origins are recorded in `dependencies.lock.json`.
+These Git submodules preserve upstream provenance and optionally accelerate
+Conan source acquisition. The application no longer builds their checkouts with
+`add_subdirectory()`. Local recipes live in `../conan/recipes/` and pin the same
+commits in `conandata.yml`; package revisions are locked in `../conan.lock`.
 
-OCS2 is the official https://github.com/leggedrobotics/ocs2 repository.
-Its ROS/catkin packages belong to upstream; the project does not build them.
-`cmake/NumericalLibraries.cmake` selects numerical libraries with plain CMake.
-Pinocchio, Boost, Eigen, Abseil and URDFDOM are discovered as installed packages.
-CppAD/CppADCodeGen headers currently come from the pinned OCS2 thirdparty tree.
-No ROS communication or MATLAB SDK is needed by the controller core.
+When `G1_RECIPE_SOURCE_ROOT` points here, recipes archive the pinned commit,
+excluding tracked edits and untracked files. Otherwise they fetch upstream.
+Initialize mirrors with `git submodule update --init --recursive` when wanted.
+No ROS/catkin packages are built. OCS2's Conan package supplies its retained
+CppAD/CppADCodeGen headers and platform adaptations.
+
+`dependencies.lock.json` and `../scripts/verify_dependencies.py` audit the mirror
+checkouts. That audit remains strict about modifications; packaging committed
+files does not erase or approve existing local edits.

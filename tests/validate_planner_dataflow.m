@@ -6,9 +6,10 @@ if nargin==0,evidenceName='planner_dataflow';end
 if nargin<2,allowRoundoff=false;end
 root = fileparts(fileparts(mfilename('fullpath')));
 cd(root); cfg=g1.initialize();
-golden=load(fullfile(root,'build','observation_hybrid','conversion_values.mat'));
-folder = fullfile(root,'build',evidenceName,'model_replay');
-fixture = load(fullfile(root,'build','core_extraction','fixture.mat'));
+cacheCleanup=g1.useBuildCache(); %#ok<NASGU>
+golden=load(fullfile(root,'runtime','evidence','observation_hybrid','conversion_values.mat'));
+folder = fullfile(root,'runtime','evidence',evidenceName,'model_replay');
+fixture = load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
 keys = {'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};
 old = {getenv(keys{1}),getenv(keys{2})};
 setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
@@ -39,7 +40,7 @@ in = in.setModelParameter('StopTime','4.8','SaveOutput','on', ...
 wall = tic;out = sim(in);execution = toc(wall);
 clear cleanup;
 samples = readtable(fullfile(folder,'planner_samples.csv'));
-previous = readtable(fullfile(root,'build','directory_validation', ...
+previous = readtable(fullfile(root,'runtime','evidence','directory_validation', ...
     'core_replay','planner_samples.csv'));
 assert(isequal(size(samples),size(previous)),'Planner sample dimensions changed.');
 assert(all(isfinite(samples{:,:}),'all'),'Nonfinite planner sample.');

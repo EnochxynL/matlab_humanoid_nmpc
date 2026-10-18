@@ -1,104 +1,80 @@
-# Native OCS2 subproject
+# Native OCS2 controller and MATLAB MEX
 
-This directory owns the C++ controller, Planner MEX, pinned submodules, CMake
-adaptations, Conan manifests/recipes and native build tests. Run commands below
-from the repository root. Runtime config/assets remain in the application root;
-`G1Controller::initialize` still receives that application root explicitly.
+This CMake subproject owns the controller, humanoid problem, Planner MEX and
+Conan recipes. Run the commands below from the repository root. Runtime robot
+assets and configuration stay in the application root.
 
-The public C++ interface is `include/g1_controller/G1Controller.h`, containing
-both the controller declaration and its standard C++ data types. Consumers include
-`g1_controller/G1Controller.h`; `src/g1_controller/` contains private implementation.
+## Source and dependency boundaries
 
-Linux builds: `bash native/scripts/build_mex.sh` (MEX) or
-`bash native/scripts/build_core.sh` (core only), output in `build/native-linux/lib`.
+- `include/g1_controller/G1Controller.h`: public controller and data types.
+- `src/g1_controller/`: controller implementation, extensions and humanoid OCP.
+- `src/g1_controller_mex/`: MATLAB adapter.
+- `conanfile.txt`, `conan.lock`: dependency declarations and recipe revisions.
+- `conan/profiles/`: compiler configurations.
+- `conan/recipes/`: local Coal, Pinocchio, BLASFEO, HPIPM and OCS2 recipes.
+- `third_party/`: optional pinned source mirrors and provenance records.
 
-## Windows build
+OCS2's recipe owns the selected upstream numerical modules and compatibility
+adaptations. `cmake/NumericalLibraries.cmake` builds only this project's own
+extensions and humanoid modules. The main project consumes OCS2 with
+`find_package(ocs2 CONFIG REQUIRED)`.
 
-The current configuration uses native MinGW GCC 8.1 (x64, POSIX threads, SEH) and
-MATLAB R2025b, with Conan 2 for C++ dependencies. It does not mix MSYS2 prebuilt
-C++ libraries into this toolchain. OCS2, BLASFEO and HPIPM remain pinned submodules.
+The recipes pin original Git commits. `G1_RECIPE_SOURCE_ROOT` optionally supplies
+local mirrors: recipes archive committed files, never working-tree changes.
+Without mirrors, the recipes fetch their pinned commits from upstream.
 
-`native/scripts/build_windows.ps1 -Stage All` builds the platform smoke tests and core.
-`-Stage Core -WithoutMatlab` builds the standalone core/replay
-driver. Run PowerShell with the installed development tools available, or pass
-`-Conan`, `-CMake`, `-Ninja` and `-MatlabRoot` explicitly.
+## Windows
 
-The script expects the isolated compiler at `build/windows/toolchains/mingw64`.
-Archive provenance and checksums are recorded in
-`../docs/windows_checkpoint_20261017.md`; it does not install another compiler.
+```powershell
+./native/scripts/build_windows.ps1 -Stage All
+```
 
-The build uses CMake 3.31 where available. A verified `G:` subst mapping to
-`build/windows` shortens Conan source paths. Change `-CacheDrive` if that drive is
-already occupied; an unrelated mapping is never replaced. The mapping is kept
-because generated CMake package files refer to it. Re-running the script verifies
-or recreates it. Remove it with `subst G: /d` only after builds are no longer using it.
-The Conan cache is project-local, not the user's default cache.
+`-Stage Core -WithoutMatlab` builds the standalone controller/replay driver.
+`-Stage Platform` builds the AD smoke tests. Both stages first resolve Conan
+packages. `-Conan`, `-CMake`, `-Ninja` and `-MatlabRoot` override tool locations.
 
-Local Pinocchio 4.1.0 and Coal 3.0.3 recipes are based on Conan Center Index commit
-`1c90a5cb2e6353488efefa7d16020c19f9fae0c5`; the MIT notice is in
-`conan/recipes/LICENSE.conan-center-index`. Core dependencies currently use Eigen 3.4.0,
-Boost 1.88.0 and Abseil 20240116.2. These are Windows build choices, not a claim of
-an exact Linux package replica. A real core lockfile is saved only after successful
-resolution/build. The three stateless adapters are now native MATLAB functions;
-only `g1_ocp_mex` is built for MATLAB. Conversion implementations now live inside
-the five MATLAB Function blocks of `g1_planner.slx`, without separate .m kernels.
+The retained compiler is MinGW GCC 8.1, x64 POSIX threads and SEH, at
+`native/build/windows/toolchains/mingw64`. Archive provenance/checksums are in
+`../docs/windows_checkpoint_20261017.md`; the script does not install a compiler.
+The project-local Conan cache uses a verified `G:` mapping to
+`native/build/windows` to avoid long Boost paths. `-CacheDrive` selects another
+free drive. Keep that mapping while using generated CMake files.
 
-For an existing Pinocchio release archive, set `G1_PINOCCHIO_ARCHIVE` to its
-absolute path before building. The recipe verifies the same pinned SHA-256 used
-for the upstream download before extraction; an unmatched archive is rejected.
+Conan builds shared BLASFEO/HPIPM and static OCS2 modules, then CMake links all AD
+users into one controller DLL. Splitting their template-local tape state across
+Windows DLLs is unsafe. The recipe retains the Eigen/GCC 8 compatibility overlay,
+64-bit generated indices, native process execution and rename-before-load.
 
-Windows platform adaptations are generated into the build directory by
-`cmake/WindowsCompatibility.cmake`; upstream submodule source remains unchanged.
-They cover native compiler process execution, DLL loading, 64-bit generated-index
-ABI, and rename-before-load behavior. No AD expressions are replaced. Native
-generation/reload tests include sparse Jacobian/Hessian checks and paths with spaces.
-The GCC 8 compatibility overlay also restricts Eigen 3.4's empty SSE register
-barrier to vectorizable packet types: GCC 8 otherwise crashes while compiling
-an AD scalar matrix product. Matrix arithmetic and double-vector packet paths
-are preserved. Conan's Eigen package itself is not modified. A related upstream
-custom-scalar register-constraint report is
-https://gitlab.com/libeigen/eigen/-/issues/3059 (a different Eigen/compiler version).
+Coal 3.0.3 and Pinocchio 4.1.0 recipes derive from Conan Center Index commit
+`1c90a5cb2e6353488efefa7d16020c19f9fae0c5` (MIT notice under `conan/recipes/`).
+Other retained dependencies include Eigen 3.4, Boost 1.88 and Abseil 20240116.2.
+`G1_PINOCCHIO_ARCHIVE` can supply a previously downloaded, checksum-verified
+release archive.
 
-`g1.initialize` selects the Windows runtime directory and modifies only the current
-MATLAB process's DLL search PATH. Runtime DLLs are deployed from host dependencies
-with a provenance manifest. Windows AD caches are separate from Linux caches.
-Application environment reads use Windows process APIs because MinGW CRT `getenv`
-does not reflect MATLAB `setenv` in the tested session.
+## Linux
 
-On Windows the internal OCS2/humanoid numerical targets are static libraries
-linked into `g1_controller.dll`. CppAD recording state uses template-local
-statics: separate PE DLLs otherwise record a lambda against different tape
-state (the integration probe returned a constant value and zero derivatives).
-Keeping these targets in one image preserves their shared tape state; Linux
-keeps the original shared-library layout. Pinocchio, Boost and C dependencies
-remain separately packaged. This is a link-layout adaptation, not an AD formula change.
+```bash
+bash native/scripts/build_mex.sh
+# Or without MATLAB:
+bash native/scripts/build_core.sh
+```
 
-The historical bitwise conversion failure is retained. The user subsequently
-authorized continuing through roundoff differences and evaluating the walking
-result. Run `validate_matlab_adapters` after adding `tests` to the MATLAB path to
-check the actual conversion block code and report floating-point differences.
-Temporary test entry points are generated from the model and removed on exit.
-Protocol, dimensions, finite outputs and control-time
-identity checks remain active. A completed build does not itself establish that
-the controller or physical walking passed.
+Prepare a Conan compiler profile first. `G1_CONAN_HOST_PROFILE` and
+`G1_CONAN_BUILD_PROFILE` select profiles; both default to `default`.
+`G1_MATLAB_ROOT` selects MATLAB. Linux builds use Conan too, without a ROS prefix.
+Linux execution must be validated on Linux; Windows checks do not establish it.
 
-The planner model replay uses `run_windows_planner_replay` after adding
-`tools/windows` to the MATLAB path. It scopes generated files to Windows caches
-and invokes `validate_planner_dataflow('windows/planner_dataflow',true)`.
-Its baseline numerical differences are
-reported rather than blocking the authorized continuation. The model output must
-still match the output published by the same runtime, and time/mode identities,
-2401 control ticks, 289 MPC updates and stage rejection checks remain mandatory.
+## Generated files and deployment
 
-Validation completed on 2026-10-17: core/MEX build, AD creation/reload, native
-and actual model replay, then `run_windows_walking` with the original 4.8 s plant
-run. See `../docs/windows_checkpoint_20261017.md` for measurements and evidence.
-The walking run took 656 s, exceeding the MATLAB tool's 600 s call timeout;
-MATLAB continued and saved the successful result. Check saved evidence before
-repeating a long run. Human animation review was subsequently confirmed PASS by the user.
+Build trees, tools and AD caches live under `native/build/`. Successful builds
+install MATLAB binaries and runtime libraries into `install/windows/lib/` or
+`install/linux/lib/` at the application root. MATLAB initializes from that
+installation, not from a build tree. Simulink caches live in `build/matlab/`.
+Validation logs and fixtures live in `runtime/evidence/`; walking runs remain in
+`runtime/walking_*/`. Old moved CMake caches are historical snapshots, not valid
+build trees. See `../docs/dependency_artifact_layout.md`.
 
-Fresh Windows builds use `build/windows/native-core` and
-`build/windows/native-platform`. Old `build/windows/core` and `platform` caches
-refer to the pre-move source tree and are retained only as historical artifacts.
-MATLAB initialization selects the new native-core runtime automatically.
-The dependency lock paths are relative to this native subproject.
+Floating-point roundoff is not a stopping gate. Same-run protocol identities,
+2401 control ticks, 289 updates and stage rejection checks remain required.
+Historical walking passes are recorded in `../docs/windows_checkpoint_20261017.md`
+and `../docs/native_matlab_adapters.md`.

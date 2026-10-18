@@ -1,0 +1,1 @@
+["ocs2_core", "ocs2_oc", "ocs2_mpc", "ocs2_test_tools/ocs2_qp_solver", "ocs2_ddp", "ocs2_robotic_tools", "ocs2_pinocchio/ocs2_pinocchio_interface", "ocs2_pinocchio/ocs2_centroidal_model", "ocs2_sqp/hpipm_catkin", "ocs2_sqp/ocs2_sqp", "ocs2_thirdparty"]

@@ -2,6 +2,7 @@ function out=run_walking()
 % Genuine 4.8 s plant run; no ROS2 endpoints or serialized reference IPC.
 root=fileparts(mfilename('fullpath'));cd(root);addpath(fullfile(root,'matlab'));
 cfg=g1.initialize();
+cacheCleanup=g1.useBuildCache(); %#ok<NASGU>
 assert(exist('g1_ocp_mex','file')==3,'Build native/scripts/build_mex.sh first.');
 assert(isfile(cfg.modelFile),'Missing models/g1_walking.slx.');
 folder=fullfile(root,'runtime',['walking_' char(datetime('now','TimeZone','Asia/Shanghai','Format','yyyyMMdd_HHmmss'))]);mkdir(folder);
