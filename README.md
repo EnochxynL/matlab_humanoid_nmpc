@@ -1,168 +1,58 @@
-# G1 Simulink + MEX 行走工程
+# G1 Simulink + OCS2 MEX 行走工程
 
-使用已验收的 OCS2、Pinocchio、CppAD 控制器，通过同进程 MEX 接入 Simulink。OCP 直接使用参考工程的 C++ 业务实现，不再通过 MATLAB Coder 生成数学替代；不使用 MATLAB-native 实验求解器。运行时无需 ROS2 节点或消息通信。
+Simulink/Simscape 实现观测转换、Reference/Gait、动作生成和物理系统，通过同进程 Planner MEX 调用原 C++ OCS2、Pinocchio、CppAD、HPIPM 数值内核。运行和构建均不需要 ROS2 节点、catkin 或 colcon。
 
-```text
-Simscape → StatePreparation → Command → ReferenceGait
-    ↑                                ↓
-JointDrive ← ActionGeneration ← OCS2PlannerMEX
-```
-
-## 打开与运行
-
-```bash
-bash scripts/build_mex.sh
-bash scripts/start_matlab.sh
-```
-
-需要 MATLAB R2025b、Simulink、Simscape Multibody，以及 C/C++ 编译器、CMake、Pinocchio/Coal、URDFDOM、Boost、Eigen、absl 和 OpenMP。构建使用普通 CMake，不使用 ROS、ament、colcon 或消息生成。本机数值依赖恰好安装在 `/opt/ros/jazzy` 下；这只是 Pinocchio/Coal/URDFDOM 的安装位置，不需要 source ROS 环境。可用 `G1_NUMERICAL_PREFIX` 指定其他安装前缀。本机 Pinocchio 的 CMake 配置还会检查 Python/NumPy，脚本默认使用系统 Python，可用 `G1_BUILD_PYTHON` 覆盖。启动脚本为新 MATLAB 进程预加载匹配的系统库；已有生成缓存可复用。避免重复启动大型 MATLAB 实例。
-
-MATLAB 中：
-
-```matlab
-open_project;         % 打开模型，不启动仿真
-out = run_walking;    % 真实 0–4.8 秒行走并打开三维窗口
-```
-
-**请通过 `run_walking` 启动，不能在仅执行 `open_project` 后直接点击 Simulink Run。** `run_walking` 负责配置控制器环境、初始化 MEX、运行仿真和退出清理；直接 Run 会报 `Initialize MEX first`。
-
-0.5 秒开始前进命令；MPC 60 Hz、策略查询 500 Hz，时间为 `double(tick)*0.002`，查询提前量 5 ms。完整输出、策略、物理 CSV、诊断与独立检查写入 `runtime/walking_*/`；当前运行状态为 `runtime/current_run.json`。启动与执行耗时分别记录。异常后可调用 `g1_ocp_mex('close')`。
-
-## 文件按职责归类
+## 目录边界
 
 | 位置 | 职责 |
 |---|---|
-| `models/g1_walking.slx` | 控制数据流、状态转换、动作生成、JointDrive、物理系统与接触测量 |
-| `models/g1_reference.slx` | Reference/Gait 状态机、命令处理、目标及摆足参考 |
-| `models/g1_data.sldd` | 总线、22 个固定参数和步态转换参数表 |
-| `matlab/+g1/initialize.m` | 设置工程路径 |
-| `matlab/+g1/loadConfiguration.m` | 读取机器人配置及仿真初始条件 |
-| `tools/+g1log/` | 5 个离线日志工具：收集信号、转换矩阵、导出物理 CSV、写 CSV/JSON |
-| `open_project.m`、`run_walking.m` | 打开工程与仿真编排入口 |
-| `adapters/matlab/` | 六个原 MEX 命令、协议转换和 MATLAB 实例生命周期 |
-| `cpp/include/g1_controller/` | 不暴露 MATLAB/ROS/OCS2 类型的公开数据类型 |
-| `cpp/controller/` | 核心实例、状态缓存、求解线程与原调度 |
-| `cpp/problem/humanoid_wb_mpc/src/dynamics/` | 原逆动力学辅助计算 |
-| `cpp/controller/reference/`、`cpp/controller/data/time/` | OCP 参考消费与 canonical time |
-| `cpp/data/diagnostics/` | 原控制链诊断 |
-| `assets/`、`config/`、`data/` | 网格、URDF、任务与物理参数 |
-| `cpp/problem/` | 原全身 OCP 数学和 composition root |
-| `cpp/data/observation/` | 机器人观测状态 |
-| `cpp/data/action/` | 关节动作数据 |
-| `cpp/data/description/` | 机器人描述、关节映射及共用数值类型 |
-| `cpp/extensions/` | 自定义罚函数、软约束所有权、权重与模式元数据、六维足端接口及旋转辅助函数 |
-| `cpp/interfaces/` | 内部纯 C++ 观察接口 |
-| `third_party/ocs2/` | 官方 OCS2 固定提交 submodule，原文件未改写 |
-| `third_party/blasfeo/`、`third_party/hpipm/` | 原版固定提交 submodule 与许可证 |
-| `cmake/NumericalLibraries.cmake` | 外部普通 CMake 适配，直接构建上述库与业务源码 |
+| `native/` | 独立 CMake 子项目：C++ 控制器、Planner MEX、固定子模块、Conan 与原生测试 |
+| `models/g1_walking.slx` | 物理闭环、动作生成、JointDrive 与诊断 |
+| `models/g1_planner.slx` | 五个内联转换/检查块与分阶段 Planner MEX 调用 |
+| `models/g1_reference.slx`、`models/g1_data.sldd` | Simulink Reference/Gait、固定参数与总线 |
+| `matlab/+g1/` | 路径初始化、机器人配置读取 |
+| `config/`、`assets/`、`data/` | 应用运行配置、URDF、网格与机器人数据 |
+| `tests/`、`tools/` | MATLAB 模型验证及日志工具 |
+| `open_project.m`、`run_walking.m` | 模型打开与仿真编排 |
 
-在线升/降步态判断、步态参数查询、摆足参考、四元数转换和接触 wrench/CoP 计算均已嵌入模型。固定配置与总线由数据字典管理；模型工作区仅保留可覆盖的初始状态、重力和站立开关。模型及数据字典是源文件，不需要外部构图脚本才能打开。
+原生子项目内部目录结构与构建说明见 [native/README.md](native/README.md)。CMake 源目录是 `native/`；仓库根目录不再是 CMake 工程。运行时的工程根目录仍是本目录，控制器从这里读取 `config/task.info`、`config/reference.info` 和 `assets/g1_29dof.urdf`。
 
-日志导出、路径初始化和配置读取保留为文件，便于维护及批量运行。原 `math/`、`generated/` 和 `cpp/math/` 已移除；原数学源文件和生成包装可从 Git 历史恢复，本机另有 `build/cpp_restoration/before/matlab_math_sources.tar.gz` 归档。CppAD/CppADCodeGen 仍保留，用于参考 C++ 模型的自动微分，与 MATLAB Coder 无关。
+## 构建与运行
 
-## 验证与归档
+克隆后先初始化固定子模块：
 
-整理前真实 4.8 秒行走证据位于 `runtime/inprocess_walking_20261010_163754/`。整理后已通过模型编译、22 个固定参数精确对照、16 个数学源文件原样保留检查、128 个嵌入内核案例，以及利用历史真实观测进行的 4.8 秒 Reference/Gait 重放；离散字段严格相等，连续字段使用 1e-12 绝对/相对容差。后者是参考模块重放，不是新一轮物理闭环或人工视觉验收。
-
-验证摘要保存在 `source_manifest.json`，详细本机证据在 `build/organization_validation.json`。`build/`、`install/`、`runtime/`、`slprj/` 和 `cppad_code_gen/` 不提交。首个 Git 提交保留抽取工程与重构工程，第二个仅保留重构工程；后续整理保留这两个历史提交。
-
-## 构建边界
-
-构建产物位于 `build/standalone/lib/`，MATLAB 从这里加载 MEX。旧 `build/controller/`、`install/` 只作为本机历史产物保留，不参与新构建。默认串行编译，以限制内存。
-
-`third_party/ocs2/` 中仍保留上游 ROS 接口、消息包及 catkin 构建文件，遵守本次“上游目录原样保留”的边界；当前普通 CMake 不执行这些文件，也不编译、链接这些 ROS 组件。项目自己的消息包、ROS 头文件依赖和 colcon 构建流程已移除。URDF 解析使用独立 URDFDOM。
-
-这次结构调整尚不代表 Windows 构建通过：保留的 OCS2 CppAD 动态代码加载及部分诊断仍使用 Linux API，需要后续单独适配。
-
-本次业务/依赖分离已完成独立普通 CMake 编译、422 个编译单元的 ROS 依赖检查、MEX 动态库依赖检查，以及清除 ROS 环境变量后的 tick0 离线查询。118 维输出与已验收的保存基线差异为零；未重新运行完整 4.8 秒物理闭环。验证摘要见 `source_manifest.json`，本机详细日志在 `build/ros_free_refactor/`。
-
-控制链已显式拆为 `ObservationHandling → PlannerPolicy → InverseDynamics / ActionGeneration → JointDrive → PhysicalPlant`。`PolicyDiagnostics` 保留历史输出，并记录策略状态、输入、模式和查询时间。结构图、代码与数据流的实际边界及验证证据见 [数据流边界说明](docs/dataflow_boundaries.md)。
-
-## 独立 C++ 核心
-
-`G1_BUILD_CORE=ON` 建立 `libg1_controller.so`；`G1_BUILD_MATLAB=ON` 额外建立 `g1_ocp_mex.mexa64`。MEX 只链接核心，不直接编译 OCP 或 controller。
-
-```bash
-# 不查找 MATLAB、不编译 MEX
-./scripts/build_core.sh
-# 核心 + 原 MEX 接口
-./scripts/build_mex.sh
-# 核验固定来源的 OCS2 子目录快照
-python3 scripts/verify_dependencies.py
+```sh
+git submodule update --init --recursive
 ```
 
-公开入口为 `g1_controller::G1Controller`：`initialize`、`setReference`、`installOcpObservation`、`updateMpc`、`queryPrepared`、`inverseDynamics`、`shutdown`。控制器声明与实现位于 `cpp/controller/G1Controller.h` 和 `G1Controller.cpp`；公用数据类型定义在 `cpp/include/g1_controller/Types.h`，依赖只有标准 C++。`config/controller_environment.json` 当前为空，不再选择 MATLAB/Shadow/Legacy 数学路径。standalone replay driver 可脱离 MATLAB 调用核心。
+Windows 使用已验证的 MinGW 8.1 + Conan，具体工具准备见原生子项目说明：
 
-核心不包含 MATLAB SDK/MEX API，也不再编译或链接 MATLAB Coder 数学库。模型、协议、solver、权重和时间语义未改变。Pinocchio 等数值包当前仍安装于 `/opt/ros/jazzy`，这是发现安装包的前缀，不是 ROS 构建工具或通信依赖。
-
-当前使用官方 OCS2 固定提交 `26386754b8bf31ab78b503971d0cbf4fdbcd7cb4`，由 Git submodule 管理，上游源码不修改。原工程依赖 fork 特有的业务罚函数、六维足端接口等通过 `cpp/extensions/` 保留，具体边界见 `docs/official_ocs2_transition.md`。
-
-本阶段不进行 Windows 适配或 solver 优化。验收结果见 `docs/core_extraction_acceptance.json`；本机编译、无 MATLAB 配置、fixture 和重放证据位于 `build/core_extraction/`。
-
-依赖初始化：`git submodule update --init --recursive`。第三方源码由 submodule 管理，版本见 `third_party/dependencies.lock.json`。
-
-官方 OCS2 接入方式和验收见 `docs/official_ocs2_transition.md`。
-
-## 恢复参考 C++ OCP
-
-本次恢复范围、旧严格回放差异与新物理测试结果见 [恢复报告](docs/cpp_ocp_restoration.md)。上面的历史验证记录对应当时版本，不构成本次新路径逐位等价声明。
-
-### 控制数据流边界
-
-- 观测转换、检查与重排位于 Simulink 和独立观测 MEX；核心不再维护 `RobotState` 中间容器。
-- `controller/reference/ExternalReferenceManager`：求解前消费外部参考；参考检查位于独立 MATLAB adapter。
-- `controller/PlannerExecutor`：`updatePolicy` 判断更新时刻并等待必要的求解完成；
-  `queryPolicy` 只查询已有策略，不触发求解；`inverseDynamics` 计算前馈力矩。
-- `controller/G1Controller`：按顺序协调上述阶段，保留 tick/策略身份、缓存和生命周期门禁。
-
-`models/g1_planner.slx` 显式连接参考装填、观测准备、MPC 更新资格判断、
-MPC 更新、策略查询和逆动力学。`g1_walking` 通过模型引用接入，动作生成与 JointDrive 不变。
-更新判断采用核心传入的 MPC 周期；观测仍使用真实物理 tick，不被 snap 到名义 deadline。
-
-当前 MEX 阶段接口：`install_observation(x58, identity3) -> tick3`、
-`update_mpc(tick3, request) -> tick3`、`query_policy(tick3) -> p95`。
-`tick3=[control_tick;canonical_time;mpc_period]` 是阶段执行依赖及身份凭据，不能改写。
-初始化、工作线程、策略缓存和关闭仍由核心管理；旧原始观测入口已经退役。
-
-独立模型回归入口：`tests/validate_planner_dataflow.m`（使用本机保存的 fixture 与重构前 C++ 输出）。
-
-### 观测数据流与独立数值内核
-
-`g1_planner/ObservationConversion` 使用原生 Selector 完成字段提取和 29→23 关节重排，
-使用 Mux 组装58维 OCP 状态。三个 MATLAB Function 节点调用独立、无状态的
-`g1_observation_mex`：四元数转 Euler ZYX、局部线速度转世界系、局部角速度转 Euler 导数。
-这些敏感计算继续使用已验证的 C++ 数学；不在 MATLAB 中维护另一套公式。
-
-每个独立 MEX 现在只有一个源文件，内部辅助函数位于匿名命名空间：
-
-- `ObservationMex.cpp`：三个坐标转换和命令分发。
-- `ObservationExtractionMex.cpp`：观测、映射和时间身份检查。
-- `ReferenceExtractionMex.cpp`：参考检查。
-
-它们不初始化控制器，不链接 OCS2、Pinocchio 或控制核心。仅构建三个独立 MEX 可使用：
-
-```bash
-cmake -S adapters/matlab -B build/observation \
-  -DMatlab_ROOT_DIR=/usr/local/MATLAB/R2025b \
-  -DCMAKE_BUILD_TYPE=Release '-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG'
-cmake --build build/observation --parallel 1
+```powershell
+.\native\scripts\build_windows.ps1 -Stage All
 ```
 
-不再生成独立辅助静态库；设置 `-DG1_BUILD_MATLAB=OFF` 时跳过这些 MEX。核心控制库仍可通过 `scripts/build_core.sh` 在没有 MATLAB 的环境构建。
-主工程的 `scripts/build_mex.sh` 会同时构建规划器、观测转换、观测提取和参考提取四个 MEX。
+Linux 使用普通 CMake 与预安装数值依赖：
 
-纯 MATLAB 敏感公式候选的严格 FAIL 证据保留在忽略目录 `build/observation_dataflow/`。
+```sh
+bash native/scripts/build_mex.sh
+bash scripts/start_matlab.sh
+```
 
-`ObservationPrepare` 已拆成两个顶层节点：`ObservationExtraction` 调用独立、无状态的 `g1_observation_extract_mex(raw74, x58, jointIndices23)`，检查观测及复制字段并输出 `[tick; canonical_time; raw_time]`；`ObservationInstall` 调用 `g1_ocp_mex('install_observation', x58, identity3)`，检查调用连续性并登记观测。旧 `prepare_observation`、`prepare_ocp_observation`、`convert_observation`、`query` 和 `step` 原始观测入口已删除；核心只接收已提取的观测。可运行 `addpath tests; validate_observation_split` 检查独立提取、拒绝非法输入及完整策略回放；本次未重跑物理行走。
+MATLAB R2025b、Simulink、Simscape Multibody 中运行：
 
-独立观测 MEX 的辅助内核现与包装同放在 `adapters/matlab/`，拥有独立 CMake target；`cpp/` 仅保留控制核心。旧 `RobotState`、原始观测转换、关节映射容器及未使用的硬件接口占位代码已删除。机器人模型仍由原 Pinocchio/URDF OCP 路径加载，本次没有更改模型或数学定义。
+```matlab
+open_project;       % 只打开模型
+out = run_walking;  % 初始化 MEX，运行原 4.8 s 物理闭环并清理
+```
 
-参考路径为 `ReferenceExtraction → ReferenceInstall`。独立 `g1_reference_extract_mex(reference428)` 检查字段并原样输出，不依赖核心、OCS2 或 Pinocchio；辅助源码与 MEX 包装位于 `adapters/matlab/`。安装节点调用 `g1_ocp_mex('install_reference', reference428)`，核心直接将具名参考转换为 OCS2 容器，不再通过428向量往返。旧 `reference` 命令和 `cpp/data/reference/ReferenceConversion` 已删除。OCP 消费适配器移至 `cpp/controller/reference/`，未使用的 CSV/二进制读取逻辑已移除。运行 `addpath tests; validate_reference_split` 可验证字段逐位一致、非法输入拒绝和完整策略回放；本次没有重跑物理行走。
+Windows 可使用 `addpath tools/windows; out=run_windows_walking`，将生成文件隔离到 Windows 缓存。不要仅打开模型后直接点击 Run；控制器生命周期由 runner 管理。
 
-规划上下文声明与实现分别位于 `cpp/controller/PlannerContext.h` 和 `.cpp`：头文件展示成员依赖，构造、参考回调注册及诊断配置在实现文件中。`controller/reference/ExternalReferenceManager.h` 已按参考取得、校验、安装、委托更新和结果核对整理注释与格式；本轮未改名或调整状态归属。
+构建输出：Windows `build/windows/native-core/lib/`，Linux `build/native-linux/lib/`。MPC 60 Hz、策略查询 500 Hz，canonical time 为 `double(tick)*0.002`，查询提前量 5 ms。日志和物理证据写入 `runtime/walking_*/`，状态文件为 `runtime/current_run.json`。
 
-控制层使用 `g1_controller::PlannerExecutor`、`PlannerContext`、`PlannerConfig`、`ReferencePacket` 和 `ExternalReferenceManager`；结构诊断归入 `g1_controller::diagnostics`。`WaveBControlTime`、`task5a`、`task5b` 不再作为类名或命名空间；现有 `TASK5A_*` 环境配置保持兼容。
+## 验证与历史
 
-原 `ObservationKernels.h/.cpp`、`ReferenceExtraction.h/.cpp` 已合入各自 MEX 源文件并删除，没有重复维护公式。`PlannerMex.cpp` 仍是独立核心库的包装。`validate_single_file_mex` 对冻结的转换样本、时间身份、拒绝非法输入和完整策略回放进行验证，不运行物理仿真。
+- [Windows 迁移检查点](docs/windows_checkpoint_20261017.md)
+- [转换内核内联及行走验证](docs/native_matlab_adapters.md)
+- [原生子项目整理与旧 gait 调用链审计](docs/native_subproject_migration.md)
 
-`cpp/extensions/` 的通用 OCP 扩展使用 `humanoid::ocp_extensions` 命名空间，类型和文件名不再使用 `G1` 前缀；旋转辅助函数位于其 `geometry` 子命名空间，增广罚函数接口位于 `augmented`。扩展库目标为 `humanoid_ocp_extensions`，调用点显式限定扩展类型，避免与官方 OCS2 同名类型混淆。`G1Controller` 等真实机器人入口保持原名。
+旧构建缓存和验收证据保留在被忽略的 `build/`、`runtime/` 中；历史源码位置以对应提交为准。子模块中的上游 ROS 示例原样保留，但不参与当前构建。项目 OCP 公式、任务参数、物理模型及 MEX 协议保持不变。

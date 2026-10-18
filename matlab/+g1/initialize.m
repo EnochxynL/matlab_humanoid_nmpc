@@ -3,11 +3,11 @@ function cfg = initialize()
 root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
 addpath(fullfile(root,'matlab'),fullfile(root,'models'), ...
     fullfile(root,'tools'));
-runtimeDirectory = fullfile(root,'build','standalone','lib');
-buildInstruction = 'Build scripts/build_mex.sh first.';
+runtimeDirectory = fullfile(root,'build','native-linux','lib');
+buildInstruction = 'Build native/scripts/build_mex.sh first.';
 if ispc
-    runtimeDirectory = fullfile(root,'build','windows','core','lib');
-    buildInstruction = 'Run scripts/build_windows.ps1 -Stage Core first.';
+    runtimeDirectory = fullfile(root,'build','windows','native-core','lib');
+    buildInstruction = 'Run native/scripts/build_windows.ps1 -Stage Core first.';
     if isempty(getenv('MW_MINGW64_LOC'))
         setenv('MW_MINGW64_LOC',fullfile(root,'build','windows','toolchains','mingw64'));
     end
