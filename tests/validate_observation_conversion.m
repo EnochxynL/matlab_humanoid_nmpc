@@ -1,5 +1,6 @@
 function result = validate_observation_conversion(evidenceName)
 %VALIDATE_OBSERVATION_CONVERSION Compare actual Simulink blocks to C++ reference.
+[kernels,blockCleanup]=planner_block_functions();
 if nargin==0,evidenceName='observation_dataflow';end
 root=fileparts(fileparts(mfilename('fullpath')));cd(root);cfg=g1.initialize();
 folder=fullfile(root,'build',evidenceName);
@@ -31,9 +32,9 @@ assert(all(isfinite(actual),'all'));
 % A wrong external joint mapping must be rejected by the runtime before solve.
 bad=expected(1,:)';bad(7)=bad(7)+0.01;rejected=false;
 try
-    ignored=g1_observation_extract_mex(raw(1,:)',bad,double(cfg.mpcIndices(:)')); %#ok<NASGU>
+    ignored=kernels.extractObservation(raw(1,:)',bad,double(cfg.mpcIndices(:)')); %#ok<NASGU>
 catch exception
-    rejected=strcmp(exception.identifier,'G1:ObservationExtractionMex');
+    rejected=strcmp(exception.identifier,'G1:ObservationExtraction');
 end
 assert(rejected,'Incorrect joint mapping was accepted.');
 result=struct('passed',true,'samples',size(raw,1),'saved_observations',size(f.raw,1),'independent_cases',40, ...

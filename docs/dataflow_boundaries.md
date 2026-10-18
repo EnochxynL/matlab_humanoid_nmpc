@@ -1,5 +1,7 @@
 # 控制链的数据流边界
 
+> 2026-10-18 更新：三个无状态转换 MEX 已替换为 `g1_planner` 的五个 MATLAB Function 块内代码，不再依赖独立转换 `.m` 文件；仅保留 `g1_ocp_mex`。旧 `PolicyQuery.m` / `InverseDynamics.m` System 适配类不参与当前模型。以下重构过程与检查点描述保留为历史；当前验证见 [原生 MATLAB 转换迁移](native_matlab_adapters.md)。
+
 本轮在已验收的 OCS2/MEX 工程上显式拆分控制链，不改变 OCP、求解器、Reference/Gait、JointDrive 或物理模型。CasADi 仍是后续 MATLAB-native 数学内核的路线，本轮没有替换当前 Pinocchio/CppAD 内核。
 
 ## 打开模型看什么

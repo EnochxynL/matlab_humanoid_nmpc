@@ -1,5 +1,6 @@
 function result = validate_cfunction_trial
 % 隔离验证块内 C 公式；不加载控制器或推进 Simscape。
+[kernels,blockCleanup]=planner_block_functions();
 root = fileparts(fileparts(mfilename('fullpath')));
 addpath(fullfile(root,'build','standalone','lib'));
 g = load(fullfile(root,'build','observation_hybrid','conversion_values.mat'));
@@ -11,7 +12,7 @@ in = in.setModelParameter('StopTime',sprintf('%.17g',(n-1)*.002));
 out = sim(in);
 expected = zeros(n,3);
 for k=1:n
-    expected(k,:) = g1_observation_mex('quaternion_to_euler',g.raw(k,5:8)')';
+    expected(k,:) = kernels.quaternionToEulerZyx(g.raw(k,5:8)')';
 end
 result.samples = n;
 result.max_abs = max(abs(out.eulerOutput-expected),[],'all');

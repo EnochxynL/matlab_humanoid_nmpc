@@ -1,6 +1,7 @@
 function result = validate_planner_dataflow(evidenceName,allowRoundoff)
 %VALIDATE_PLANNER_DATAFLOW Run the actual planner model on saved observations.
 % Checks staged API guards, then the complete 2401-tick/289-update contract.
+[kernels,blockCleanup]=planner_block_functions();
 if nargin==0,evidenceName='planner_dataflow';end
 if nargin<2,allowRoundoff=false;end
 root = fileparts(fileparts(mfilename('fullpath')));
@@ -14,14 +15,14 @@ setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
 envCleanup = onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
 g1_ocp_mex('init',root,folder);
 cleanup = onCleanup(@()g1_ocp_mex('close'));
-g1_ocp_mex('install_reference',g1_reference_extract_mex(fixture.ref(1,:)'));
-identity=g1_observation_extract_mex(fixture.raw(1,:)',golden.expected(1,:)',double(cfg.mpcIndices(:)'));
+g1_ocp_mex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
+identity=kernels.extractObservation(fixture.raw(1,:)',golden.expected(1,:)',double(cfg.mpcIndices(:)'));
 token = g1_ocp_mex('install_observation',golden.expected(1,:)',identity);
 assertRejected(@()g1_ocp_mex('query_policy',token));
 assertRejected(@()g1_ocp_mex('update_mpc',token,0));
 bad = token;bad(2) = bad(2)+0.002;
 assertRejected(@()g1_ocp_mex('update_mpc',bad,1));
-nextIdentity=g1_observation_extract_mex(fixture.raw(2,:)',golden.expected(2,:)',double(cfg.mpcIndices(:)'));
+nextIdentity=kernels.extractObservation(fixture.raw(2,:)',golden.expected(2,:)',double(cfg.mpcIndices(:)'));
 assertRejected(@()g1_ocp_mex('install_observation',golden.expected(2,:)',nextIdentity));
 clear cleanup;
 % Fresh runtime and model persistent state; do not reuse guard-test state.

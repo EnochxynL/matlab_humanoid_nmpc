@@ -1,6 +1,7 @@
-function result = run_windows_planner_replay()
+function result = run_windows_planner_replay(evidenceName)
 %RUN_WINDOWS_PLANNER_REPLAY Keep generated simulation files in Windows caches.
 root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
+if nargin==0,evidenceName='windows/planner_dataflow';end
 previousFolder = pwd;
 config = Simulink.fileGenControl('getConfig');
 cleanup = onCleanup(@()restore(previousFolder,config));
@@ -9,7 +10,7 @@ Simulink.fileGenControl('set', ...
     'CodeGenFolder',fullfile(root,'build','windows','simulink-codegen'), ...
     'keepPreviousPath',true,'createDir',true);
 addpath(fullfile(root,'matlab'),fullfile(root,'tests'));
-result = validate_planner_dataflow('windows/planner_dataflow',true);
+result = validate_planner_dataflow(evidenceName,true);
 end
 
 function restore(folder,config)

@@ -4,8 +4,8 @@ The current configuration uses native MinGW GCC 8.1 (x64, POSIX threads, SEH) an
 MATLAB R2025b, with Conan 2 for C++ dependencies. It does not mix MSYS2 prebuilt
 C++ libraries into this toolchain. OCS2, BLASFEO and HPIPM remain pinned submodules.
 
-`scripts/build_windows.ps1 -Stage All` builds the platform smoke tests, standalone
-adapters and core. `-Stage Core -WithoutMatlab` builds the standalone core/replay
+`scripts/build_windows.ps1 -Stage All` builds the platform smoke tests and core.
+`-Stage Core -WithoutMatlab` builds the standalone core/replay
 driver. Run PowerShell with the installed development tools available, or pass
 `-Conan`, `-CMake`, `-Ninja` and `-MatlabRoot` explicitly.
 
@@ -25,7 +25,9 @@ Local Pinocchio 4.1.0 and Coal 3.0.3 recipes are based on Conan Center Index com
 `recipes/LICENSE.conan-center-index`. Core dependencies currently use Eigen 3.4.0,
 Boost 1.88.0 and Abseil 20240116.2. These are Windows build choices, not a claim of
 an exact Linux package replica. A real core lockfile is saved only after successful
-resolution/build. `adapters.conan.lock` already records the adapter recipe revision.
+resolution/build. The three stateless adapters are now native MATLAB functions;
+only `g1_ocp_mex` is built for MATLAB. Conversion implementations now live inside
+the five MATLAB Function blocks of `g1_planner.slx`, without separate .m kernels.
 
 For an existing Pinocchio release archive, set `G1_PINOCCHIO_ARCHIVE` to its
 absolute path before building. The recipe verifies the same pinned SHA-256 used
@@ -59,8 +61,10 @@ remain separately packaged. This is a link-layout adaptation, not an AD formula 
 
 The historical bitwise conversion failure is retained. The user subsequently
 authorized continuing through roundoff differences and evaluating the walking
-result. Run `validate_adapters(root,true)` to report all conversion differences;
-the default remains strict. Protocol, dimensions, finite outputs and control-time
+result. Run `validate_matlab_adapters` after adding `tests` to the MATLAB path to
+check the actual conversion block code and report floating-point differences.
+Temporary test entry points are generated from the model and removed on exit.
+Protocol, dimensions, finite outputs and control-time
 identity checks remain active. A completed build does not itself establish that
 the controller or physical walking passed.
 

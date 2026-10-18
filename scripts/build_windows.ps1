@@ -1,5 +1,5 @@
 param(
-  [ValidateSet('Platform','Adapters','Core','All')][string]$Stage = 'All',
+  [ValidateSet('Platform','Core','All')][string]$Stage = 'All',
   [string]$Conan = "$env:LOCALAPPDATA\Conan\conan\conan.exe",
   [string]$CMake,
   [string]$Ninja,
@@ -63,13 +63,6 @@ try {
       "-DCMAKE_C_COMPILER=$mingw/bin/gcc.exe","-DCMAKE_CXX_COMPILER=$mingw/bin/g++.exe",'-DCMAKE_BUILD_TYPE=Release')
     Invoke-Checked $CMake @('--build',"$build/platform")
     Invoke-Checked (Join-Path (Split-Path $CMake) 'ctest.exe') @('--test-dir',"$build/platform",'--output-on-failure')
-  }
-  if ($Stage -in @('Adapters','All')) {
-    Invoke-Checked $Conan @('install','tools/windows/adapters.conanfile.txt','-pr:h',$profile,'-pr:b',$profile,
-      '-of',"$build/adapters-deps",'--build=missing','--lockfile=tools/windows/adapters.conan.lock')
-    Invoke-Checked $CMake @('-S','adapters/matlab','-B',"$build/adapters",'-G','Ninja',
-      "-DCMAKE_TOOLCHAIN_FILE=$build/adapters-deps/conan_toolchain.cmake","-DMatlab_ROOT_DIR=$MatlabRoot",'-DCMAKE_BUILD_TYPE=Release')
-    Invoke-Checked $CMake @('--build',"$build/adapters")
   }
   if ($Stage -in @('Core','All')) {
     Invoke-Checked $Conan @('export','tools/windows/recipes/coal','--version=3.0.3')
