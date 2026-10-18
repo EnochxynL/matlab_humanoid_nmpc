@@ -4,7 +4,7 @@
  * 负责资源所有权、参考包缓存、物理 tick、输入安全检查和策略/力矩身份绑定。
  * 不在这里定义 OCP 方程；OCP 组装见 PlannerContext 和 WBMpcInterface。
  */
-#include "G1Controller.h"
+#include "g1_controller/G1Controller.h"
 #include "controller/PlannerContext.h"
 #include <algorithm>
 #include <cmath>

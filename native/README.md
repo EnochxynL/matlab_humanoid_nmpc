@@ -5,6 +5,10 @@ adaptations, Conan manifests/recipes and native build tests. Run commands below
 from the repository root. Runtime config/assets remain in the application root;
 `G1Controller::initialize` still receives that application root explicitly.
 
+The public C++ interface is `cpp/include/g1_controller/G1Controller.h`, containing
+both the controller declaration and its standard C++ data types. Consumers include
+`g1_controller/G1Controller.h`; `cpp/controller/` contains private implementation.
+
 Linux builds: `bash native/scripts/build_mex.sh` (MEX) or
 `bash native/scripts/build_core.sh` (core only), output in `build/native-linux/lib`.
 

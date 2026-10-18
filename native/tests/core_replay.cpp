@@ -1,5 +1,5 @@
 // Integration acceptance: only public core API + saved real observations.
-#include "G1Controller.h"
+#include "g1_controller/G1Controller.h"
 #include <algorithm>
 #include <array>
 #include <boost/property_tree/json_parser.hpp>

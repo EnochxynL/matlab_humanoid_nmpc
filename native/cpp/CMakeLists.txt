@@ -9,9 +9,9 @@ if(WIN32)
 endif()
 target_include_directories(g1_controller_core
   PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/controller>"
          "$<INSTALL_INTERFACE:include>"
-  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/controller"
+          "${CMAKE_CURRENT_SOURCE_DIR}"
           "${CMAKE_CURRENT_SOURCE_DIR}/problem")
 target_link_libraries(g1_controller_core PRIVATE humanoid_wb_mpc)
 if(UNIX AND NOT APPLE)
@@ -20,7 +20,6 @@ if(UNIX AND NOT APPLE)
 endif()
 install(TARGETS g1_controller_core LIBRARY DESTINATION lib RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include)
-install(FILES controller/G1Controller.h DESTINATION include)
 option(G1_BUILD_TESTS "Build the public-API standalone replay driver" OFF)
 if(G1_BUILD_TESTS)
   if(WIN32)

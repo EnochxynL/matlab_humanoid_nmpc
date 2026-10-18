@@ -6,7 +6,7 @@
  * 阅读顺序：本文件 → G1Controller.h → G1Controller.cpp。
  * 下文数组偏移均为 C++ 从 0 开始的索引；MATLAB 索引需加 1。
  */
-#include "G1Controller.h"
+#include "g1_controller/G1Controller.h"
 #include "mex.h"
 
 #include <algorithm>
