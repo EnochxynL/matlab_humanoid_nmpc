@@ -12,16 +12,15 @@ assets and configuration stay in the application root.
 - `conanfile.txt`, `conan.lock`: dependency declarations and recipe revisions.
 - `conan/profiles/`: compiler configurations.
 - `conan/recipes/`: local Coal, Pinocchio, BLASFEO, HPIPM and OCS2 recipes.
-- `third_party/`: optional pinned source mirrors and provenance records.
 
 OCS2's recipe owns the selected upstream numerical modules and compatibility
 adaptations. `cmake/NumericalLibraries.cmake` builds only this project's own
 extensions and humanoid modules. The main project consumes OCS2 with
 `find_package(ocs2 CONFIG REQUIRED)`.
 
-The recipes pin original Git commits. `G1_RECIPE_SOURCE_ROOT` optionally supplies
-local mirrors: recipes archive committed files, never working-tree changes.
-Without mirrors, the recipes fetch their pinned commits from upstream.
+The recipes fetch fixed upstream Git commits directly. No Git submodule, local
+mirror environment variable or separate source lock is required. Sources are
+pinned in each recipe's `conandata.yml`; recipe revisions are in `conan.lock`.
 
 ## Windows
 
@@ -40,7 +39,7 @@ The project-local Conan cache uses a verified `G:` mapping to
 `native/build/windows` to avoid long Boost paths. `-CacheDrive` selects another
 free drive. Keep that mapping while using generated CMake files.
 
-Conan builds shared BLASFEO/HPIPM and static OCS2 modules, then CMake links all AD
+Conan builds static BLASFEO, HPIPM and OCS2 modules, then CMake links all AD
 users into one controller DLL. Splitting their template-local tape state across
 Windows DLLs is unsafe. The recipe retains the Eigen/GCC 8 compatibility overlay,
 64-bit generated indices, native process execution and rename-before-load.

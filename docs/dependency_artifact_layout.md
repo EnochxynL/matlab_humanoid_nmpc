@@ -7,14 +7,15 @@ application CMake owns only the humanoid problem, extensions, controller and MEX
 
 `native/conanfile.txt` declares dependencies and `native/conan.lock` pins recipe
 revisions. `native/conan/profiles/` selects the compiler. Local recipes are under
-`native/conan/recipes/`. Windows retains GCC 8.1, GENERIC BLASFEO, shared numerical
+`native/conan/recipes/`. Windows retains GCC 8.1, GENERIC BLASFEO, static BLASFEO/HPIPM
 backend dependencies and static OCS2 modules inside the controller DLL.
 
-The existing `native/third_party/` Git submodules are optional source mirrors and
-provenance records, not CMake subdirectories. A recipe can archive the pinned
-commit from a local mirror via `G1_RECIPE_SOURCE_ROOT`, or fetch upstream itself.
-The archive excludes all working-tree edits, including the preexisting HPIPM
-change. No submodule working tree is modified or deleted by this migration.
+All three recipes fetch their fixed upstream commits directly. The former
+`native/third_party/` submodules, `dependencies.lock.json`, mirror audit script
+and local-mirror environment variable have been removed. The documentation-only
+HPIPM bibliography edit was discarded with the user's explicit authorization.
+Historical Git object caches may remain under `.git/`; they are not sources or
+build inputs.
 
 | Location | Purpose |
 | --- | --- |
@@ -39,7 +40,7 @@ Linux requires an explicitly prepared Conan profile; `G1_CONAN_HOST_PROFILE`
 and `G1_CONAN_BUILD_PROFILE` select it. Windows uses the committed `mingw81`
 profile and a short `G:` cache mapping to avoid Boost path-length failures.
 
-## Validation on Windows, 2026-10-18
+## Initial migration validation on Windows, 2026-10-18
 
 - All three new recipes built from their original pinned commits. Independent
   OCS2 packaging exposed a missing Coal public-header dependency, now declared.
@@ -66,3 +67,25 @@ Evidence is in `runtime/evidence/conan_artifact_migration/`: `build.log`,
 `conan-graph.json`, `source_audit.json`, `lock_comparison.json`,
 `include_boundary.json`, `replay_comparison.json`, `core_replay/`, and
 `retry/model_replay/acceptance.json`. Historical walking evidence is unchanged.
+
+## Removal of legacy mirrors, 2026-10-18
+
+Removed all three Git submodules, `.gitmodules`, the old source manifest and its
+audit script. Removed mirror selection from the Windows build and from all three
+recipes. Source acquisition now fetches each exact commit directly from its
+upstream Git repository with a shallow fetch. Historical reports above retain
+the earlier mirror-based validation context.
+
+This cleanup also corrected the previously misspelled `BUILD_SHARED_LIBS`
+toolchain keys. Upstream had defaulted to static builds despite the old Conan
+options claiming shared BLASFEO/HPIPM. The recipes now explicitly declare and
+configure static libraries, preserving the previously tested actual linkage.
+
+All three upstream source fetches and standalone CMake configurations passed
+without mirrors; checked-out commits match `conandata.yml`. Recipe revisions
+were updated in `native/conan.lock`; all other locked dependency revisions are
+unchanged. Python/PowerShell syntax and Git whitespace checks passed. This
+cleanup did not rebuild binaries or rerun simulations. New recipe revisions and
+corrected package metadata will cause the next normal build to rebuild the
+affected packages. Evidence: `runtime/evidence/dependency_cleanup/acceptance.json`
+and the accompanying source/configuration logs.

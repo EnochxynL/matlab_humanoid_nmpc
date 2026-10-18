@@ -6,7 +6,7 @@ Simulink/Simscape 实现观测转换、Reference/Gait、动作生成和物理系
 
 | 位置 | 职责 |
 |---|---|
-| `native/` | 独立 CMake 子项目：C++ 控制器、Planner MEX、固定子模块、Conan 与原生测试 |
+| `native/` | 独立 CMake 子项目：C++ 控制器、Planner MEX、Conan 配方与原生测试 |
 | `models/g1_walking.slx` | 物理闭环、动作生成、JointDrive 与诊断 |
 | `models/g1_planner.slx` | 五个内联转换/检查块与分阶段 Planner MEX 调用 |
 | `models/g1_reference.slx`、`models/g1_data.sldd` | Simulink Reference/Gait、固定参数与总线 |
@@ -19,11 +19,7 @@ Simulink/Simscape 实现观测转换、Reference/Gait、动作生成和物理系
 
 ## 构建与运行
 
-克隆后先初始化固定子模块：
-
-```sh
-git submodule update --init --recursive
-```
+克隆后直接按平台执行构建脚本；依赖由 Conan 配方获取固定上游提交，无需初始化 Git 子模块。
 
 Windows 使用已验证的 MinGW 8.1 + Conan，具体工具准备见原生子项目说明：
 
@@ -55,4 +51,4 @@ Windows 可使用 `addpath tools/windows; out=run_windows_walking`，将 Simulin
 - [转换内核内联及行走验证](docs/native_matlab_adapters.md)
 - [原生子项目整理与旧 gait 调用链审计](docs/native_subproject_migration.md)
 
-旧构建缓存和验收证据保留在被忽略的 `build/`、`runtime/` 中；历史源码位置以对应提交为准。子模块中的上游 ROS 示例原样保留，但不参与当前构建。项目 OCP 公式、任务参数、物理模型及 MEX 协议保持不变。
+旧构建缓存和验收证据保留在被忽略的 `native/build/`、`runtime/` 中；历史源码位置以对应提交为准。Conan 配方只构建所需数值模块，不构建上游 ROS 示例。项目 OCP 公式、任务参数、物理模型及 MEX 协议保持不变。

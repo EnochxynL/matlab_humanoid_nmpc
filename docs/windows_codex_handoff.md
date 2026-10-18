@@ -1,5 +1,7 @@
 # Windows Codex 交接：G1 Simulink + 原生 C++ OCS2
 
+> 旧子模块依赖管理已移除：`native/third_party/`、`.gitmodules`、旧清单和检查脚本均已删除，配方直接获取固定上游提交。下方子模块和镜像说明属于历史记录。
+
 > 当前依赖与产物边界见 [Conan 与产物布局](dependency_artifact_layout.md)：公开头文件在 `native/include/`，实现和 MEX 在 `native/src/`；三个数值子模块改由 Conan 配方构建。构建文件、工具链与 AD 缓存在 `native/build/`，MATLAB 运行库部署到 `install/windows/lib/`，历史验收记录移至 `runtime/evidence/`。下方保留上一轮迁移记录和原始路径。
 
 > 原生子项目整理完成：C++、MEX、子模块、CMake、Conan、构建脚本和 C++ 测试统一位于 `native/`。新入口 `native/scripts/build_windows.ps1`，Windows 运行目录为 `build/windows/native-core/lib`；新构建、AD 与两条回放均通过，回放输出与整理前逐字节一致。旧 gait 命令生成链经审计成组移除。见 [整理与审计记录](native_subproject_migration.md)。后文旧源码路径及旧构建目录是历史记录。

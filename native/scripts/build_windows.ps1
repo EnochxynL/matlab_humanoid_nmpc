@@ -54,18 +54,11 @@ function Invoke-Checked([string]$Program, [string[]]$Arguments) {
 }
 $previousPath = $env:PATH
 $previousHome = $env:CONAN_HOME
-$previousMirrors = $env:G1_RECIPE_SOURCE_ROOT
 Push-Location $root
 try {
   # Keep this mapping for generated CMake package paths; reruns verify its target.
   $env:CONAN_HOME = "$drivePrefix\conan-home"
   $env:PATH = "$mingw/bin;$(Split-Path $CMake);$(Split-Path $Ninja);$previousPath"
-  $mirrorRoot = Join-Path $native 'third_party'
-  if (@('blasfeo','hpipm','ocs2' | Where-Object { !(Test-Path "$mirrorRoot/$_/.git") }).Count -eq 0) {
-    $env:G1_RECIPE_SOURCE_ROOT = $mirrorRoot
-  } else {
-    $env:G1_RECIPE_SOURCE_ROOT = $null
-  }
   $profile = 'native/conan/profiles/mingw81'
   & {
     foreach ($dependency in @('blasfeo','hpipm','ocs2')) {
@@ -110,5 +103,4 @@ try {
   Pop-Location
   $env:PATH = $previousPath
   $env:CONAN_HOME = $previousHome
-  $env:G1_RECIPE_SOURCE_ROOT = $previousMirrors
 }
