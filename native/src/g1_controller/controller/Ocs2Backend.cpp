@@ -35,10 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace g1_controller {
 
 Ocs2Backend::Ocs2Backend(const ocs2::humanoid::ModelSettings& settings,
-                       ocs2::MPC_BASE& mpc, ocs2::PinocchioInterface pinocchio,
-                       std::shared_ptr<ocs2::DummyObserver> observer)
-    : mrt_(mpc), pinocchio_(std::move(pinocchio)), robotModel_(settings),
-      observer_(std::move(observer)) {}
+                       ocs2::MPC_BASE& mpc, ocs2::PinocchioInterface pinocchio)
+    : mrt_(mpc), pinocchio_(std::move(pinocchio)), robotModel_(settings) {}
 
 ocs2::TargetTrajectories Ocs2Backend::resetTarget(const ocs2::SystemObservation& observation) const {
   auto state = observation.state;
@@ -88,7 +86,7 @@ ocs2::vector_t Ocs2Backend::inverseDynamics(const ocs2::vector_t& state, const o
   if (state.size() != 58 || input.size() != 35 || !state.allFinite() || !input.allFinite())
     throw std::runtime_error("Invalid inverse dynamics inputs");
   auto torque = ocs2::humanoid::computeJointTorques<ocs2::scalar_t>(state, input, pinocchio_, robotModel_);
-  if (observer_) observer_->update(observation_, mrt_.getPolicy(), mrt_.getCommand());
+  if (policy_) policy_(observation_, mrt_.getPolicy(), mrt_.getCommand());
   if (!torque.allFinite()) throw std::runtime_error("Nonfinite inverse dynamics output");
   return torque;
 }

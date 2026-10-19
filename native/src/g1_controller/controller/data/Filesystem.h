@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-// Keep the existing platform backends for runtime files and diagnostics.
+// Platform file operations used only by application diagnostics.
 #ifdef _WIN32
 #include <boost/filesystem.hpp>
 #include <boost/winapi/error_codes.hpp>

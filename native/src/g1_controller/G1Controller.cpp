@@ -8,7 +8,8 @@
 #include "controller/PlannerContext.h"
 #include <algorithm>
 #include <cmath>
-#include "controller/data/Filesystem.h"
+#include "controller/CanonicalControlTime.h"
+#include "controller/data/RunDiagnostics.h"
 #include <stdexcept>
 
 namespace g1_controller {
@@ -31,14 +32,12 @@ struct G1Controller::Impl {
   SystemObservation preparedObservation;
   double preparedTime = 0;
   double lastRawTime = 0;
-  std::ofstream sampleLog;
-  std::unique_ptr<CanonicalControlTime> canonicalLog;
+  CanonicalControlTime controlTime;
 /**
  * @brief 按依赖逆序关闭；先释放数值后端，再销毁 OCP 上下文。
  */
   void close() {
-    sampleLog.close();
-    canonicalLog.reset();
+    controlTime = CanonicalControlTime{};
     controller.reset();
     context.reset();
     lastTick = UINT64_MAX;
@@ -55,21 +54,11 @@ struct G1Controller::Impl {
     if (context)
       throw std::runtime_error(
           "Close existing MEX controller before initialization");
-    const auto& folder = config.logDirectory;
-    g1_filesystem::create_directories(folder);
     context = std::make_unique<PlannerContext>(config);
     context->expectedSession = 1;
-    canonicalLog = std::make_unique<CanonicalControlTime>(folder);
-    sampleLog.open(folder + "/planner_samples.csv");
-    sampleLog << std::setprecision(17)
-              << "control_tick,raw_time,canonical_time";
-    for (int j = 0; j < 118; ++j)
-      sampleLog << ",value" << j;
-    sampleLog << "\n";
     controller = std::make_unique<Ocs2Backend>(
         context->interface.modelSettings(), context->mpc,
-        context->interface.getPinocchioInterface(),
-        context->structure);
+        context->interface.getPinocchioInterface());
     context->configure(*controller);
   }
   PlannerTick tickIdentity() const {
@@ -123,11 +112,8 @@ struct G1Controller::Impl {
     vector_t tau = controller->inverseDynamics(x, u);
     lastResult << x, u, tau, lastPolicy[93], lastPolicy[94];
     actionReady = true;
-    sampleLog << lastTick << ',' << lastRawTime << ','
-              << double(lastTick) * .002;
-    for (int j = 0; j < 118; ++j)
-      sampleLog << ',' << lastResult[j];
-    sampleLog << '\n' << std::flush;
+    if (context->diagnostics)
+      context->diagnostics->sample(lastTick, lastRawTime, preparedTime, lastResult);
   }
 };
 
@@ -208,7 +194,9 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
     throw std::runtime_error("Complete inverse dynamics before advancing policy tick");
   if(runtime.lastTick!=UINT64_MAX && tick!=runtime.lastTick+1)
     throw std::runtime_error("Nonsequential physical tick");
-  const double t=runtime.canonicalLog->accept(tick,identity[2],1,tick);
+  const double t=runtime.controlTime.accept(tick,identity[2],1);
+  if (runtime.context->diagnostics)
+    runtime.context->diagnostics->time(tick,identity[2],t);
   runtime.preparedObservation.state=Eigen::Map<const vector_t>(state.data(),StateDimension);
   runtime.preparedObservation.time=t;
   runtime.preparedObservation.input=vector_t::Zero(35);

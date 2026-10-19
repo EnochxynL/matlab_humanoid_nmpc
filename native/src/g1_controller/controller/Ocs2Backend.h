@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ocs2_mpc/MPC_MRT_Interface.h>
 #include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
-#include "controller/data/diagnostics/PolicyObserver.h"
 
 namespace g1_controller {
 
@@ -43,11 +42,13 @@ namespace g1_controller {
 class Ocs2Backend final {
  public:
   Ocs2Backend(const ocs2::humanoid::ModelSettings& settings, ocs2::MPC_BASE& mpc,
-              ocs2::PinocchioInterface pinocchio,
-              std::shared_ptr<ocs2::DummyObserver> observer);
+              ocs2::PinocchioInterface pinocchio);
 
   using TraceCallback = std::function<void(const char*, double, double, double)>;
   void setTraceCallback(TraceCallback callback) { trace_ = std::move(callback); }
+  using PolicyCallback = std::function<void(const ocs2::SystemObservation&,
+      const ocs2::PrimalSolution&, const ocs2::CommandData&)>;
+  void setPolicyCallback(PolicyCallback callback) { policy_ = std::move(callback); }
   bool ready() const { return mrt_.initialPolicyReceived(); }
   // request=false 仅登记当前观测，继续使用已有策略；首次调用必须求解。
   void prepare(const ocs2::SystemObservation& observation, bool request);
@@ -60,7 +61,7 @@ class Ocs2Backend final {
   ocs2::PinocchioInterface pinocchio_;
   ocs2::humanoid::WBAccelMpcRobotModel<ocs2::scalar_t> robotModel_;
   ocs2::SystemObservation observation_;
-  std::shared_ptr<ocs2::DummyObserver> observer_;
+  PolicyCallback policy_;
   TraceCallback trace_;
   size_t solveCount_ = 0;
   bool prepared_ = false;

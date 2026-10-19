@@ -9,12 +9,10 @@
 #include <memory>
 #include <array>
 #include <algorithm>
-#include "controller/data/time/CanonicalControlTime.h"
+#include "controller/CanonicalControlTime.h"
 #include <ocs2_oc/synchronized_module/ReferenceManagerDecorator.h>
 #include <humanoid_common_mpc/reference_manager/SwitchedModelReferenceManager.h>
 #include <functional>
-#include <fstream>
-#include <iomanip>
 
 namespace g1_controller {
 
@@ -45,25 +43,23 @@ class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
 
   // 输入本轮求解初始时间，返回由外部数据流安装的参考包。
   using Provider = std::function<ReferencePacket(double)>;
+  using ConsumptionCallback = std::function<void(const ReferencePacket&, double, double)>;
 
   /**
-   * @brief 绑定原管理器、参考来源和消费日志；此时不读取参考、不执行求解。
+   * @brief 绑定原管理器、参考来源和可选诊断回调；不读取参考、不执行求解。
    * 清空循环步态模板，避免 C++ 再次铺设外部已经给出的接触时间表。
    */
   ExternalReferenceManager(
       std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> ref,
-      Provider provider, const std::string& folder)
+      Provider provider, ConsumptionCallback consumed = {})
       : ReferenceManagerDecorator(ref),
         ref_(ref),
-        provider_(std::move(provider)),
-        log_(folder + "/adapter_consumption.csv") {
+        provider_(std::move(provider)), consumed_(std::move(consumed)) {
     ocs2::humanoid::ModeSequenceTemplate empty({0., 1.}, {3});
     empty.modeSequence.clear();
     empty.switchingTimes.clear();
     ref_->getGaitSchedule()->insertModeSequenceTemplate(empty, 0., 0.);
 
-    log_ << std::setprecision(17)
-         << "session,epoch,sequence,control_tick,canonical_control_time,target_count,event_count,event_mode_max_error,target_max_error,legacy_filter_calls,legacy_gait_decisions\n";
   }
 
   /**
@@ -99,9 +95,7 @@ class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
     if (error != 0)
       throw std::runtime_error("H: Adapter changed target values");
 
-    log_ << p.session << ',' << p.epoch << ',' << p.sequence << ',' << p.tick
-         << ',' << t << ',' << p.target.timeTrajectory.size() << ','
-         << s.eventTimes.size() << ",0," << error << ",0,0\n" << std::flush;
+    if (consumed_) consumed_(p, t, error);
     previous_ = p;
     initialized_ = true;
   }
@@ -160,7 +154,7 @@ class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
   // 原OCP参考管理器仍由成本、约束等对象共享；本适配器不替换这些引用。
   std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> ref_;
   Provider provider_;
-  std::ofstream log_;
+  ConsumptionCallback consumed_;
   ReferencePacket previous_;
   bool initialized_ = false;
 };

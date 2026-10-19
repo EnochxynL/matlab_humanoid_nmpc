@@ -34,6 +34,20 @@ condition variable, duplicate 60 Hz clock or five-second worker wait timeout.
 OCS2's own numerical parallelism remains configured by its solver settings.
 Whole policies stay native; MATLAB receives only the evaluated policy sample.
 
+Application diagnostics are optional. `ControllerConfig::diagnosticsEnabled`
+defaults to true for existing acceptance tooling. MATLAB can use
+`g1.plannerConfiguration(root, logDirectory, false)` to disable them. With that
+setting the backend creates no application log directory, diagnostic OCP clone,
+diagnostic observers or diagnostic files. OCS2's own logging and AD code caches
+are separate from this switch. `run_walking` keeps diagnostics enabled because
+its acceptance checks consume the logs.
+
+`controller/CanonicalControlTime.h` retains runtime time/continuity checks.
+`controller/data/RunDiagnostics.h` owns CSV output, reference-consumption logs,
+configuration/library export and extra structural evaluations. The reference
+adapter validates and installs packets without owning file streams. Runtime
+stage, tick, reference and policy identity checks stay enabled in both modes.
+
 Timing trace update timestamps now identify the actual externally requested
 observation time, rather than a separately reconstructed nominal deadline.
 See [synchronous backend validation](../docs/synchronous_ocs2_backend.md).

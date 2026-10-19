@@ -5,10 +5,8 @@
  */
 #pragma once
 #include "controller/Ocs2Backend.h"
-#include "controller/data/diagnostics/StructuralObserver.h"
-#include "controller/data/diagnostics/TimeLog.h"
 #include "controller/reference/ExternalReferenceManager.h"
-#include "controller/data/time/CanonicalControlTime.h"
+#include <ocs2_sqp/SqpMpc.h>
 #include "g1_controller/G1Controller.h"
 
 #include <humanoid_wb_mpc/WBMpcInterface.h>
@@ -17,6 +15,7 @@
 #include <memory>
 #include <string>
 namespace g1_controller {
+namespace diagnostics { class RunDiagnostics; }
 
 /**
  * @brief 拥有一套完整规划上下文。成员按声明顺序初始化、按逆序析构。
@@ -25,9 +24,8 @@ namespace g1_controller {
 struct PlannerContext {
   ocs2::humanoid::WBMpcInterface interface;
   ocs2::SqpMpc mpc;
-  std::shared_ptr<TimeLog> log;
   std::shared_ptr<ExternalReferenceManager> external;
-  std::shared_ptr<diagnostics::StructuralObserver> structure;
+  std::unique_ptr<diagnostics::RunDiagnostics> diagnostics;
   ReferencePacket currentPacket;
   bool migrated;
   uint64_t expectedSession = 0;
@@ -37,6 +35,7 @@ struct PlannerContext {
    * 日志和结构观察器挂到求解同步接口。
    */
   PlannerContext(const ControllerConfig &config);
+  ~PlannerContext();
 
   /**
    * @brief 为同步数值后端绑定诊断回调；调度由外部负责。

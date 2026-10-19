@@ -35,6 +35,8 @@ struct ControllerConfig {
   std::string referenceFile;
   std::string urdfFile;
   std::string logDirectory;
+  // 默认保留现有验收日志；关闭时不创建应用诊断文件或额外诊断模型。
+  bool diagnosticsEnabled = true;
 };
 
 

@@ -166,8 +166,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         if (!value) throw std::runtime_error(std::string("Missing configuration field: ") + name);
         return readString(value);
       };
-      const g1_controller::ControllerConfig config{field("taskFile"), field("referenceFile"),
+      g1_controller::ControllerConfig config{field("taskFile"), field("referenceFile"),
                                                   field("urdfFile"), field("logDirectory")};
+      if (const auto* enabled = mxGetField(prhs[1], 0, "diagnosticsEnabled")) {
+        if (!mxIsLogicalScalar(enabled)) throw std::runtime_error("diagnosticsEnabled must be a logical scalar");
+        config.diagnosticsEnabled = mxIsLogicalScalarTrue(enabled);
+      }
       if (controller)
         throw std::runtime_error(
             "Close existing MEX controller before initialization");

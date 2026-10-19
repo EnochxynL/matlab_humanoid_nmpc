@@ -4,7 +4,7 @@
  * 初始化和 configure 不直接求解；求解时刻由 MATLAB/Simulink 决定。
  */
 #include "controller/PlannerContext.h"
-#include "controller/data/LoadedLibraries.h"
+#include "controller/data/RunDiagnostics.h"
 #include "extensions/Environment.h"
 
 #include <cmath>
@@ -18,10 +18,10 @@ PlannerContext::PlannerContext(const ControllerConfig &i)
     : interface(i.taskFile, i.urdfFile, i.referenceFile),
       mpc(interface.mpcSettings(), interface.sqpSettings(),
           interface.getOptimalControlProblem(), interface.getInitializer()),
-      log(std::make_shared<TimeLog>(i.logDirectory, false)),
       migrated(g1_platform::environmentVariable("TASK5A_AUTHORITY") ==
                    "SIMULINK_REFERENCE") {
-  writeLoadedLibraries(i.logDirectory + "/loaded_process_maps.txt");
+  if (i.diagnosticsEnabled)
+    diagnostics = std::make_unique<diagnostics::RunDiagnostics>(i, interface, mpc);
   if (migrated) {
     external = std::make_shared<ExternalReferenceManager>(
         interface.getSwitchedModelReferenceManagerPtr(),
@@ -34,28 +34,26 @@ PlannerContext::PlannerContext(const ControllerConfig &i)
           if (p.tick != tick)
             throw std::runtime_error(
                 "G: Reference tick does not match actual solver observation");
-          log->reference(t, p.filtered);
+          if (diagnostics) diagnostics->reference(t, p.filtered);
           return p;
         },
-        i.logDirectory);
+        [this](const ReferencePacket& p, double t, double error) {
+          if (diagnostics) diagnostics->consumed(p, t, error);
+        });
     mpc.getSolverPtr()->setReferenceManager(external);
   } else
     throw std::runtime_error("MEX requires SIMULINK_REFERENCE authority");
-  mpc.getSolverPtr()->addSynchronizedModule(log);
-  log->configure(interface.getPinocchioInterface(),
-                 interface.getMpcRobotModel(),
-                 interface.getSwitchedModelReferenceManagerPtr());
-  diagnostics::exportConfiguration(interface, i.taskFile, i.logDirectory);
-  structure = std::make_shared<diagnostics::StructuralObserver>(interface, mpc,
-                                                           log, i.logDirectory);
-  mpc.getSolverPtr()->addSynchronizedModule(structure);
-  std::ofstream(i.logDirectory + "/reference_authority.txt")
-      << (migrated ? "SIMULINK_REFERENCE" : "LEGACY_CPP_REFERENCE") << "\n";
 }
 
+PlannerContext::~PlannerContext() = default;
+
 void PlannerContext::configure(Ocs2Backend &c) {
+  if (!diagnostics) return;
   c.setTraceCallback([this](const char *e, double t, double d, double r) {
-    log->trace(e, t, d, r);
+    diagnostics->trace(e, t, d, r);
+  });
+  c.setPolicyCallback([this](const auto& observation, const auto& solution, const auto& command) {
+    diagnostics->policy(observation, solution, command);
   });
 }
 
