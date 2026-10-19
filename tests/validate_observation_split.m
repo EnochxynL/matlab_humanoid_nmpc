@@ -22,7 +22,7 @@ bad=indices;bad(2)=bad(1);reject(@()kernels.extractObservation(raw,state,bad),'G
 keys={'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};old={getenv(keys{1}),getenv(keys{2})};
 envCleanup=onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
 setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
-g1_ocp_mex('init',root,fullfile(folder,'install_guards'));
+g1_ocp_mex('init',g1.plannerConfiguration(root,fullfile(folder,'install_guards')));
 cleanup=onCleanup(@()g1_ocp_mex('close'));
 identity=kernels.extractObservation(raw,state,indices);
 bad=identity;bad(2)=.001;reject(@()g1_ocp_mex('install_observation',state,bad),'G1:PlannerMex');

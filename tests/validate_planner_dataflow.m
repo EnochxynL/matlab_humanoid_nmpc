@@ -14,7 +14,7 @@ keys = {'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};
 old = {getenv(keys{1}),getenv(keys{2})};
 setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
 envCleanup = onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
-g1_ocp_mex('init',root,folder);
+g1_ocp_mex('init',g1.plannerConfiguration(root,folder));
 cleanup = onCleanup(@()g1_ocp_mex('close'));
 g1_ocp_mex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
 identity=kernels.extractObservation(fixture.raw(1,:)',golden.expected(1,:)',double(cfg.mpcIndices(:)'));
@@ -27,7 +27,7 @@ nextIdentity=kernels.extractObservation(fixture.raw(2,:)',golden.expected(2,:)',
 assertRejected(@()g1_ocp_mex('install_observation',golden.expected(2,:)',nextIdentity));
 clear cleanup;
 % Fresh runtime and model persistent state; do not reuse guard-test state.
-g1_ocp_mex('init',root,folder);
+g1_ocp_mex('init',g1.plannerConfiguration(root,folder));
 cleanup = onCleanup(@()g1_ocp_mex('close')); %#ok<NASGU>
 ds = Simulink.SimulationData.Dataset;
 t = (0:2400)'*0.002;

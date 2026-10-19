@@ -72,7 +72,8 @@ int main(int argc, char **argv) {
     if(!states) throw std::runtime_error("Missing preconverted OCP state fixture");
     double epoch=0, period=1./60.;size_t nextSlot=1;
     G1Controller core;
-    core.initialize({root, folder});
+    core.initialize({root + "/config/task.info", root + "/config/reference.info",
+                     root + "/assets/g1_29dof.urdf", folder});
     const bool measure = argc == 6 && std::string(argv[5]) == "measure";
     std::array<double, 118> maxima{};
     std::array<std::uint64_t, 118> maximumTicks{};

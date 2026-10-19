@@ -2,7 +2,7 @@
  * @file
  * @brief MATLAB 与独立 G1 控制核心之间的薄适配层。
  * 只负责 mxArray 校验、固定长度向量编解码、实例生命周期及异常转换。
- * 机器人数学、求解调度和策略缓存均由 G1Controller 及其内部实现负责。
+ * MATLAB/Simulink 决定求解时刻；G1Controller 保管数值对象和策略缓存。
  * 阅读顺序：本文件 → G1Controller.h → G1Controller.cpp。
  * 下文数组偏移均为 C++ 从 0 开始的索引；MATLAB 索引需加 1。
  */
@@ -140,10 +140,10 @@ mxArray* encodeTick(const g1_controller::PlannerTick& tick) {
 
 /**
  * @brief MEX 命令分发入口，仅暴露当前分阶段运行接口。
- * init(root,folder)：创建核心并 mexLock，防止运行中卸载；close：关闭并解锁。
+ * init(config)：使用 MATLAB 提供的路径创建核心并 mexLock；close：关闭并解锁。
  * install_reference(r428)：安装已提取参考。
  * install_observation(x58, identity3) → tick3：登记独立提取的观测，不求解。
- * update_mpc(tick3,request) → tick3：校验外部更新判断，等待必要求解完成。
+ * update_mpc(tick3,request) → tick3：按外部请求同步求解或沿用策略。
  * query_policy(tick3) → p95：只查询已准备好的策略，不触发求解。
  * inverse_dynamics(p95) → tau23：计算该策略的前馈力矩。
  * 标准 C++ 异常统一转换为 G1:PlannerMex 错误；此处不实现控制算法。
@@ -154,15 +154,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       throw std::runtime_error("Expected planner command");
     const std::string command = readString(prhs[0]);
     if (command == "init") {
-      if (nrhs != 3 || nlhs)
-        throw std::runtime_error("init(root,folder)");
+      if (nrhs != 2 || nlhs || !mxIsStruct(prhs[1]) || mxGetNumberOfElements(prhs[1]) != 1)
+        throw std::runtime_error("init(config): expected a scalar configuration struct");
       static bool registered = false;
       if (!registered) {
         mexAtExit(closeController);
         registered = true;
       }
-      const g1_controller::ControllerConfig config{readString(prhs[1]),
-                                                   readString(prhs[2])};
+      const auto field = [&](const char* name) {
+        const auto* value = mxGetField(prhs[1], 0, name);
+        if (!value) throw std::runtime_error(std::string("Missing configuration field: ") + name);
+        return readString(value);
+      };
+      const g1_controller::ControllerConfig config{field("taskFile"), field("referenceFile"),
+                                                  field("urdfFile"), field("logDirectory")};
       if (controller)
         throw std::runtime_error(
             "Close existing MEX controller before initialization");

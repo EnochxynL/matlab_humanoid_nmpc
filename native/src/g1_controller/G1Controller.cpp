@@ -21,20 +21,20 @@ using ocs2::SystemObservation;
  */
 struct G1Controller::Impl {
   std::unique_ptr<PlannerContext> context;
-  std::unique_ptr<PlannerExecutor> controller;
+  std::unique_ptr<Ocs2Backend> controller;
   uint64_t lastTick = UINT64_MAX, sequence = 0;
   vector_t lastResult = vector_t::Zero(118);
   vector_t lastPolicy = vector_t::Zero(95);
   bool actionReady = false;
   uint64_t preparedTick = UINT64_MAX;
-  bool updateReady = false, expectedUpdate = false;
+  bool updateReady = false, updateRequested = false;
   SystemObservation preparedObservation;
   double preparedTime = 0;
   double lastRawTime = 0;
   std::ofstream sampleLog;
   std::unique_ptr<CanonicalControlTime> canonicalLog;
 /**
- * @brief 按依赖逆序关闭；先释放控制器并等待线程，再销毁 OCP 上下文。
+ * @brief 按依赖逆序关闭；先释放数值后端，再销毁 OCP 上下文。
  */
   void close() {
     sampleLog.close();
@@ -49,15 +49,15 @@ struct G1Controller::Impl {
   }
 /**
  * @brief 创建 OCP 上下文和日志；观测转换与关节映射由外部数据流承担。
- * 这里只配置确定性调度；实际工作线程在首次 MPC 更新时启动。
+ * 配置由 MATLAB 提供，首次求解由外部更新请求触发。
  */
-  void init(const std::string &root, const std::string &folder) {
+  void init(const ControllerConfig &config) {
     if (context)
       throw std::runtime_error(
           "Close existing MEX controller before initialization");
+    const auto& folder = config.logDirectory;
     g1_filesystem::create_directories(folder);
-    PlannerConfig inputs(root, folder);
-    context = std::make_unique<PlannerContext>(inputs);
+    context = std::make_unique<PlannerContext>(config);
     context->expectedSession = 1;
     canonicalLog = std::make_unique<CanonicalControlTime>(folder);
     sampleLog.open(folder + "/planner_samples.csv");
@@ -66,10 +66,9 @@ struct G1Controller::Impl {
     for (int j = 0; j < 118; ++j)
       sampleLog << ",value" << j;
     sampleLog << "\n";
-    controller = std::make_unique<PlannerExecutor>(
+    controller = std::make_unique<Ocs2Backend>(
         context->interface.modelSettings(), context->mpc,
         context->interface.getPinocchioInterface(),
-        context->interface.mpcSettings().mpcDesiredFrequency_,
         context->structure);
     context->configure(*controller);
   }
@@ -85,12 +84,13 @@ struct G1Controller::Impl {
   }
   void update(const PlannerTick& token, bool requested) {
     validateTick(token);
-    if (requested != expectedUpdate)
-      throw std::runtime_error("External MPC eligibility differs from physical deadline contract");
-    if (updateReady) return;
-    if (lastTick == UINT64_MAX)
-      controller->startMpcThread(preparedObservation);
-    controller->updatePolicy(preparedObservation);
+    if (updateReady) {
+      if (requested != updateRequested)
+        throw std::runtime_error("Repeated MPC stage changed its request");
+      return;
+    }
+    controller->prepare(preparedObservation, requested);
+    updateRequested = requested;
     updateReady = true;
   }
   void queryPrepared(const PlannerTick& token) {
@@ -167,7 +167,7 @@ void requireFinite(const double *data, std::size_t count) {
 G1Controller::G1Controller() : impl_(std::make_unique<Impl>()) {}
 G1Controller::~G1Controller() { shutdown(); }
 void G1Controller::initialize(const ControllerConfig &config) {
-  impl_->init(config.projectRoot, config.logDirectory);
+  impl_->init(config);
 }
 void G1Controller::shutdown() noexcept { impl_->close(); }
 /** @brief 安装具名参考：只构造 OCS2 容器并写入缓存；不再往返428向量。 */
@@ -215,7 +215,6 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
   runtime.preparedObservation.mode=3;
   runtime.preparedTime=t;
   runtime.preparedTick=tick;
-  runtime.expectedUpdate=runtime.lastTick==UINT64_MAX || runtime.controller->mpcUpdateDue(t);
   runtime.updateReady=false;
   runtime.lastRawTime=identity[2];
   return runtime.tickIdentity();

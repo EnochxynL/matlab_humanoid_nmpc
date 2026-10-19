@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief 不暴露 MATLAB、ROS、Eigen 或 OCS2 类型的控制核心公共接口。
- * 适配器提交具名数据，核心通过 PImpl 隐藏机器人模型、求解器和线程。
+ * 适配器提交具名数据，核心通过 PImpl 隐藏机器人模型、求解器和策略。
  * 这是 C++ 接口，不是保证跨编译器二进制兼容的 C ABI。
  */
 #pragma once
@@ -28,10 +28,12 @@ inline constexpr std::size_t InputDimension = 35;
 inline constexpr std::size_t ControlledJointCount = 23;
 
 /**
- * @brief 初始化资源路径：工程根目录用于定位模型和配置，日志目录用于保存运行证据。
+ * @brief 调用者提供完整资源路径；后端不推断工程目录布局。
  */
 struct ControllerConfig {
-  std::string projectRoot;
+  std::string taskFile;
+  std::string referenceFile;
+  std::string urdfFile;
   std::string logDirectory;
 };
 
@@ -80,10 +82,10 @@ struct Policy {
 using Torque = std::array<double, ControlledJointCount>;
 
 /**
- * @brief 一个实例拥有一套运行时、求解工作线程及当前策略缓存。
+ * @brief 一个实例拥有一套同步数值后端及当前策略缓存。
  * 典型调用：initialize → setReference → installOcpObservation → updateMpc → queryPrepared → inverseDynamics → shutdown。
  * 同 tick 的重复策略查询使用缓存。
- * 接口不承诺可由多个调用线程同时操作；内部工作线程同步由实现负责。
+ * 接口不承诺可由多个调用线程同时操作；求解在调用线程同步完成。
  */
 class G1_CONTROLLER_API G1Controller {
 public:
@@ -100,7 +102,7 @@ public:
  * @brief 更新外部参考缓存；不会在此调用中直接执行一次 SQP。
  */
   void setReference(const Reference &reference);
-/** @brief 显式阶段接口：准备观测，不求解；更新节点等待必要求解；查询节点只读策略。 */
+/** @brief 外部决定更新时刻；requested=true 同步求解，否则沿用已有策略。 */
   // 独立 Extraction 已校验观测；这里只登记状态和 [tick, canonical time, raw time]。
   PlannerTick installOcpObservation(const std::array<double, StateDimension>& state, const std::array<double,3>& identity);
   PlannerTick updateMpc(const PlannerTick &tick, bool requested);
@@ -111,7 +113,7 @@ public:
  */
   Torque inverseDynamics(const Policy &policy);
 /**
- * @brief 释放控制器并等待其工作线程结束；允许重复调用，析构也会调用。
+ * @brief 释放数值后端；允许重复调用，析构也会调用。
  */
   void shutdown() noexcept;
 

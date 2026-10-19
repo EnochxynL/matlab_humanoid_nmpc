@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief 规划上下文的装配实现：构造 OCP/MPC，注册参考接入与诊断回调。
- * 初始化和 configure 不直接求解；工作线程由控制调度器启动。
+ * 初始化和 configure 不直接求解；求解时刻由 MATLAB/Simulink 决定。
  */
 #include "controller/PlannerContext.h"
 #include "controller/data/LoadedLibraries.h"
@@ -14,22 +14,14 @@
 
 namespace g1_controller {
 
-PlannerConfig::PlannerConfig(const std::string &projectRoot, const std::string &logDirectory)
-    : backend("simscape"), task(projectRoot + "/config/task.info"),
-      ref(projectRoot + "/config/reference.info"),
-      urdf(projectRoot + "/assets/g1_29dof.urdf"),
-      mjcf("unused"),
-      root(logDirectory), recorded("unused"), horizon(4.8), pacingMs(0),
-      startup(0), heavy(false) {}
-
-PlannerContext::PlannerContext(const PlannerConfig &i)
-    : interface(i.task, i.urdf, i.ref),
+PlannerContext::PlannerContext(const ControllerConfig &i)
+    : interface(i.taskFile, i.urdfFile, i.referenceFile),
       mpc(interface.mpcSettings(), interface.sqpSettings(),
           interface.getOptimalControlProblem(), interface.getInitializer()),
-      log(std::make_shared<TimeLog>(i.root, i.heavy)),
+      log(std::make_shared<TimeLog>(i.logDirectory, false)),
       migrated(g1_platform::environmentVariable("TASK5A_AUTHORITY") ==
                    "SIMULINK_REFERENCE") {
-  writeLoadedLibraries(i.root + "/loaded_process_maps.txt");
+  writeLoadedLibraries(i.logDirectory + "/loaded_process_maps.txt");
   if (migrated) {
     external = std::make_shared<ExternalReferenceManager>(
         interface.getSwitchedModelReferenceManagerPtr(),
@@ -45,7 +37,7 @@ PlannerContext::PlannerContext(const PlannerConfig &i)
           log->reference(t, p.filtered);
           return p;
         },
-        i.root);
+        i.logDirectory);
     mpc.getSolverPtr()->setReferenceManager(external);
   } else
     throw std::runtime_error("MEX requires SIMULINK_REFERENCE authority");
@@ -53,16 +45,15 @@ PlannerContext::PlannerContext(const PlannerConfig &i)
   log->configure(interface.getPinocchioInterface(),
                  interface.getMpcRobotModel(),
                  interface.getSwitchedModelReferenceManagerPtr());
-  diagnostics::exportConfiguration(interface, i.task, i.root);
+  diagnostics::exportConfiguration(interface, i.taskFile, i.logDirectory);
   structure = std::make_shared<diagnostics::StructuralObserver>(interface, mpc,
-                                                           log, i.root);
+                                                           log, i.logDirectory);
   mpc.getSolverPtr()->addSynchronizedModule(structure);
-  std::ofstream(i.root + "/reference_authority.txt")
+  std::ofstream(i.logDirectory + "/reference_authority.txt")
       << (migrated ? "SIMULINK_REFERENCE" : "LEGACY_CPP_REFERENCE") << "\n";
 }
 
-void PlannerContext::configure(PlannerExecutor &c) {
-  c.enableDeterministicSimulation();
+void PlannerContext::configure(Ocs2Backend &c) {
   c.setTraceCallback([this](const char *e, double t, double d, double r) {
     log->trace(e, t, d, r);
   });

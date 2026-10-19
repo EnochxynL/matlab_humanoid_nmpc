@@ -13,6 +13,31 @@ assets and configuration stay in the application root.
 - `conan/profiles/`: compiler configurations.
 - `conan/recipes/`: local Coal, Pinocchio, URDFDOM, BLASFEO, HPIPM and OCS2 recipes.
 
+## Runtime ownership
+
+MATLAB selects task, reference, URDF and log paths through
+`g1.plannerConfiguration(root, logDirectory)`. Initialize with
+`g1_ocp_mex('init', config)`; the old `init(root, folder)` signature is retired.
+`run_walking` supplies this configuration automatically.
+
+The `g1_planner/MPCSchedule` MATLAB Function block owns update deadlines.
+`update_mpc(token, request)` solves synchronously only when requested; otherwise
+it prepares the observation for querying the cached policy. The first update
+must request a solve. Duplicate updates must retain the same request and do not
+solve twice. C++ checks stage and policy identities, not external scheduling
+eligibility. A failed solve requires closing and initializing a fresh backend.
+
+`PlannerContext` only assembles and owns the native OCP, MPC and diagnostic
+objects. `Ocs2Backend` owns MRT access, synchronous solve/policy installation,
+policy evaluation and inverse dynamics. There is no application solver worker,
+condition variable, duplicate 60 Hz clock or five-second worker wait timeout.
+OCS2's own numerical parallelism remains configured by its solver settings.
+Whole policies stay native; MATLAB receives only the evaluated policy sample.
+
+Timing trace update timestamps now identify the actual externally requested
+observation time, rather than a separately reconstructed nominal deadline.
+See [synchronous backend validation](../docs/synchronous_ocs2_backend.md).
+
 OCS2's recipe owns the selected upstream numerical modules and compatibility
 adaptations. `cmake/NumericalLibraries.cmake` builds only this project's own
 extensions and humanoid modules. The main project consumes OCS2 with
