@@ -13,7 +13,7 @@ namespace diagnostics { class Diagnostics; }
 class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
                                        public ::humanoid::ocp_extensions::MeasuredModeReceiver {
  public:
-  // 参考包管理器和可选诊断由 PlannerContext 持有，必须比求解器存活更久。
+  // 参考包管理器和可选诊断由 Ocs2Backend 持有，必须比求解器存活更久。
   ExternalReferenceManager(
       std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> originalManager,
       PacketManager& packets, diagnostics::Diagnostics* diagnostics);

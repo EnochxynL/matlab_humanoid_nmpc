@@ -2,26 +2,25 @@
  * @file
  * @brief G1Controller 的运行时实现：连接公共 API、已提取观测和内部 MPC 控制器。
  * 负责资源所有权、参考包缓存、物理 tick、输入安全检查和策略/力矩身份绑定。
- * 不在这里定义 OCP 方程；OCP 组装见 PlannerContext 和 WBMpcInterface。
+ * 不在这里定义 OCP 方程；原生对象由 Ocs2Backend 装配，方程由 WBMpcInterface 创建。
  */
 #include "g1_controller/G1Controller.h"
-#include "controller/PlannerContext.h"
+#include "controller/Ocs2Backend.h"
+#include "controller/diagnostics/Diagnostics.h"
 #include <algorithm>
 #include <cmath>
 #include "controller/CanonicalControlTime.h"
-#include "controller/diagnostics/Diagnostics.h"
 #include <stdexcept>
 
 namespace g1_controller {
 using ocs2::vector_t;
 using ocs2::SystemObservation;
 /**
- * @brief PImpl 私有状态。context 先创建、最后释放，确保被引用的模型和 MPC 存活。
+ * @brief PImpl 私有状态：controller 拥有原生模型、MPC 和诊断对象。
  * lastPolicy 保存95元素策略；lastResult 保存含23关节力矩的118元素兼容结果。
  * actionReady 区分“已查询”与“已完成逆动力学”，lastTick 防止跨 tick 混用。
  */
 struct G1Controller::Impl {
-  std::unique_ptr<PlannerContext> context;
   std::unique_ptr<Ocs2Backend> controller;
   uint64_t lastTick = UINT64_MAX, sequence = 0;
   vector_t lastResult = vector_t::Zero(118);
@@ -34,12 +33,11 @@ struct G1Controller::Impl {
   double lastRawTime = 0;
   CanonicalControlTime controlTime;
 /**
- * @brief 按依赖逆序关闭；先释放数值后端，再销毁 OCP 上下文。
+ * @brief 幂等、无异常关闭：后端内部按依赖顺序释放原生对象。
  */
   void close() {
     controlTime = CanonicalControlTime{};
     controller.reset();
-    context.reset();
     lastTick = UINT64_MAX;
     sequence = 0;
     actionReady = false;
@@ -47,23 +45,19 @@ struct G1Controller::Impl {
     updateReady = false;
   }
 /**
- * @brief 创建 OCP 上下文和日志；观测转换与关节映射由外部数据流承担。
+ * @brief 创建完整原生后端；外部仍负责观测转换、关节映射和求解调度。
  * 配置由 MATLAB 提供，首次求解由外部更新请求触发。
  */
   void init(const ControllerConfig &config) {
-    if (context)
+    if (controller)
       throw std::runtime_error(
           "Close existing MEX controller before initialization");
-    context = std::make_unique<PlannerContext>(config);
-    controller = std::make_unique<Ocs2Backend>(
-        context->interface.modelSettings(), context->mpc,
-        context->interface.getPinocchioInterface());
-    context->attachBackendDiagnostics(*controller);
+    controller = std::make_unique<Ocs2Backend>(config);
   }
   PlannerTick tickIdentity() const {
     if (!controller || preparedTick == UINT64_MAX)
       throw std::runtime_error("Prepare observation first");
-    return {preparedTick, preparedTime, 1.0 / context->interface.mpcSettings().mpcDesiredFrequency_};
+    return {preparedTick, preparedTime, controller->mpcPeriod()};
   }
   void validateTick(const PlannerTick& token) const {
     const auto current = tickIdentity();
@@ -111,8 +105,8 @@ struct G1Controller::Impl {
     vector_t tau = controller->inverseDynamics(x, u);
     lastResult << x, u, tau, lastPolicy[93], lastPolicy[94];
     actionReady = true;
-    if (context->diagnostics)
-      context->diagnostics->sample(lastTick, lastRawTime, preparedTime, lastResult);
+    if (controller->diagnostics_)
+      controller->diagnostics_->sample(lastTick, lastRawTime, preparedTime, lastResult);
   }
 };
 
@@ -152,8 +146,9 @@ void requireFinite(const double *data, std::size_t count) {
 G1Controller::G1Controller() : impl_(std::make_unique<Impl>()) {}
 G1Controller::~G1Controller() { shutdown(); }
 DiagnosticBatch G1Controller::drainDiagnostics() {
-  if (!impl_->context) throw std::runtime_error("Initialize MEX first");
-  return impl_->context->diagnostics ? impl_->context->diagnostics->drain() : DiagnosticBatch{};
+  if (!impl_->controller) throw std::runtime_error("Initialize MEX first");
+  return impl_->controller->diagnostics_ ? impl_->controller->diagnostics_->drain()
+                                       : DiagnosticBatch{};
 }
 void G1Controller::initialize(const ControllerConfig &config) {
   impl_->init(config);
@@ -161,8 +156,8 @@ void G1Controller::initialize(const ControllerConfig &config) {
 void G1Controller::shutdown() noexcept { impl_->close(); }
 /** @brief 安装具名参考：只构造 OCS2 容器并写入缓存；不再往返428向量。 */
 void G1Controller::setReference(const Reference &r) {
-  if(!impl_->context) throw std::runtime_error("Initialize MEX first");
-  if(!r.publish || (impl_->sequence && impl_->context->packets.currentTick()==r.tick)) return;
+  if(!impl_->controller) throw std::runtime_error("Initialize MEX first");
+  if(!r.publish || (impl_->sequence && impl_->controller->currentReferenceTick()==r.tick)) return;
   if((r.targetCount!=1 && r.targetCount!=3)||r.eventCount<1||r.eventCount>64)
     throw std::runtime_error("Reference shape rejected");
   ReferencePacket p;
@@ -176,7 +171,7 @@ void G1Controller::setReference(const Reference &r) {
   p.schedule.modeSequence.assign(r.modes.begin(),r.modes.begin()+r.eventCount+1);
   p.terminal=r.terminalTime;p.swing=r.swingParameters;
   for(size_t k=0;k<4;++k)p.filtered[k]=r.filteredCommand[k];
-  impl_->context->packets.publish(std::move(p));
+  impl_->controller->publishReference(std::move(p));
 }
 
 PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDimension>& state,
@@ -198,8 +193,8 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
   if(runtime.lastTick!=UINT64_MAX && tick!=runtime.lastTick+1)
     throw std::runtime_error("Nonsequential physical tick");
   const double t=runtime.controlTime.accept(tick,identity[2],1);
-  if (runtime.context->diagnostics)
-    runtime.context->diagnostics->time(tick,identity[2],t);
+  if (runtime.controller->diagnostics_)
+    runtime.controller->diagnostics_->time(tick,identity[2],t);
   runtime.preparedObservation.state=Eigen::Map<const vector_t>(state.data(),StateDimension);
   runtime.preparedObservation.time=t;
   runtime.preparedObservation.input=vector_t::Zero(35);

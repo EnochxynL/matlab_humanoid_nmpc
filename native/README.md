@@ -27,16 +27,17 @@ must request a solve. Duplicate updates must retain the same request and do not
 solve twice. C++ checks stage and policy identities, not external scheduling
 eligibility. A failed solve requires closing and initializing a fresh backend.
 
-External reference packets are the sole reference path. `PlannerContext`
+External reference packets are the sole reference path. `Ocs2Backend`
 always installs the external reference manager; no migration flag or
 `TASK5A_AUTHORITY`/`TASK5A_PACKET_FILE` environment selector is required.
 It checks each packet against the actual solver observation time and the
-current single-session protocol. Optional backend diagnostic callbacks are
-attached separately by `attachBackendDiagnostics`.
+current single-session protocol. Optional diagnostics are created and called
+inside the backend, without separate callback attachment.
 
-`PlannerContext` only assembles and owns the native OCP, MPC and diagnostic
-objects. `Ocs2Backend` owns MRT access, synchronous solve/policy installation,
-policy evaluation and inverse dynamics. There is no application solver worker,
+`Ocs2Backend(config)` assembles and owns the native OCP, MPC, reference and
+diagnostic objects, along with MRT access, synchronous solve/policy installation,
+policy evaluation and inverse dynamics. `G1Controller` manages the external
+tick/stage protocol through backend methods. There is no application solver worker,
 condition variable, duplicate 60 Hz clock or five-second worker wait timeout.
 OCS2's own numerical parallelism remains configured by its solver settings.
 The control path returns evaluated policy samples. Enabled diagnostics also

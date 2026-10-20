@@ -4,9 +4,9 @@
 `controller/CanonicalControlTime.h` 从原 `data/time/CanonicalControlTime.h`
 提取纯运行合同，不再持有文件流；未使用的旧 `ControlTime.h` 同时删除。
 
-`PlannerContext` 创建 OCP、求解器和外部参考管理器，并按配置选择是否创建
-`data/RunDiagnostics`。`Ocs2Backend` 通过可选回调提供求解事件和策略数据，
-不再依赖诊断观察器的具体类型。
+`Ocs2Backend` 创建并持有 OCP、求解器、参考管理器和可选诊断对象，
+直接向诊断对象提供求解事件和策略数据。`G1Controller` 通过后端公开的
+`diagnostics_` 记录控制时间、结果样本及提取诊断批次；关闭诊断时跳过这些调用。
 
 诊断会话独占时间/样本 CSV、参考消费记录、配置与动态库信息导出，
 并注册已有 `TimeLog` 和 `StructuralObserver`。

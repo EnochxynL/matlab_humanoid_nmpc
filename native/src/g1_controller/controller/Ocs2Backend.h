@@ -29,26 +29,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <utility>
+#include "controller/ExternalReferenceManager.h"
+#include "g1_controller/G1Controller.h"
+#include <humanoid_wb_mpc/WBMpcInterface.h>
+#include <ocs2_sqp/SqpMpc.h>
 #include <ocs2_mpc/MPC_MRT_Interface.h>
 #include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
 
 namespace g1_controller {
+namespace diagnostics { class Diagnostics; }
 
 /** @brief 同步数值后端；调用者决定求解时刻，本类不维护时钟或工作线程。 */
 class Ocs2Backend final {
  public:
-  Ocs2Backend(const ocs2::humanoid::ModelSettings& settings, ocs2::MPC_BASE& mpc,
-              ocs2::PinocchioInterface pinocchio);
+  explicit Ocs2Backend(const ControllerConfig& config);
+  ~Ocs2Backend();
+  Ocs2Backend(const Ocs2Backend&) = delete;
+  Ocs2Backend& operator=(const Ocs2Backend&) = delete;
 
-  using TraceCallback = std::function<void(const char*, double, double, double)>;
-  void setTraceCallback(TraceCallback callback) { trace_ = std::move(callback); }
-  using PolicyCallback = std::function<void(const ocs2::SystemObservation&,
-      const ocs2::PrimalSolution&, const ocs2::CommandData&)>;
-  void setPolicyCallback(PolicyCallback callback) { policy_ = std::move(callback); }
+  double mpcPeriod() const { return 1.0 / interface_.mpcSettings().mpcDesiredFrequency_; }
+  uint64_t currentReferenceTick() const { return packets_.currentTick(); }
+  void publishReference(ReferencePacket packet) { packets_.publish(std::move(packet)); }
   bool ready() const { return mrt_.initialPolicyReceived(); }
   // request=false 仅登记当前观测，继续使用已有策略；首次调用必须求解。
   void prepare(const ocs2::SystemObservation& observation, bool request);
@@ -57,12 +61,19 @@ class Ocs2Backend final {
 
  private:
   ocs2::TargetTrajectories resetTarget(const ocs2::SystemObservation& observation) const;
+  // 按依赖顺序构造、逆序销毁：MRT 和 MPC 必须先于参考包、诊断和 OCP 接口销毁。
+  ocs2::humanoid::WBMpcInterface interface_;
+ public:
+  // 可选诊断供控制入口直接记录和提取；初始化后保持此对象存活，供参考管理器使用。
+  std::unique_ptr<diagnostics::Diagnostics> diagnostics_;
+ private:
+  PacketManager packets_;
+  ocs2::SqpMpc mpc_;
+  std::shared_ptr<ExternalReferenceManager> referenceManager_;
   ocs2::MPC_MRT_Interface mrt_;
   ocs2::PinocchioInterface pinocchio_;
   ocs2::humanoid::WBAccelMpcRobotModel<ocs2::scalar_t> robotModel_;
   ocs2::SystemObservation observation_;
-  PolicyCallback policy_;
-  TraceCallback trace_;
   size_t solveCount_ = 0;
   bool prepared_ = false;
   bool failed_ = false;
