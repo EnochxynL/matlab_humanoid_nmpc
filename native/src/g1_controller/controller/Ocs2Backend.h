@@ -36,8 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <humanoid_wb_mpc/WBMpcInterface.h>
 #include <ocs2_sqp/SqpMpc.h>
 #include <ocs2_mpc/MPC_MRT_Interface.h>
-#include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
-#include <ocs2_pinocchio_interface/PinocchioInterface.h>
 
 namespace g1_controller {
 namespace diagnostics { class Diagnostics; }
