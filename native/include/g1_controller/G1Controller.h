@@ -79,7 +79,7 @@ struct Policy {
 };
 
 /**
- * @brief 一个实例拥有一套同步数值后端及当前策略缓存。
+ * @brief 一个实例直接拥有模型、同步求解器、MRT 及当前策略缓存。
  * 典型调用：initialize → setReference → installOcpObservation → updateMpc → queryPrepared → shutdown。
  * 同 tick 的重复策略查询使用缓存。
  * 接口不承诺可由多个调用线程同时操作；求解在调用线程同步完成。

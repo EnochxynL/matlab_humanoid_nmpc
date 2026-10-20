@@ -11,8 +11,7 @@ Simulink 已有 `g1_planner/MPCSchedule`，C++ 又维护 epoch、nextSlot 和更
 | `matlab/+g1/plannerConfiguration.m` | 选择 task、reference、URDF 和日志路径 |
 | `g1_planner/MPCSchedule` | 控制 tick 对应的 MPC 更新请求 |
 | `PlannerMex.cpp` | MATLAB 数据校验、命令分发和实例生命周期 |
-| `G1Controller.cpp` | 观测、参考和策略身份绑定，以及阶段缓存 |
-| `Ocs2Backend` | 原生 OCP、SQP MPC、参考和诊断对象的创建与生命周期；同步求解、策略安装/查询 |
+| `G1Controller.cpp` | 原生 OCP、SQP MPC、MRT、参考和诊断对象的创建与生命周期；观测与策略身份、阶段缓存、同步求解及策略查询 |
 | `InverseDynamics` / `g1_inverse_dynamics_mex` | 独立模型根据 state/input 计算力矩，无 MPC/MRT 实例 |
 
 初始化改为 `g1_ocp_mex('init', g1.plannerConfiguration(root, folder))`。
