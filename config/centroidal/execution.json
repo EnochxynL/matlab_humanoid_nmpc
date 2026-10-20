@@ -1,0 +1,10 @@
+{
+  "joint_position_kp": 1200,
+  "joint_velocity_kd": 10,
+  "acceleration_feedback_kp": 0,
+  "acceleration_feedback_kd": 0,
+  "fixed_joint_kp": 100,
+  "fixed_joint_kd": 1,
+  "command_height_m": 0.8,
+  "forward_command": 0.1
+}

@@ -2,22 +2,26 @@ function varargout = plannerMex(command,varargin)
 %PLANNERMEX Coordinate OCS2 and independent inverse dynamics MEX instances.
 % Simulink calls this wrapper; the native MEX never calls MATLAB callbacks.
 persistent writer initialized inverseInitialized
-persistent queryOnly
+persistent queryOnly centroidal
 persistent currentToken rawTime lastPolicy lastTorque
+persistent lastExecutionInput
 if isempty(initialized), initialized = false; end
 if isempty(inverseInitialized), inverseInitialized = false; end
 if isempty(queryOnly), queryOnly = false; end
+if isempty(centroidal), centroidal = false; end
 if strcmp(command,'init')
     g1_ocp_mex(command,varargin{:});
     initialized = true;
     try
         config = varargin{1};
-        queryOnly = isfield(config,'formulation') && strcmp(config.formulation,'centroidal');
+        centroidal = isfield(config,'formulation') && strcmp(config.formulation,'centroidal');
+        queryOnly = centroidal && (~isfield(config,'executionEnabled') || ~config.executionEnabled);
         if ~queryOnly
             g1_inverse_dynamics_mex('init',config);
             inverseInitialized = true;
         end
         currentToken = []; rawTime = []; lastPolicy = []; lastTorque = [];
+        lastExecutionInput = [];
         if ~isfield(config,'diagnosticsEnabled') || config.diagnosticsEnabled
             writer = g1.DiagnosticWriter(config.logDirectory);
         end
@@ -35,9 +39,34 @@ elseif strcmp(command,'close')
     clear cleanup;
 else
     try
-        if strcmp(command,'inverse_dynamics')
-            if queryOnly
-                error('G1:PlannerMex','Centroidal query has no inverse dynamics execution adapter');
+        if strcmp(command,'centroidal_inverse_dynamics')
+            if ~centroidal || queryOnly || nargout~=1 || numel(varargin)~=3
+                error('G1:PlannerMex','Centroidal execution requires policy72, measured state58 and joint acceleration23');
+            end
+            policy=varargin{1}; measured=varargin{2}; acceleration=varargin{3};
+            validateVector(policy,72); validateVector(measured,58); validateVector(acceleration,23);
+            policy=policy(:);
+            if isempty(lastPolicy) || ~isequal(policy(:),lastPolicy)
+                error('G1:PlannerMex','Inverse dynamics requires the current queried policy');
+            end
+            executionInput=[measured(:);acceleration(:)];
+            if ~isempty(lastTorque) && ~isequal(lastExecutionInput,executionInput)
+                error('G1:PlannerMex','Repeated centroidal execution changed its measured state or acceleration');
+            end
+            if isempty(lastTorque)
+                lastTorque=g1_inverse_dynamics_mex('compute',measured, ...
+                    [policy(36:47);acceleration(:)]);
+                lastExecutionInput=executionInput;
+                if ~isempty(writer)
+                    writer.sample(currentToken(1),rawTime,currentToken(2), ...
+                        [lastPolicy(1:70);lastTorque;lastPolicy(71:72)],'centroidal_samples');
+                end
+                collect();
+            end
+            varargout{1}=lastTorque;
+        elseif strcmp(command,'inverse_dynamics')
+            if centroidal
+                error('G1:PlannerMex','Use the centroidal execution adapter for a centroidal policy');
             end
             if nargout ~= 1 || numel(varargin) ~= 1
                 error('G1:PlannerMex','inverse_dynamics requires policy95 and one output');
@@ -80,6 +109,7 @@ else
                 if isempty(currentToken) || token(1) ~= currentToken(1)
                     currentToken = token; rawTime = varargin{2}(3);
                     lastPolicy = []; lastTorque = [];
+                    lastExecutionInput = [];
                     if ~isempty(writer)
                         writer.timeIdentity(token(1),rawTime,token(2));
                     end
@@ -113,7 +143,9 @@ end
         end
         if ~isempty(writer), delete(writer); writer = []; end
         currentToken = []; rawTime = []; lastPolicy = []; lastTorque = [];
+        lastExecutionInput = [];
         queryOnly = false;
+        centroidal = false;
         clear inverseCleanup;
     end
     function closeInverse()
@@ -121,6 +153,13 @@ end
             g1_inverse_dynamics_mex('close'); inverseInitialized = false;
         end
     end
+end
+
+function validateVector(value,count)
+if ~isa(value,'double') || ~isreal(value) || issparse(value) || ...
+        numel(value)~=count || ~all(isfinite(value(:)))
+    error('G1:PlannerMex','Invalid centroidal execution argument');
+end
 end
 
 function identity = validateObservationTime(extracted)
