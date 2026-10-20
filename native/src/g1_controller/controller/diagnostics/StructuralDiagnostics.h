@@ -4,6 +4,7 @@
 
 #include "controller/diagnostics/TimingDiagnostics.h"
 #include <limits>
+#include <type_traits>
 #include <humanoid_wb_mpc/WBMpcInterface.h>
 #include <humanoid_wb_mpc/dynamics/DynamicsHelperFunctions.h>
 #include "extensions/StateInputSoftConstraint.h"
@@ -12,7 +13,8 @@
 #include <boost/property_tree/json_parser.hpp>
 namespace g1_controller::diagnostics {
 using namespace ocs2;using namespace ocs2::humanoid;
-inline std::string configurationJson(WBMpcInterface& i,const std::string&task){
+template<class Problem>
+inline std::string configurationJson(Problem& i,const std::string&task){
  boost::property_tree::ptree raw,out;boost::property_tree::read_info(task,raw);out.add_child("source_config",raw);
  auto&s=i.sqpSettings();auto&m=i.mpcSettings();out.put("state_dim",i.getMpcRobotModel().getStateDim());out.put("input_dim",i.getMpcRobotModel().getInputDim());
  out.put("loaded.horizon",m.timeHorizon_);out.put("loaded.mpc_hz",m.mpcDesiredFrequency_);out.put("loaded.mrt_hz",m.mrtDesiredFrequency_);out.put("loaded.cold_start",m.coldStart_);
@@ -26,23 +28,25 @@ inline std::string configurationJson(WBMpcInterface& i,const std::string&task){
  inventory("running_cost",ocp.costPtr);inventory("terminal_cost",ocp.finalCostPtr);inventory("state_soft",ocp.stateSoftConstraintPtr);inventory("input_soft",ocp.softConstraintPtr);inventory("hard_equality",ocp.equalityConstraintPtr);
  std::ostringstream text;boost::property_tree::write_json(text,out);return text.str();
 }
+template<class Problem>
 class StructuralObserver final:public SolverSynchronizedModule,public DummyObserver {
- WBMpcInterface&interface_;SqpMpc&mpc_;std::shared_ptr<TimingDiagnostics>log_;
- OptimalControlProblem clone_;PinocchioInterface pin_;WBAccelMpcRobotModel<double>model_;
- DiagnosticBuffer& buffer_;vector_t lastDerivative_=vector_t::Zero(58);double lastSampleTime_=0;std::array<double,8>lastSolver_{};
+ Problem&interface_;SqpMpc&mpc_;std::shared_ptr<TimingDiagnostics>log_;
+ OptimalControlProblem clone_;PinocchioInterface pin_;std::unique_ptr<MpcRobotModelBase<double>>model_;
+ DiagnosticBuffer& buffer_;vector_t lastDerivative_;double lastSampleTime_=0;std::array<double,8>lastSolver_{};
  double target_=0;size_t previousIterations_=0;
+ const uint64_t& observationTick_;
  void scalarCost(const char*group,const std::string&name,double t,double value){
   if(!std::isfinite(value))throw std::runtime_error("Nonfinite read-only cost");
   buffer_.row("structural_costs",{target_,t,group,name,value});
  }
  public:
- StructuralObserver(WBMpcInterface&i,SqpMpc&m,std::shared_ptr<TimingDiagnostics>log,DiagnosticBuffer&buffer)
-  :interface_(i),mpc_(m),log_(log),clone_(i.getOptimalControlProblem()),pin_(i.getPinocchioInterface()),model_(i.modelSettings()),buffer_(buffer){
+ StructuralObserver(Problem&i,SqpMpc&m,std::shared_ptr<TimingDiagnostics>log,DiagnosticBuffer&buffer,const uint64_t& observationTick)
+  :interface_(i),mpc_(m),log_(log),clone_(i.getOptimalControlProblem()),pin_(i.getPinocchioInterface()),model_(i.getMpcRobotModel().clone()),buffer_(buffer),lastDerivative_(vector_t::Zero(i.getMpcRobotModel().getStateDim())),observationTick_(observationTick){
   buffer_.define("structural_solver","control_tick,observation_time,iterations_this_solve,total_iterations,objective,dynamics_sse,equality_sse,inequality_sse,lq_wall_ms,qp_wall_ms,linesearch_wall_ms,controller_wall_ms,status");
   buffer_.define("structural_dynamics","solver_time,sample_time,index,derivative,A_rows,A_cols,B_rows,B_cols");
   buffer_.define("structural_costs","solver_time,sample_time,group,term,value");
   buffer_.define("structural_constraints","solver_time,sample_time,term,active,dimension,index,residual");
-  buffer_.define("structural_id","observation_time,query_time,index,q_des,qd_des,qdd_des,tau_ff,left_wrench,right_wrench");
+  if constexpr (std::is_same_v<Problem, WBMpcInterface>) buffer_.define("structural_id","observation_time,query_time,index,q_des,qd_des,qdd_des,tau_ff,left_wrench,right_wrench");
  }
  void preSolverRun(double t,double,const vector_t&,const ReferenceManagerInterface&)override{target_=t;}
  void postSolverRun(const PrimalSolution&p)override{
@@ -50,7 +54,7 @@ class StructuralObserver final:public SolverSynchronizedModule,public DummyObser
   const double unknown=std::numeric_limits<double>::quiet_NaN();
   struct {double linearQuadraticApproximationTime,solveQpTime,linesearchTime,computeControllerTime;} times{unknown,unknown,unknown,unknown};
   // Public API exposes performance and iteration count; convergence enum is private.
-  buffer_.row("structural_solver",{std::llround(target_/.002),target_,n-previousIterations_,n,perf.cost,perf.dynamicsViolationSSE,perf.equalityConstraintsSSE,perf.inequalityConstraintsSSE,times.linearQuadraticApproximationTime,times.solveQpTime,times.linesearchTime,times.computeControllerTime,"POLICY_RETURNED_CONVERGENCE_ENUM_AND_INTERNAL_TIMERS_UNAVAILABLE"});previousIterations_=n;lastSolver_={double(n),perf.cost,perf.dynamicsViolationSSE,perf.equalityConstraintsSSE,times.linearQuadraticApproximationTime,times.solveQpTime,times.linesearchTime,times.computeControllerTime};
+  buffer_.row("structural_solver",{observationTick_,target_,n-previousIterations_,n,perf.cost,perf.dynamicsViolationSSE,perf.equalityConstraintsSSE,perf.inequalityConstraintsSSE,times.linearQuadraticApproximationTime,times.solveQpTime,times.linesearchTime,times.computeControllerTime,"POLICY_RETURNED_CONVERGENCE_ENUM_AND_INTERNAL_TIMERS_UNAVAILABLE"});previousIterations_=n;lastSolver_={double(n),perf.cost,perf.dynamicsViolationSSE,perf.equalityConstraintsSSE,times.linearQuadraticApproximationTime,times.solveQpTime,times.linesearchTime,times.computeControllerTime};
   clone_.targetTrajectoriesPtr=&interface_.getSwitchedModelReferenceManagerPtr()->getTargetTrajectories();
   // One interior policy knot per solve. Objects and precomputation are cloned,
   // sharing only the unchanged reference manager after solver completion.
@@ -71,13 +75,17 @@ class StructuralObserver final:public SolverSynchronizedModule,public DummyObser
 
  }
  void update(const SystemObservation&o,const PrimalSolution&p,const CommandData&c)override{
-  log_->update(o,p,c);double t=o.time+.005;auto x=LinearInterpolation::interpolate(t,p.timeTrajectory_,p.stateTrajectory_);auto u=LinearInterpolation::interpolate(t,p.timeTrajectory_,p.inputTrajectory_);
-  auto tau=computeJointTorques<double>(x,u,pin_,model_);auto q=model_.getJointAngles(x);auto qd=model_.getJointVelocities(x,u);auto qdd=model_.getJointAccelerations(u);
+  log_->update(o,p,c);
+  // 通用 OCP 诊断适用于两种问题；以下力矩和 218 维快照仅适用于全身模型。
+  if constexpr (std::is_same_v<Problem, WBMpcInterface>) {
+  auto& model = static_cast<WBAccelMpcRobotModel<double>&>(*model_);double t=o.time+.005;auto x=LinearInterpolation::interpolate(t,p.timeTrajectory_,p.stateTrajectory_);auto u=LinearInterpolation::interpolate(t,p.timeTrajectory_,p.inputTrajectory_);
+  auto tau=computeJointTorques<double>(x,u,pin_,model);auto q=model.getJointAngles(x);auto qd=model.getJointVelocities(x,u);auto qdd=model.getJointAccelerations(u);
   for(int j=0;j<23;++j)buffer_.row("structural_id",{o.time,t,j,q[j],qd[j],qdd[j],tau[j],j<6?u[j]:0,j<6?u[j+6]:0});
-  auto accel=computeGeneralizedAccelerations<double>(x,u,pin_,model_);std::vector<double>snapshot{1,o.time,t,p.timeTrajectory_.front(),p.timeTrajectory_.back(),double(p.modeSchedule_.modeAtTime(t))};
+  auto accel=computeGeneralizedAccelerations<double>(x,u,pin_,model);std::vector<double>snapshot{1,o.time,t,p.timeTrajectory_.front(),p.timeTrajectory_.back(),double(p.modeSchedule_.modeAtTime(t))};
   for(auto*v:{&x,&u,&tau,&accel})for(int j=0;j<v->size();++j)snapshot.push_back((*v)[j]);for(auto v:lastSolver_)snapshot.push_back(v);snapshot.push_back(lastSampleTime_);for(int j=0;j<58;++j)snapshot.push_back(lastDerivative_[j]);
   if(snapshot.size()!=218)throw std::runtime_error("Structural snapshot shape");
   buffer_.snapshot=std::move(snapshot);
+  }
  }
 };
 }

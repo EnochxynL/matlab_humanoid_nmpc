@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "humanoid_centroidal_mpc/initialization/CentroidalWeightCompInitializer.h"
 
-#include "humanoid_centroidal_mpc/dynamics/DynamicsHelperFunctions.h"
+#include "humanoid_common_mpc/pinocchio_model/DynamicsHelperFunctions.h"
 
 #include <ocs2_centroidal_model/AccessHelperFunctions.h>
 
@@ -73,7 +73,7 @@ CentroidalWeightCompInitializer* CentroidalWeightCompInitializer::clone() const 
 void CentroidalWeightCompInitializer::compute(
     scalar_t time, const vector_t& state, scalar_t nextTime, vector_t& input, vector_t& nextState) {
   const auto contactFlags = referenceManagerPtr_->getContactFlags(time);
-  input = weightCompensatingInput(info_, contactFlags, *mpcRobotModelPtr_);
+  input = weightCompensatingInput(info_.robotMass, contactFlags, *mpcRobotModelPtr_);
   nextState = state;
   if (!extendNormalizedMomentum_) {
     centroidal_model::getNormalizedMomentum(nextState, info_).setZero();

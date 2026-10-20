@@ -36,6 +36,8 @@ Reference reference(const double *a) {
   r.targetCount = static_cast<std::size_t>(a[2]);
   std::copy_n(a + 3, 3, r.targetTimes.begin());
   for (std::size_t k = 0; k < 3; ++k) {
+    r.targetStates[k].resize(58);
+    r.targetInputs[k].resize(35);
     std::copy_n(a + 6 + 58 * k, 58, r.targetStates[k].begin());
     std::copy_n(a + 180 + 35 * k, 35, r.targetInputs[k].begin());
   }
@@ -92,8 +94,8 @@ int main(int argc, char **argv) {
       input.read(reinterpret_cast<char *>(a.data()), sizeof(a));
       if (!input)
         throw std::runtime_error("Truncated fixture");
-      std::array<double,58> state;
-      states.read(reinterpret_cast<char*>(state.data()),sizeof(state));
+      std::vector<double> state(58);
+      states.read(reinterpret_cast<char*>(state.data()),state.size()*sizeof(double));
       if(!states) throw std::runtime_error("Truncated OCP state fixture");
       core.setReference(reference(a.data()+74));
       const double t=double(k)*.002;
@@ -115,7 +117,11 @@ int main(int argc, char **argv) {
       core.updateMpc(token,due);
       ControlResult control;
       control.policy=core.queryPrepared(token);
-      control.torque=inverseDynamics.compute(control.policy.state,control.policy.input);
+      std::array<double, StateDimension> dynamicsState;
+      std::array<double, InputDimension> dynamicsInput;
+      std::copy(control.policy.state.begin(),control.policy.state.end(),dynamicsState.begin());
+      std::copy(control.policy.input.begin(),control.policy.input.end(),dynamicsInput.begin());
+      control.torque=inverseDynamics.compute(dynamicsState,dynamicsInput);
       auto actual = result(control);
       // Native consumers own persistence too; keep the library buffer bounded.
       auto diagnostics = core.drainDiagnostics();

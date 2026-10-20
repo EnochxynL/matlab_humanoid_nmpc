@@ -35,24 +35,40 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "g1_controller/G1Controller.h"
 #include "controller/ExternalReferenceManager.h"
 #include <humanoid_wb_mpc/WBMpcInterface.h>
+#ifdef G1_HAS_CENTROIDAL
+#include <humanoid_centroidal_mpc/CentroidalMpcInterface.h>
+#endif
 #include <ocs2_sqp/SqpMpc.h>
 #include <ocs2_mpc/MPC_MRT_Interface.h>
 #include "controller/diagnostics/Diagnostics.h"
-#include <algorithm>
+#include <utility>
 #include <cmath>
 #include <stdexcept>
 
 namespace g1_controller {
 using ocs2::vector_t;
 using ocs2::SystemObservation;
+namespace {
+std::array<double,8> swingParameters(const std::string& taskFile) {
+  const auto config = ocs2::humanoid::loadSwingTrajectorySettings(taskFile, "swing_trajectory_config", false);
+  return {config.liftOffVelocity, config.touchDownVelocity, config.swingHeight,
+          config.touchDownHeightOffset, config.swingTimeScale,
+          config.impactProximityFactorLiftOffVelocity, config.impactProximityFactorTouchDownVelocity,
+          config.impactProximityFactorMidPointValue};
+}
+}
 /**
  * @brief PImpl 私有状态：直接持有原生模型、MPC、MRT 和诊断对象。
- * lastPolicy 保存当前 tick 的95元素策略；动作计算和结果汇总由外部消费者负责。
+ * lastPolicy 保存具体问题维度的策略；动作计算和结果汇总由外部消费者负责。
  * lastTick 防止跨 tick 混用，查询后允许准备下一个观测。
  */
 struct G1Controller::Impl {
   // 按依赖顺序构造，逆序销毁：MRT/MPC 先于参考包、诊断与模型销毁。
-  ocs2::humanoid::WBMpcInterface interface;
+  std::unique_ptr<ocs2::RobotInterface> interface;
+  const ocs2::humanoid::MpcRobotModelBase<double>* model;
+  ocs2::mpc::Settings mpcSettings;
+  ocs2::sqp::Settings sqpSettings;
+  MpcFormulation formulation;
   std::unique_ptr<diagnostics::Diagnostics> diagnostics;
   PacketManager packets;
   ocs2::SqpMpc mpc;
@@ -60,13 +76,19 @@ struct G1Controller::Impl {
   ocs2::MPC_MRT_Interface mrt;
   bool failed = false;
 
-  explicit Impl(const ControllerConfig& config)
-      : interface(config.taskFile, config.urdfFile, config.referenceFile),
-        mpc(interface.mpcSettings(), interface.sqpSettings(),
-            interface.getOptimalControlProblem(), interface.getInitializer()),
+  template<class Problem>
+  Impl(const ControllerConfig& config, std::unique_ptr<Problem> problem)
+      : interface(std::move(problem)),
+        model(&static_cast<Problem&>(*interface).getMpcRobotModel()),
+        mpcSettings(static_cast<Problem&>(*interface).mpcSettings()),
+        sqpSettings(static_cast<Problem&>(*interface).sqpSettings()),
+        formulation(config.formulation),
+        packets(model->getStateDim(), model->getInputDim(), swingParameters(config.taskFile)),
+        mpc(mpcSettings, sqpSettings,
+            interface->getOptimalControlProblem(), interface->getInitializer()),
         mrt(mpc) {}
   uint64_t lastTick = UINT64_MAX, sequence = 0;
-  vector_t lastPolicy = vector_t::Zero(95);
+  Policy lastPolicy;
   uint64_t preparedTick = UINT64_MAX;
   bool updateReady = false, updateRequested = false;
   SystemObservation preparedObservation;
@@ -74,17 +96,6 @@ struct G1Controller::Impl {
 };
 
 namespace {
-/**
- * @brief 将内部缓存转回公共策略结构，避免向外暴露 Eigen。
- */
-Policy decodePolicy(const double *a) {
-  Policy p;
-  std::copy_n(a, 58, p.state.begin());
-  std::copy_n(a + 58, 35, p.input.begin());
-  p.mode = a[93];
-  p.queryTime = a[94];
-  return p;
-}
 /**
  * @brief 公共 API 的有限性检查；非法数值不得进入求解器或逆动力学。
  */
@@ -105,13 +116,36 @@ DiagnosticBatch G1Controller::drainDiagnostics() {
 void G1Controller::initialize(const ControllerConfig &config) {
   if (impl_)
     throw std::runtime_error("Close existing MEX controller before initialization");
-  auto runtime = std::make_unique<Impl>(config);
-  if (config.diagnosticsEnabled)
-    runtime->diagnostics = std::make_unique<diagnostics::Diagnostics>(config, runtime->interface, runtime->mpc);
-  runtime->referenceManager = std::make_shared<ExternalReferenceManager>(
-      runtime->interface.getSwitchedModelReferenceManagerPtr(), runtime->packets, runtime->diagnostics.get());
-  runtime->mpc.getSolverPtr()->setReferenceManager(runtime->referenceManager);
-  impl_ = std::move(runtime);
+  // 只有初始化选择具体问题；后续观测、求解、查询共用同一条流程。
+  auto initializeProblem = [&](auto problem) {
+    auto* definition = problem.get();
+    auto runtime = std::make_unique<Impl>(config, std::move(problem));
+    if (config.diagnosticsEnabled)
+      runtime->diagnostics = std::make_unique<diagnostics::Diagnostics>(config, *definition, runtime->mpc);
+    runtime->referenceManager = std::make_shared<ExternalReferenceManager>(
+        definition->getSwitchedModelReferenceManagerPtr(), runtime->packets, runtime->diagnostics.get());
+    runtime->mpc.getSolverPtr()->setReferenceManager(runtime->referenceManager);
+    impl_ = std::move(runtime);
+  };
+  switch (config.formulation) {
+    case MpcFormulation::WholeBody:
+      initializeProblem(std::make_unique<ocs2::humanoid::WBMpcInterface>(config.taskFile, config.urdfFile, config.referenceFile));
+      break;
+    case MpcFormulation::Centroidal:
+#ifdef G1_HAS_CENTROIDAL
+      initializeProblem(std::make_unique<ocs2::humanoid::CentroidalMpcInterface>(config.taskFile, config.urdfFile, config.referenceFile));
+      break;
+#else
+      throw std::runtime_error("Centroidal support was not enabled at build time");
+#endif
+    default:
+      throw std::runtime_error("Unknown MPC formulation");
+  }
+}
+
+ProblemDimensions G1Controller::dimensions() const {
+  if (!impl_) throw std::runtime_error("Initialize MEX first");
+  return {impl_->model->getStateDim(), impl_->model->getInputDim(), impl_->model->getJointDim()};
 }
 
 void G1Controller::shutdown() noexcept {
@@ -123,7 +157,7 @@ PlannerTick G1Controller::tickIdentity() const {
     throw std::runtime_error("Prepare observation first");
   const auto& runtime = *impl_;
   return {runtime.preparedTick, runtime.preparedObservation.time,
-          1.0 / runtime.interface.mpcSettings().mpcDesiredFrequency_};
+          1.0 / runtime.mpcSettings.mpcDesiredFrequency_};
 }
 
 void G1Controller::validateTick(const PlannerTick& token) const {
@@ -137,12 +171,17 @@ void G1Controller::setReference(const Reference &r) {
   if(!r.publish || (impl_->sequence && impl_->packets.currentTick()==r.tick)) return;
   if((r.targetCount!=1 && r.targetCount!=3)||r.eventCount<1||r.eventCount>64)
     throw std::runtime_error("Reference shape rejected");
+  for(size_t k=0;k<r.targetCount;++k){
+    if (r.targetStates[k].size() != impl_->model->getStateDim() ||
+        r.targetInputs[k].size() != impl_->model->getInputDim())
+      throw std::runtime_error("Reference dimensions do not match the selected OCP");
+  }
   ReferencePacket p;
   p.tick=r.tick;p.session=1;p.sequence=++impl_->sequence;
   for(size_t k=0;k<r.targetCount;++k){
     p.target.timeTrajectory.push_back(r.targetTimes[k]);
-    p.target.stateTrajectory.emplace_back(Eigen::Map<const vector_t>(r.targetStates[k].data(),58));
-    p.target.inputTrajectory.emplace_back(Eigen::Map<const vector_t>(r.targetInputs[k].data(),35));
+    p.target.stateTrajectory.emplace_back(Eigen::Map<const vector_t>(r.targetStates[k].data(),r.targetStates[k].size()));
+    p.target.inputTrajectory.emplace_back(Eigen::Map<const vector_t>(r.targetInputs[k].data(),r.targetInputs[k].size()));
   }
   p.schedule.eventTimes.assign(r.eventTimes.begin(),r.eventTimes.begin()+r.eventCount);
   p.schedule.modeSequence.assign(r.modes.begin(),r.modes.begin()+r.eventCount+1);
@@ -151,12 +190,14 @@ void G1Controller::setReference(const Reference &r) {
   impl_->packets.publish(std::move(p));
 }
 
-PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDimension>& state,
+PlannerTick G1Controller::installOcpObservation(const std::vector<double>& state,
                                                const std::array<double,2>& identity) {
   requireFinite(state.data(),state.size());
   requireFinite(identity.data(),identity.size());
   if(!impl_) throw std::runtime_error("Initialize MEX first");
   auto& runtime=*impl_;
+  if (state.size() != runtime.model->getStateDim())
+    throw std::runtime_error("Observation dimensions do not match the selected OCP");
   if(identity[0]<0 || identity[0]>static_cast<double>(uint64_t{1}<<53) || identity[0]!=std::floor(identity[0]))
     throw std::runtime_error("Invalid extracted tick");
   const auto tick=static_cast<uint64_t>(identity[0]);
@@ -173,9 +214,9 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
     throw std::runtime_error("First physical tick must be zero");
   if(runtime.lastTick!=UINT64_MAX && tick!=runtime.lastTick+1)
     throw std::runtime_error("Nonsequential physical tick");
-  runtime.preparedObservation.state=Eigen::Map<const vector_t>(state.data(),StateDimension);
+  runtime.preparedObservation.state=Eigen::Map<const vector_t>(state.data(),state.size());
   runtime.preparedObservation.time=t;
-  runtime.preparedObservation.input=vector_t::Zero(35);
+  runtime.preparedObservation.input=vector_t::Zero(runtime.model->getInputDim());
   runtime.preparedObservation.mode=3;
   runtime.preparedTick=tick;
   runtime.updateReady=false;
@@ -196,13 +237,17 @@ PlannerTick G1Controller::updateMpc(const PlannerTick& tick, bool requested) {
     throw std::runtime_error("Initial observation requires an MPC solve");
   const auto& observation = runtime.preparedObservation;
   runtime.mrt.setCurrentObservation(observation);
+  if (runtime.diagnostics) runtime.diagnostics->observation(runtime.preparedTick);
   if (runtime.diagnostics) runtime.diagnostics->trace("observation_arrived", observation.time);
   if (requested) {
     try {
       if (!runtime.mrt.initialPolicyReceived()) {
         auto state = observation.state;
-        state.tail(runtime.interface.getMpcRobotModel().getGenCoordinatesDim()).setZero();
-        state.segment<2>(4).setZero();
+        // 保留全身模型既有的复位目标；centroidal 不能按全身状态布局清零。
+        if (runtime.formulation == MpcFormulation::WholeBody) {
+          state.tail(runtime.model->getGenCoordinatesDim()).setZero();
+          state.segment<2>(4).setZero();
+        }
         runtime.mrt.resetMpcNode({{observation.time}, {state}, {vector_t::Zero(observation.input.size())}});
       }
       runtime.referenceManager->setMeasuredMode(observation.mode);
@@ -234,13 +279,18 @@ Policy G1Controller::queryPrepared(const PlannerTick& tick) {
     size_t mode;
     const auto& observation = runtime.preparedObservation;
     runtime.mrt.evaluatePolicy(observation.time + .005, observation.state, state, input, mode);
+    if (state.size() != runtime.model->getStateDim() || input.size() != runtime.model->getInputDim())
+      throw std::runtime_error("Policy dimensions do not match the selected OCP");
     if (!state.allFinite() || !input.allFinite()) throw std::runtime_error("Nonfinite policy output");
     if (runtime.diagnostics)
       runtime.diagnostics->policy(observation, runtime.mrt.getPolicy(), runtime.mrt.getCommand());
-    runtime.lastPolicy << state, input, double(mode), observation.time + .005;
+    runtime.lastPolicy.state.assign(state.data(), state.data()+state.size());
+    runtime.lastPolicy.input.assign(input.data(), input.data()+input.size());
+    runtime.lastPolicy.mode = double(mode);
+    runtime.lastPolicy.queryTime = observation.time + .005;
     runtime.lastTick = runtime.preparedTick;
   }
-  return decodePolicy(runtime.lastPolicy.data());
+  return runtime.lastPolicy;
 }
 
 } // namespace g1_controller

@@ -11,8 +11,8 @@
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <vector>
 #include "Diagnostics.h"
-#include "ModelTypes.h"
 
 #if defined(_WIN32)
 #if defined(g1_controller_core_EXPORTS)
@@ -26,6 +26,13 @@
 
 namespace g1_controller {
 
+// 两种问题有不同的状态和输入含义，不能仅凭向量长度互换策略。
+enum class MpcFormulation { WholeBody, Centroidal };
+
+struct ProblemDimensions {
+  std::size_t state = 0, input = 0, joints = 0;
+};
+
 /**
  * @brief 调用者提供完整资源路径；后端不推断工程目录布局。
  */
@@ -36,11 +43,12 @@ struct ControllerConfig {
   std::string logDirectory;
   // 默认保留现有验收日志；关闭时不创建应用诊断文件或额外诊断模型。
   bool diagnosticsEnabled = true;
+  MpcFormulation formulation = MpcFormulation::WholeBody;
 };
 
 
 /**
- * @brief 外部参考与接触时间表的定长容器。
+ * @brief 外部参考与接触时间表的有界容器；节点维度由具体 OCP 决定。
  * 数组为容量，targetCount/eventCount 才是有效数量；模式数为事件数加一。
  * publish 控制本包是否生效；tick 将参考绑定到实际求解的观测时刻。
  */
@@ -49,8 +57,8 @@ struct Reference {
   bool publish = false;
   std::size_t targetCount = 0;
   std::array<double, 3> targetTimes{};
-  std::array<std::array<double, StateDimension>, 3> targetStates{};
-  std::array<std::array<double, InputDimension>, 3> targetInputs{};
+  std::array<std::vector<double>, 3> targetStates{};
+  std::array<std::vector<double>, 3> targetInputs{};
   std::size_t eventCount = 0;
   std::array<double, 64> eventTimes{};
   std::array<std::size_t, 65> modes{};
@@ -68,11 +76,11 @@ struct PlannerTick {
 
 /**
  * @brief 一次 MRT 查询的结果，不是整条预测轨迹，也不携带反馈增益矩阵。
- * 包含58维名义状态、35维策略输入、模式及实际查询时间。
+ * 状态和输入维度由具体 OCP 决定；不把两种问题的输入含义混用。
  */
 struct Policy {
-  std::array<double, StateDimension> state{};
-  std::array<double, InputDimension> input{};
+  std::vector<double> state;
+  std::vector<double> input;
   // Keep the original numeric mode representation for exact packet identity.
   double mode = 0;
   double queryTime = 0;
@@ -95,13 +103,14 @@ public:
  * @brief 加载模型、OCP、数学实现和日志配置；已有实例须先 shutdown。
  */
   void initialize(const ControllerConfig &config);
+  ProblemDimensions dimensions() const;
 /**
  * @brief 更新外部参考缓存；不会在此调用中直接执行一次 SQP。
  */
   void setReference(const Reference &reference);
 /** @brief 外部决定更新时刻；requested=true 同步求解，否则沿用已有策略。 */
   // 调用者负责生成规范时间；这里只登记状态和 [tick, canonical time]。
-  PlannerTick installOcpObservation(const std::array<double, StateDimension>& state, const std::array<double,2>& identity);
+  PlannerTick installOcpObservation(const std::vector<double>& state, const std::array<double,2>& identity);
   PlannerTick updateMpc(const PlannerTick &tick, bool requested);
   Policy queryPrepared(const PlannerTick &tick);
 /** @brief 取走当前批次；重复读取返回空数据，不触发求解或额外诊断计算。 */

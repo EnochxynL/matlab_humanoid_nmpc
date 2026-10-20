@@ -86,6 +86,8 @@ g1_controller::Reference decodeReference(const double *a) {
   r.targetCount = static_cast<std::size_t>(a[2]);
   std::copy_n(a + 3, 3, r.targetTimes.begin());
   for (std::size_t k = 0; k < 3; ++k) {
+    r.targetStates[k].resize(58);
+    r.targetInputs[k].resize(35);
     std::copy_n(a + 6 + 58 * k, 58, r.targetStates[k].begin());
     std::copy_n(a + 180 + 35 * k, 35, r.targetInputs[k].begin());
   }
@@ -104,6 +106,8 @@ g1_controller::Reference decodeReference(const double *a) {
  * @brief 创建 MATLAB 拥有的 95×1 策略向量，供后续 inverse_dynamics 原样回传。
  */
 mxArray *encodePolicy(const g1_controller::Policy &p) {
+  if (p.state.size()!=58 || p.input.size()!=35)
+    throw std::runtime_error("Legacy MATLAB policy transport requires the whole-body OCP");
   mxArray *output = mxCreateDoubleMatrix(95, 1, mxREAL);
   double *a = mxGetPr(output);
   std::copy(p.state.begin(), p.state.end(), a);
@@ -213,7 +217,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       runtime().setReference(decodeReference(values));
     } else if (command == "install_observation") {
       if(nrhs!=3 || nlhs!=1) throw std::runtime_error("install_observation requires x58, identity2 and one output");
-      std::array<double,58> state;
+      std::vector<double> state(58);
       std::array<double,2> identity;
       std::copy_n(readDoubles(prhs[1],58),58,state.begin());
       std::copy_n(readDoubles(prhs[2],2),2,identity.begin());

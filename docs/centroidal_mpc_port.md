@@ -77,5 +77,6 @@ python native/scripts/verify_layers.py
 centroidal 与全身 MPC 的输入虽然同为 35 维，末尾分别表示关节速度和
 关节加速度，不能把它们交给同一个未经转换的逆动力学入口。
 
-下一阶段以两个真实问题为依据整理运行接入，随后接入 centroidal
-观测/参考和执行链。原 centroidal 执行器中的逆动力学 TODO 仍需独立验证。
+第二阶段的共用原生接入见 [共用运行接口](shared_mpc_runtime.md)。
+centroidal 的观测/参考和执行链仍待接入；原执行器中的逆动力学 TODO
+仍需独立验证。

@@ -25,6 +25,8 @@ struct ReferencePacket {
 /** 保存参考包及消费历史，集中维护参考协议；不执行求解或诊断。 */
 class PacketManager {
  public:
+  PacketManager(std::size_t stateDimension, std::size_t inputDimension, std::array<double,8> swing)
+      : stateDimension_(stateDimension), inputDimension_(inputDimension), swing_(swing) {}
   uint64_t currentTick() const { return current_.tick; }
   void publish(ReferencePacket packet) { current_ = std::move(packet); }
   ReferencePacket referenceForSolve(uint64_t observationTick) const;
@@ -32,6 +34,8 @@ class PacketManager {
   void markConsumed(const ReferencePacket& packet);
 
  private:
+  std::size_t stateDimension_, inputDimension_;
+  std::array<double,8> swing_;
   ReferencePacket current_;
   ReferencePacket previous_;
   bool initialized_ = false;

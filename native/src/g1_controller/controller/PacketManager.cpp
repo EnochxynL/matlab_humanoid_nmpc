@@ -25,7 +25,7 @@ void PacketManager::validate(const ReferencePacket& p, double t, double end) {
        p.sequence != previous_.sequence + 1 || p.tick <= previous_.tick))
     throw std::runtime_error("G: Reference session/order rejected; fresh process per epoch");
 
-  // 目标时间严格递增，每个节点必须包含完整的58维状态和35维输入。
+  // 目标时间严格递增，节点维度必须匹配本实例的 OCP。
   auto n = p.target.timeTrajectory.size();
   if ((n != 1 && n != 3) || p.target.stateTrajectory.size() != n ||
       p.target.inputTrajectory.size() != n)
@@ -33,8 +33,8 @@ void PacketManager::validate(const ReferencePacket& p, double t, double end) {
   for (size_t k = 0; k < n; ++k) {
     if (!std::isfinite(p.target.timeTrajectory[k]) ||
         (k && p.target.timeTrajectory[k] <= p.target.timeTrajectory[k - 1]) ||
-        p.target.stateTrajectory[k].size() != 58 ||
-        p.target.inputTrajectory[k].size() != 35 ||
+        p.target.stateTrajectory[k].size() != stateDimension_ ||
+        p.target.inputTrajectory[k].size() != inputDimension_ ||
         !p.target.stateTrajectory[k].allFinite() ||
         !p.target.inputTrajectory[k].allFinite())
       throw std::runtime_error("G: Nonfinite or malformed target");
@@ -57,9 +57,8 @@ void PacketManager::validate(const ReferencePacket& p, double t, double end) {
       p.terminal <= end + (end - t))
     throw std::runtime_error("G: Terminal marker is not outside the reference window");
 
-  // 固定的已验收摆腿配置；禁止通过接入层静默修改控制任务。
-  const std::array<double, 8> expected = {.05, -0.0, .08, -.001, .4, -.15, .3, .005};
-  if (p.swing != expected)
+  // 外部给出的摆腿参数必须与本实例加载的配置一致。
+  if (p.swing != swing_)
     throw std::runtime_error("F: Swing parameters changed from the accepted consumer configuration");
 }
 

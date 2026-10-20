@@ -11,6 +11,14 @@ Build `g1_centroidal_smoke` with `G1_BUILD_TESTS=ON` for a native construction,
 SQP solve and MRT query check. Its configuration is in `config/centroidal/`;
 it does not use the whole-body controller API or inverse-dynamics MEX.
 
+`G1Controller` now provides the common native runtime for both formulations.
+Select `ControllerConfig::formulation` (`WholeBody` by default, or `Centroidal`
+when enabled), and obtain state/input sizes from `dimensions()`. Reference nodes,
+observations and policies use vectors sized for the selected OCP. The existing
+MATLAB 428/95 transport remains whole-body-specific until the Simulink integration
+stage. Build/run `g1_shared_runtime_smoke` to exercise the common API with both
+formulations and diagnostic modes. See [shared runtime](../docs/shared_mpc_runtime.md).
+
 - `include/g1_controller/G1Controller.h`: public controller and data types.
 - `src/g1_controller/model/`: shared robot model and numerical functions.
 - `src/g1_controller/problem/`: planning problem, costs, constraints and references.
