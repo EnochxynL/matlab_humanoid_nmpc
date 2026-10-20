@@ -23,13 +23,17 @@ PlannerContext::~PlannerContext() = default;
 
 void PlannerContext::installReferenceManager() {
   referenceManager_ = std::make_shared<ExternalReferenceManager>(
+      // 1. 取得原项目已有的参考管理器。
       interface.getSwitchedModelReferenceManagerPtr(),
+      // 2. 定义“求解前如何取得参考包”。
       [this](double observationTime) {
         return referenceForSolve(observationTime);
       },
+      // 3. 定义“参考被消费后如何记录诊断”。
       [this](const ReferencePacket& packet, double observationTime, double error) {
         if (diagnostics) diagnostics->consumed(packet, observationTime, error);
       });
+  // 告诉 OCS2，求解时使用这个适配器。
   mpc.getSolverPtr()->setReferenceManager(referenceManager_);
 }
 

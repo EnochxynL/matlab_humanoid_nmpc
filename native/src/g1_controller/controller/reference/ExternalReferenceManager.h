@@ -42,7 +42,7 @@ class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
   void setMeasuredMode(size_t mode) override { ref_->setMeasuredMode(mode); }
 
   // 输入本轮求解初始时间，返回由外部数据流安装的参考包。
-  using Provider = std::function<ReferencePacket(double)>;
+  using ProviderCallback = std::function<ReferencePacket(double)>;
   using ConsumptionCallback = std::function<void(const ReferencePacket&, double, double)>;
 
   /**
@@ -51,7 +51,7 @@ class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
    */
   ExternalReferenceManager(
       std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> ref,
-      Provider provider, ConsumptionCallback consumed = {})
+      ProviderCallback provider, ConsumptionCallback consumed = {})
       : ReferenceManagerDecorator(ref),
         ref_(ref),
         provider_(std::move(provider)), consumed_(std::move(consumed)) {
@@ -153,7 +153,7 @@ class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
 
   // 原OCP参考管理器仍由成本、约束等对象共享；本适配器不替换这些引用。
   std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> ref_;
-  Provider provider_;
+  ProviderCallback provider_;
   ConsumptionCallback consumed_;
   ReferencePacket previous_;
   bool initialized_ = false;
