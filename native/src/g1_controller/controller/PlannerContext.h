@@ -31,7 +31,7 @@ struct PlannerContext {
   // 按依赖顺序声明：MPC 先于诊断销毁，机器人/OCP 接口最后销毁。
   ocs2::humanoid::WBMpcInterface interface;
   std::unique_ptr<diagnostics::Diagnostics> diagnostics;
-  ReferencePacket currentPacket;
+  PacketManager packets;
   ocs2::SqpMpc mpc;
 
  private:

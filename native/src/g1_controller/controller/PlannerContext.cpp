@@ -21,7 +21,7 @@ PlannerContext::~PlannerContext() = default;
 
 void PlannerContext::installReferenceManager() {
   referenceManager_ = std::make_shared<ExternalReferenceManager>(
-      interface.getSwitchedModelReferenceManagerPtr(), currentPacket, diagnostics.get());
+      interface.getSwitchedModelReferenceManagerPtr(), packets, diagnostics.get());
   mpc.getSolverPtr()->setReferenceManager(referenceManager_);
 }
 

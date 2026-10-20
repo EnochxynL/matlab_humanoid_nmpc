@@ -162,7 +162,7 @@ void G1Controller::shutdown() noexcept { impl_->close(); }
 /** @brief 安装具名参考：只构造 OCS2 容器并写入缓存；不再往返428向量。 */
 void G1Controller::setReference(const Reference &r) {
   if(!impl_->context) throw std::runtime_error("Initialize MEX first");
-  if(!r.publish || (impl_->sequence && impl_->context->currentPacket.tick==r.tick)) return;
+  if(!r.publish || (impl_->sequence && impl_->context->packets.currentTick()==r.tick)) return;
   if((r.targetCount!=1 && r.targetCount!=3)||r.eventCount<1||r.eventCount>64)
     throw std::runtime_error("Reference shape rejected");
   ReferencePacket p;
@@ -176,7 +176,7 @@ void G1Controller::setReference(const Reference &r) {
   p.schedule.modeSequence.assign(r.modes.begin(),r.modes.begin()+r.eventCount+1);
   p.terminal=r.terminalTime;p.swing=r.swingParameters;
   for(size_t k=0;k<4;++k)p.filtered[k]=r.filteredCommand[k];
-  impl_->context->currentPacket=std::move(p);
+  impl_->context->packets.publish(std::move(p));
 }
 
 PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDimension>& state,
