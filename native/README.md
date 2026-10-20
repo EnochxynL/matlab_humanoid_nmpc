@@ -7,7 +7,10 @@ assets and configuration stay in the application root.
 ## Source and dependency boundaries
 
 - `include/g1_controller/G1Controller.h`: public controller and data types.
-- `src/g1_controller/`: controller implementation, extensions and humanoid OCP.
+- `src/g1_controller/model/`: shared robot model and numerical functions.
+- `src/g1_controller/problem/`: planning problem, costs, constraints and references.
+- `src/g1_controller/dynamics/`: independent inverse-dynamics implementation and API.
+- `src/g1_controller/controller/`: OCS2 runtime and reference integration.
 - `src/g1_controller_mex/`: MATLAB adapter.
 - `conanfile.txt`, `conan.lock`: dependency declarations and recipe revisions.
 - `conan/profiles/`: compiler configurations.
@@ -36,7 +39,7 @@ inside the backend, without separate callback attachment.
 
 `Ocs2Backend(config)` assembles and owns the native OCP, MPC, reference and
 diagnostic objects, along with MRT access, synchronous solve/policy installation,
-policy evaluation. The independent `InverseDynamics` model owns its own
+policy evaluation. The independent `InverseDynamics` model in `g1_dynamics.dll` owns its own
 Pinocchio model and computes torque without MPC or MRT. `G1Controller` manages the external
 tick/stage protocol through backend methods. There is no application solver worker,
 condition variable, duplicate 60 Hz clock or five-second worker wait timeout.
@@ -68,6 +71,11 @@ planning stage completes at policy query, where MRT diagnostics are captured.
 No native handles are passed between MEX files. The Simulink block interfaces
 and model files are unchanged. Direct users can initialize the inverse dynamics
 MEX alone with a struct containing `taskFile` and `urdfFile`.
+
+The planning and inverse-dynamics MEX link different project libraries. Both
+consume `humanoid_model`; `problem` and `dynamics` never depend on each other.
+See [native layer boundaries](../docs/native_layers.md) and run
+`python native/scripts/verify_layers.py` to check includes.
 
 The wrapper drains after each completed action.
 `DiagnosticWriter` owns CSV/metadata/snapshot files. Use the wrapper for normal

@@ -12,6 +12,7 @@
 #include <string>
 #include <memory>
 #include "Diagnostics.h"
+#include "ModelTypes.h"
 
 #if defined(_WIN32)
 #if defined(g1_controller_core_EXPORTS)
@@ -24,9 +25,6 @@
 #endif
 
 namespace g1_controller {
-inline constexpr std::size_t StateDimension = 58;
-inline constexpr std::size_t InputDimension = 35;
-inline constexpr std::size_t ControlledJointCount = 23;
 
 /**
  * @brief 调用者提供完整资源路径；后端不推断工程目录布局。
@@ -79,10 +77,6 @@ struct Policy {
   double mode = 0;
   double queryTime = 0;
 };
-/**
- * @brief 23 个受控关节的逆动力学前馈力矩；最终 PD 与饱和处理位于外部执行链。
- */
-using Torque = std::array<double, ControlledJointCount>;
 
 /**
  * @brief 一个实例拥有一套同步数值后端及当前策略缓存。

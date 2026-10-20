@@ -1,9 +1,21 @@
 #pragma once
-#include "G1Controller.h"
+#include "g1_controller/ModelTypes.h"
+#include <memory>
+#include <string>
+
+#if defined(_WIN32)
+#if defined(g1_dynamics_core_EXPORTS)
+#define G1_DYNAMICS_API __declspec(dllexport)
+#else
+#define G1_DYNAMICS_API __declspec(dllimport)
+#endif
+#else
+#define G1_DYNAMICS_API
+#endif
 
 namespace g1_controller {
 /** 独立逆动力学模型；不创建 MPC、MRT、参考管理器或诊断对象。 */
-class G1_CONTROLLER_API InverseDynamics final {
+class G1_DYNAMICS_API InverseDynamics final {
  public:
   InverseDynamics(const std::string& taskFile, const std::string& urdfFile);
   ~InverseDynamics();

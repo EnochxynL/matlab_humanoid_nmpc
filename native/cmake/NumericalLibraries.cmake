@@ -1,16 +1,27 @@
+# Shared model definitions and numerical algorithms. No planning or inverse-dynamics facade.
+add_library(humanoid_model STATIC
+  "${G1_CORE_DIR}/model/humanoid_common_mpc/src/common/ModelSettings.cpp"
+  "${G1_CORE_DIR}/model/humanoid_common_mpc/src/contact/ContactCenterPoint.cpp"
+  "${G1_CORE_DIR}/model/humanoid_common_mpc/src/contact/ContactPolygon.cpp"
+  "${G1_CORE_DIR}/model/humanoid_common_mpc/src/contact/ContactRectangle.cpp"
+  "${G1_CORE_DIR}/model/humanoid_common_mpc/src/pinocchio_model/createPinocchioModel.cpp"
+  "${G1_CORE_DIR}/model/humanoid_common_mpc/src/pinocchio_model/DynamicsHelperFunctions.cpp"
+  "${G1_CORE_DIR}/model/humanoid_common_mpc/src/pinocchio_model/pinocchioUtils.cpp"
+  "${G1_CORE_DIR}/model/humanoid_wb_mpc/src/dynamics/DynamicsHelperFunctions.cpp")
+target_include_directories(humanoid_model PUBLIC
+  "${G1_CORE_DIR}/model/humanoid_common_mpc/include"
+  "${G1_CORE_DIR}/model/humanoid_wb_mpc/include"
+  PRIVATE "${G1_CORE_DIR}")
+target_link_libraries(humanoid_model PUBLIC
+  ocs2_core ocs2_robotic_tools ocs2_pinocchio_interface pinocchio::pinocchio)
+target_compile_options(humanoid_model PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
+
 set(G1_NUMERICAL_LIBRARY_TYPE STATIC)
 file(GLOB humanoid_extension_sources CONFIGURE_DEPENDS "${G1_CORE_DIR}/extensions/*.cpp")
 add_library(humanoid_ocp_extensions ${G1_NUMERICAL_LIBRARY_TYPE} ${humanoid_extension_sources})
 target_include_directories(humanoid_ocp_extensions PUBLIC "${G1_CORE_DIR}")
 target_link_libraries(humanoid_ocp_extensions PUBLIC ocs2_core ocs2_robotic_tools)
 add_library(humanoid_common_mpc ${G1_NUMERICAL_LIBRARY_TYPE}
-  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactCenterPoint.cpp"
-  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactPolygon.cpp"
-  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/contact/ContactRectangle.cpp"
-  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/pinocchio_model/pinocchioUtils.cpp"
-  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/pinocchio_model/createPinocchioModel.cpp"
-  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/pinocchio_model/DynamicsHelperFunctions.cpp"
-  "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/common/ModelSettings.cpp"
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/JointLimitsSoftConstraint.cpp"
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/FootCollisionConstraint.cpp"
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/constraint/ZeroWrenchConstraint.cpp"
@@ -34,11 +45,10 @@ add_library(humanoid_common_mpc ${G1_NUMERICAL_LIBRARY_TYPE}
   "${G1_CORE_DIR}/problem/humanoid_common_mpc/src/initialization/WeightCompInitializer.cpp"
 )
 target_include_directories(humanoid_common_mpc PUBLIC "${G1_CORE_DIR}/problem/humanoid_common_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
-target_link_libraries(humanoid_common_mpc PUBLIC humanoid_ocp_extensions ocs2_core ocs2_mpc ocs2_pinocchio_interface pinocchio::pinocchio)
+target_link_libraries(humanoid_common_mpc PUBLIC humanoid_model humanoid_ocp_extensions ocs2_mpc)
 target_compile_options(humanoid_common_mpc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
 
 add_library(humanoid_wb_mpc ${G1_NUMERICAL_LIBRARY_TYPE}
-  "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/dynamics/DynamicsHelperFunctions.cpp"
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/dynamics/WBAccelDynamicsAD.cpp"
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/end_effector/PinocchioEndEffectorDynamicsCppAd.cpp"
   "${G1_CORE_DIR}/problem/humanoid_wb_mpc/src/constraint/EndEffectorDynamicsLinearAccConstraint.cpp"

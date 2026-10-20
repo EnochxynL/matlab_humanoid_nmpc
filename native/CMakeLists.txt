@@ -43,7 +43,7 @@ if(G1_BUILD_MATLAB)
   matlab_add_mex(NAME g1_ocp_mex SRC src/g1_controller_mex/PlannerMex.cpp
     LINK_TO g1_controller_core)
   matlab_add_mex(NAME g1_inverse_dynamics_mex SRC src/g1_controller_mex/InverseDynamicsMex.cpp
-    LINK_TO g1_controller_core)
+    LINK_TO g1_dynamics_core)
   install(TARGETS g1_ocp_mex g1_inverse_dynamics_mex LIBRARY DESTINATION lib RUNTIME DESTINATION lib)
   if(UNIX AND NOT APPLE)
     target_link_options(g1_ocp_mex PRIVATE -Wl,--disable-new-dtags)
@@ -52,3 +52,4 @@ if(G1_BUILD_MATLAB)
     set_target_properties(g1_inverse_dynamics_mex PROPERTIES BUILD_RPATH "${CMAKE_BINARY_DIR}/lib;$ORIGIN" INSTALL_RPATH "$ORIGIN")
   endif()
 endif()
+include(cmake/VerifyLayers.cmake)
