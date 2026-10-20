@@ -1,17 +1,20 @@
-# Centroidal Simulink 求解与策略查询
+# Centroidal Simulink 参考、规划与执行
 
-`models/g1_centroidal_planner.slx` 是独立的查询模型，保留原有
-`g1_planner` 和 `g1_walking`。在已部署启用 `G1_BUILD_CENTROIDAL` 的
+`models/g1_centroidal_planner.slx` 负责求解、策略查询与力矩计算，保留原有
+全身 `g1_planner` 和 `g1_walking`。在已部署启用 `G1_BUILD_CENTROIDAL` 的
 MEX、并配置编译器环境的 MATLAB 中运行：
 
 ```matlab
 addpath('matlab','tools');
-result = run_centroidal_query();
+run_centroidal_walking(1,true); % 站立验证
+run_centroidal_walking();       % 4.8 s 行走
 ```
 
-示例向模型输入 50 ms 的固定站立观测和显式双支撑参考，按 2 ms
-推进观测，在首次到达 80 Hz 截止时间的 tick 同步求解，每 tick 查询一次。
-它不连接多体执行模型，因此通过仅证明求解与查询链路可用。
+`g1_centroidal_walking` 引用 `g1_centroidal_reference` 与
+`g1_centroidal_planner`，与全身的 walking/reference/planner 命名一致。
+按 2 ms 推进观测，在首次到达 80 Hz 截止时间的 tick 同步求解，
+每 tick 查询策略并计算力矩，连接真实多体模型。
+阶段性纯查询模型及其专用运行脚本已删除。
 
 ## 信号与模型流程
 
@@ -34,13 +37,13 @@ v = [基座世界线速度3; ZYX欧拉角导数3; MPC关节速度23]
 
 模型依次安装参考、登记观测、判断求解截止时间、更新 MPC、查询策略。
 输出 `Policy` 为 `[state35; input35; mode; queryTime]`，共 72 项；
-`CentroidalState` 输出送入求解器的 35 项观测。
+`Torque23` 输出 23 个关节力矩；`PolicyAndID` 输出策略与力矩汇总。
 输入末尾 23 项是关节速度，没有被解释成关节加速度。
 
 ## 显式参考协议
 
-参考输入目前直接接收 `reference359`，发布 tick 必须对应实际求解 tick。
-此阶段尚未移植 `g1_reference` 的命令/目标生成器。
+模型输入接收 428 项完整运动学参考包，内部转换为 `reference359`；
+发布 tick 必须对应实际求解 tick。下表描述安装到 OCP MEX 的内部协议。
 三个节点和事件数组均为固定容量，实际使用数量由包内字段指定。
 
 | MATLAB 索引 | 内容 |
@@ -56,7 +59,7 @@ v = [基座世界线速度3; ZYX欧拉角导数3; MPC关节速度23]
 | 348:355 | 与加载配置一致的八个摆腿参数 |
 | 356:359 | 四项滤波命令诊断值 |
 
-`run_centroidal_query` 展示站立包的构造。模式 3 为双支撑。
+模式 3 为双支撑。
 改变输入数据时，应提供相应的参考及接触时间表。
 
 ## MATLAB 与 MEX 生命周期
@@ -78,9 +81,9 @@ centroidal 默认的只查询模式不初始化逆动力学 MEX。查询当前 t
 
 ## 力矩执行与多体模型
 
-`g1_centroidal_reference`、`g1_centroidal_execution` 和
+`g1_centroidal_reference`、`g1_centroidal_planner` 和
 `g1_centroidal_walking` 提供独立的命令参考、力矩执行和物理闭环。
-原全身模型及只查询模型继续保留。
+原全身模型继续保留。
 
 ```matlab
 run_centroidal_walking(1,true) % 站立
@@ -118,7 +121,7 @@ run_centroidal_walking()       % 4.8 s 行走命令
 ## 本次验证
 
 - 完整原生构建、部署和新模型编译通过；模型无悬空信号端口。
-- `run_centroidal_query`：26 tick、5 次更新，35 维观测、72 维有限策略，
+- 早期纯查询验证：26 tick、5 次更新，35 维观测、72 维有限策略，
   重复查询逐值一致；零速度及纯平移的动量转换检查通过。
 - centroidal 错误维度、求解前查询及逆动力学误用均被拒绝。
 - 原生两种实例并存、诊断开关一致性和失败后重建检查通过。

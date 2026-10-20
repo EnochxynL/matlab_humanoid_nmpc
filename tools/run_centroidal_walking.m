@@ -35,9 +35,9 @@ kd=parameters.fixed_joint_kd*ones(29,1);kd(cfg.mpcIndices)=parameters.joint_velo
 in=in.setVariable('g1_kp',kp,'Workspace',model);
 in=in.setVariable('g1_kd',kd,'Workspace',model);
 in=in.setVariable('accelerationKp',parameters.acceleration_feedback_kp*ones(23,1), ...
-    'Workspace','g1_centroidal_execution');
+    'Workspace','g1_centroidal_planner');
 in=in.setVariable('accelerationKd',parameters.acceleration_feedback_kd*ones(23,1), ...
-    'Workspace','g1_centroidal_execution');
+    'Workspace','g1_centroidal_planner');
 if exist('layout.LayoutStateManager','class')
     layoutHold=layout.LayoutStateManager.instance().getScopedLayoutListenerDisabler(model); %#ok<NASGU>
 end

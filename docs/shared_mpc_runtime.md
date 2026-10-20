@@ -49,7 +49,7 @@ centroidal 不生成 `structural_id`，也不把其输入解释为加速度计�
 ## 兼容与验证
 
 MATLAB MEX 默认仍解码 428 元素全身参考、58 维观测，编码 95 元素
-全身策略。后续已增加 centroidal 选择及独立的查询模型，见
+全身策略。后续已增加 centroidal 选择及独立的规划与行走模型，见
 [Simulink 求解与策略查询](centroidal_simulink.md)。
 原生 C++ API 的向量类型已改变，调用方需要重新编译。
 
