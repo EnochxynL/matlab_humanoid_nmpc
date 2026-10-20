@@ -22,6 +22,7 @@ PlannerContext::PlannerContext(const ControllerConfig& config)
 PlannerContext::~PlannerContext() = default;
 
 void PlannerContext::installReferenceManager() {
+  // 创建适配器，并用几个匿名函数来填充 preSolverRun 中未定义的行为（注册二级回调）
   referenceManager_ = std::make_shared<ExternalReferenceManager>(
       // 1. 取得原项目已有的参考管理器。
       interface.getSwitchedModelReferenceManagerPtr(),
@@ -33,7 +34,7 @@ void PlannerContext::installReferenceManager() {
       [this](const ReferencePacket& packet, double observationTime, double error) {
         if (diagnostics) diagnostics->consumed(packet, observationTime, error);
       });
-  // 告诉 OCS2，求解时使用这个适配器。
+  // 告诉 OCS2，求解时使用这个适配器。（注册一级回调）
   mpc.getSolverPtr()->setReferenceManager(referenceManager_);
 }
 
