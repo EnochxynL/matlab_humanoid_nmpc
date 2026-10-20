@@ -1,6 +1,6 @@
 #pragma once
 #include "StructuralDiagnostics.h"
-#include "LoadedLibraries.h"
+#include "ProcessModules.h"
 #include "controller/reference/ExternalReferenceManager.h"
 #include "g1_controller/G1Controller.h"
 
@@ -17,7 +17,7 @@ class Diagnostics {
     mpc.getSolverPtr()->addSynchronizedModule(timing_);
     mpc.getSolverPtr()->addSynchronizedModule(structure_);
     buffer_.configurationJson=configurationJson(interface,config.taskFile);
-    buffer_.loadedLibraries=g1_controller::loadedLibraries();
+    buffer_.loadedLibraries=g1_controller::describeLoadedModules();
     std::string columns="control_tick,raw_time,canonical_time";
     for (int j=0;j<118;++j) columns+=",value"+std::to_string(j);
     buffer_.define("planner_samples",columns.c_str());
