@@ -15,9 +15,11 @@ it does not use the whole-body controller API or inverse-dynamics MEX.
 Select `ControllerConfig::formulation` (`WholeBody` by default, or `Centroidal`
 when enabled), and obtain state/input sizes from `dimensions()`. Reference nodes,
 observations and policies use vectors sized for the selected OCP. The existing
-MATLAB 428/95 transport remains whole-body-specific until the Simulink integration
-stage. Build/run `g1_shared_runtime_smoke` to exercise the common API with both
+MATLAB transport defaults to the unchanged whole-body 428/95 layout; selecting
+`centroidal` uses 359/72. Build/run `g1_shared_runtime_smoke` to exercise the common API with both
 formulations and diagnostic modes. See [shared runtime](../docs/shared_mpc_runtime.md).
+The optional centroidal formulation also has a query-only Simulink model.
+See [centroidal Simulink integration](../docs/centroidal_simulink.md).
 
 - `include/g1_controller/G1Controller.h`: public controller and data types.
 - `src/g1_controller/model/`: shared robot model and numerical functions.

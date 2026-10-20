@@ -48,8 +48,9 @@ centroidal 不生成 `structural_id`，也不把其输入解释为加速度计�
 
 ## 兼容与验证
 
-现有 MATLAB MEX 仍解码 428 元素全身参考、58 维观测，编码 95 元素
-全身策略。有效输入上的传输协议和数值语义保持不变；本阶段不改模型。
+MATLAB MEX 默认仍解码 428 元素全身参考、58 维观测，编码 95 元素
+全身策略。后续已增加 centroidal 选择及独立的查询模型，见
+[Simulink 求解与策略查询](centroidal_simulink.md)。
 原生 C++ API 的向量类型已改变，调用方需要重新编译。
 
 `g1_shared_runtime_smoke` 只通过公共控制器接口验证两种实例并存、
@@ -64,7 +65,7 @@ python native/scripts/verify_layers.py
 ```
 
 全身回归继续运行原生 2401 tick 回放和现有 MATLAB 阶段、诊断及模型回放。
-这一阶段验证原生运行接入；centroidal 尚未接入 Simulink 或完成行走验收。
+本页记录原生运行接入阶段的证据；后续 Simulink 查询接入不代表行走验收。
 
 本次验证证据位于 `runtime/evidence/shared_runtime/`：
 

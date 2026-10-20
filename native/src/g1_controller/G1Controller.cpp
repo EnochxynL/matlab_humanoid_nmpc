@@ -37,6 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <humanoid_wb_mpc/WBMpcInterface.h>
 #ifdef G1_HAS_CENTROIDAL
 #include <humanoid_centroidal_mpc/CentroidalMpcInterface.h>
+#include <ocs2_centroidal_model/ModelHelperFunctions.h>
 #endif
 #include <ocs2_sqp/SqpMpc.h>
 #include <ocs2_mpc/MPC_MRT_Interface.h>
@@ -108,6 +109,28 @@ void requireFinite(const double *data, std::size_t count) {
 
 G1Controller::G1Controller() = default;
 G1Controller::~G1Controller() { shutdown(); }
+std::vector<double> G1Controller::observationFromGeneralizedState(const std::vector<double>& state) {
+  if (!impl_) throw std::runtime_error("Initialize MEX first");
+  const auto nq = 6 + dimensions().joints;
+  if (state.size() != 2*nq) throw std::runtime_error("Expected generalized position and velocity");
+  requireFinite(state.data(), state.size());
+  if (impl_->formulation == MpcFormulation::WholeBody) return state;
+#ifdef G1_HAS_CENTROIDAL
+  auto& problem = static_cast<ocs2::humanoid::CentroidalMpcInterface&>(*impl_->interface);
+  auto& pinocchio = problem.getPinocchioInterface();
+  const auto& info = problem.getCentroidalModelInfo();
+  const vector_t q = Eigen::Map<const vector_t>(state.data(), nq);
+  const vector_t v = Eigen::Map<const vector_t>(state.data()+nq, nq);
+  ocs2::updateCentroidalDynamics(pinocchio, info, q);
+  vector_t result(6+nq);
+  result.head(6) = ocs2::getCentroidalMomentumMatrix(pinocchio)*v/info.robotMass;
+  result.tail(nq) = q;
+  requireFinite(result.data(), result.size());
+  return {result.data(), result.data()+result.size()};
+#else
+  throw std::runtime_error("Centroidal support was not enabled at build time");
+#endif
+}
 DiagnosticBatch G1Controller::drainDiagnostics() {
   if (!impl_) throw std::runtime_error("Initialize MEX first");
   return impl_->diagnostics ? impl_->diagnostics->drain()

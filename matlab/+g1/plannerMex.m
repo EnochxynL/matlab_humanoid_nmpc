@@ -2,16 +2,21 @@ function varargout = plannerMex(command,varargin)
 %PLANNERMEX Coordinate OCS2 and independent inverse dynamics MEX instances.
 % Simulink calls this wrapper; the native MEX never calls MATLAB callbacks.
 persistent writer initialized inverseInitialized
+persistent queryOnly
 persistent currentToken rawTime lastPolicy lastTorque
 if isempty(initialized), initialized = false; end
 if isempty(inverseInitialized), inverseInitialized = false; end
+if isempty(queryOnly), queryOnly = false; end
 if strcmp(command,'init')
     g1_ocp_mex(command,varargin{:});
     initialized = true;
     try
         config = varargin{1};
-        g1_inverse_dynamics_mex('init',config);
-        inverseInitialized = true;
+        queryOnly = isfield(config,'formulation') && strcmp(config.formulation,'centroidal');
+        if ~queryOnly
+            g1_inverse_dynamics_mex('init',config);
+            inverseInitialized = true;
+        end
         currentToken = []; rawTime = []; lastPolicy = []; lastTorque = [];
         if ~isfield(config,'diagnosticsEnabled') || config.diagnosticsEnabled
             writer = g1.DiagnosticWriter(config.logDirectory);
@@ -31,6 +36,9 @@ elseif strcmp(command,'close')
 else
     try
         if strcmp(command,'inverse_dynamics')
+            if queryOnly
+                error('G1:PlannerMex','Centroidal query has no inverse dynamics execution adapter');
+            end
             if nargout ~= 1 || numel(varargin) ~= 1
                 error('G1:PlannerMex','inverse_dynamics requires policy95 and one output');
             end
@@ -63,7 +71,7 @@ else
             if strcmp(command,'install_observation') && numel(varargin) == 2 && ...
                     isnumeric(varargin{2}) && numel(varargin{2}) == 3 && ...
                     ~isempty(currentToken) && varargin{2}(1) ~= currentToken(1) && ...
-                    isempty(lastTorque)
+                    ((queryOnly && isempty(lastPolicy)) || (~queryOnly && isempty(lastTorque)))
                 error('G1:PlannerMex','Complete current action before advancing tick');
             end
             [varargout{1:nargout}] = g1_ocp_mex(command,nativeArguments{:});
@@ -105,6 +113,7 @@ end
         end
         if ~isempty(writer), delete(writer); writer = []; end
         currentToken = []; rawTime = []; lastPolicy = []; lastTorque = [];
+        queryOnly = false;
         clear inverseCleanup;
     end
     function closeInverse()

@@ -68,52 +68,61 @@ void closeController() {
   controller.reset();
 }
 
-// These offsets are the unchanged MATLAB transport protocol. No robot math
-// or solver scheduling belongs in this adapter.
+// Node widths follow the selected OCP. The whole-body layout remains unchanged;
+// centroidal uses the same bounded packet structure with 35-state nodes.
 
 
 /**
- * @brief 解码 428 元素参考包；publish 为假时直接返回。
- * 包含 tick、至多 3 个 58/35 维目标节点、至多 64 个事件和 65 个模式，
+ * @brief 解码参考包（全身 428 项、centroidal 359 项）；publish 为假时直接返回。
+ * 包含 tick、至多 3 个目标节点、至多 64 个事件和 65 个模式，
  * 以及终止时间、摆腿参数和滤波命令；实际计数由核心继续校验。
  */
-g1_controller::Reference decodeReference(const double *a) {
+g1_controller::Reference decodeReference(const double *a, const g1_controller::ProblemDimensions& dimensions) {
   g1_controller::Reference r;
+  if (a[1] != 0 && a[1] != 1) throw std::runtime_error("Invalid reference publication flag");
   r.publish = a[1] != 0;
   if (!r.publish)
     return r;
+  if (a[0] < 0 || a[0] > 9007199254740992.0 || std::floor(a[0]) != a[0])
+    throw std::runtime_error("Invalid reference tick");
+  if (a[2] != 1 && a[2] != 3) throw std::runtime_error("Invalid reference node count");
   r.tick = static_cast<std::uint64_t>(a[0]);
   r.targetCount = static_cast<std::size_t>(a[2]);
   std::copy_n(a + 3, 3, r.targetTimes.begin());
   for (std::size_t k = 0; k < 3; ++k) {
-    r.targetStates[k].resize(58);
-    r.targetInputs[k].resize(35);
-    std::copy_n(a + 6 + 58 * k, 58, r.targetStates[k].begin());
-    std::copy_n(a + 180 + 35 * k, 35, r.targetInputs[k].begin());
+    r.targetStates[k].resize(dimensions.state);
+    r.targetInputs[k].resize(dimensions.input);
+    std::copy_n(a + 6 + dimensions.state * k, dimensions.state, r.targetStates[k].begin());
+    std::copy_n(a + 6 + 3*dimensions.state + dimensions.input * k, dimensions.input, r.targetInputs[k].begin());
   }
-  r.eventCount = static_cast<std::size_t>(a[285]);
-  std::copy_n(a + 286, 64, r.eventTimes.begin());
-  for (std::size_t k = 0; k < 65; ++k)
-    r.modes[k] = static_cast<std::size_t>(a[350 + k]);
-  r.terminalTime = a[415];
-  std::copy_n(a + 416, 8, r.swingParameters.begin());
-  std::copy_n(a + 424, 4, r.filteredCommand.begin());
+  const auto offset = 6 + 3*(dimensions.state+dimensions.input);
+  if (a[offset] < 1 || a[offset] > 64 || std::floor(a[offset]) != a[offset])
+    throw std::runtime_error("Invalid reference event count");
+  r.eventCount = static_cast<std::size_t>(a[offset]);
+  std::copy_n(a + offset+1, 64, r.eventTimes.begin());
+  for (std::size_t k = 0; k < 65; ++k) {
+    if (a[offset+65+k] < 0 || a[offset+65+k] > 3 || std::floor(a[offset+65+k]) != a[offset+65+k])
+      throw std::runtime_error("Invalid reference contact mode");
+    r.modes[k] = static_cast<std::size_t>(a[offset+65 + k]);
+  }
+  r.terminalTime = a[offset+130];
+  std::copy_n(a + offset+131, 8, r.swingParameters.begin());
+  std::copy_n(a + offset+139, 4, r.filteredCommand.begin());
   return r;
 }
 
 
 /**
- * @brief 创建 MATLAB 拥有的 95×1 策略向量，供后续 inverse_dynamics 原样回传。
+ * @brief 创建 [state; input; mode; queryTime] 列向量：全身 95 项，centroidal 72 项。
  */
 mxArray *encodePolicy(const g1_controller::Policy &p) {
-  if (p.state.size()!=58 || p.input.size()!=35)
-    throw std::runtime_error("Legacy MATLAB policy transport requires the whole-body OCP");
-  mxArray *output = mxCreateDoubleMatrix(95, 1, mxREAL);
+  const auto stateSize = p.state.size(), inputSize = p.input.size();
+  mxArray *output = mxCreateDoubleMatrix(stateSize+inputSize+2, 1, mxREAL);
   double *a = mxGetPr(output);
   std::copy(p.state.begin(), p.state.end(), a);
-  std::copy(p.input.begin(), p.input.end(), a + 58);
-  a[93] = p.mode;
-  a[94] = p.queryTime;
+  std::copy(p.input.begin(), p.input.end(), a + stateSize);
+  a[stateSize+inputSize] = p.mode;
+  a[stateSize+inputSize+1] = p.queryTime;
   return output;
 }
 
@@ -161,10 +170,11 @@ mxArray* encodeDiagnostics(const g1_controller::DiagnosticBatch& batch) {
 /**
  * @brief MEX 命令分发入口，仅暴露当前分阶段运行接口。
  * init(config)：使用 MATLAB 提供的路径创建核心并 mexLock；close：关闭并解锁。
- * install_reference(r428)：安装已提取参考。
- * install_observation(x58, identity2) → tick3：登记独立提取的观测，不求解。
+ * dimensions → [state;input;joints]；convert_observation(qv) → 所选问题的状态。
+ * install_reference(packet)：安装已提取参考。
+ * install_observation(state, identity2) → tick3：登记独立提取的观测，不求解。
  * update_mpc(tick3,request) → tick3：按外部请求同步求解或沿用策略。
- * query_policy(tick3) → p95：只查询已准备好的策略，不触发求解。
+ * query_policy(tick3) → policy：只查询已准备好的策略，不触发求解。
  * 动作计算和完成检查由 MATLAB 协调层负责，力矩不回传本 MEX。
  * 标准 C++ 异常统一转换为 G1:PlannerMex 错误；此处不实现控制算法。
  */
@@ -188,6 +198,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       };
       g1_controller::ControllerConfig config{field("taskFile"), field("referenceFile"),
                                                   field("urdfFile"), field("logDirectory")};
+      if (const auto* selected = mxGetField(prhs[1], 0, "formulation")) {
+        const auto name = readString(selected);
+        if (name == "centroidal") config.formulation = g1_controller::MpcFormulation::Centroidal;
+        else if (name != "whole_body") throw std::runtime_error("Unknown MPC formulation");
+      }
       if (const auto* enabled = mxGetField(prhs[1], 0, "diagnosticsEnabled")) {
         if (!mxIsLogicalScalar(enabled)) throw std::runtime_error("diagnosticsEnabled must be a logical scalar");
         config.diagnosticsEnabled = mxIsLogicalScalarTrue(enabled);
@@ -203,6 +218,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         throw;
       }
       mexLock();
+    } else if (command == "dimensions") {
+      if (nrhs!=1 || nlhs!=1) throw std::runtime_error("dimensions requires one output");
+      const auto d = runtime().dimensions();
+      plhs[0] = mxCreateDoubleMatrix(3,1,mxREAL);
+      auto* a = mxGetPr(plhs[0]); a[0]=d.state; a[1]=d.input; a[2]=d.joints;
+    } else if (command == "convert_observation") {
+      if (nrhs!=2 || nlhs!=1) throw std::runtime_error("convert_observation requires generalized state and one output");
+      const auto count = 2*(6+runtime().dimensions().joints);
+      const auto* values = readDoubles(prhs[1],count);
+      const auto state = runtime().observationFromGeneralizedState({values,values+count});
+      plhs[0] = mxCreateDoubleMatrix(state.size(),1,mxREAL);
+      std::copy(state.begin(),state.end(),mxGetPr(plhs[0]));
     } else if (command == "diagnostics") {
       if (nrhs!=1 || nlhs!=1) throw std::runtime_error("diagnostics requires one output");
       plhs[0]=encodeDiagnostics(runtime().drainDiagnostics());
@@ -212,14 +239,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexUnlock();
     } else if (command == "install_reference") {
       if (nrhs != 2)
-        throw std::runtime_error("install_reference requires 428 values");
-      const double *values = readDoubles(prhs[1], 428);
-      runtime().setReference(decodeReference(values));
+        throw std::runtime_error("install_reference requires one packet");
+      const auto dimensions = runtime().dimensions();
+      const double *values = readDoubles(prhs[1], 149+3*(dimensions.state+dimensions.input));
+      runtime().setReference(decodeReference(values,dimensions));
     } else if (command == "install_observation") {
-      if(nrhs!=3 || nlhs!=1) throw std::runtime_error("install_observation requires x58, identity2 and one output");
-      std::vector<double> state(58);
+      if(nrhs!=3 || nlhs!=1) throw std::runtime_error("install_observation requires state, identity2 and one output");
+      const auto count = runtime().dimensions().state;
+      std::vector<double> state(count);
       std::array<double,2> identity;
-      std::copy_n(readDoubles(prhs[1],58),58,state.begin());
+      std::copy_n(readDoubles(prhs[1],count),count,state.begin());
       std::copy_n(readDoubles(prhs[2],2),2,identity.begin());
       plhs[0]=encodeTick(runtime().installOcpObservation(state,identity));
     } else if (command == "update_mpc") {

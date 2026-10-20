@@ -104,6 +104,8 @@ public:
  */
   void initialize(const ControllerConfig &config);
   ProblemDimensions dimensions() const;
+  // 输入为 [广义位置; 广义速度]；centroidal 使用 A(q)*v/m 构造动量。
+  std::vector<double> observationFromGeneralizedState(const std::vector<double>& state);
 /**
  * @brief 更新外部参考缓存；不会在此调用中直接执行一次 SQP。
  */
