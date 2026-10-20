@@ -39,10 +39,8 @@ OCP 代价、约束、动力学、求解统计、策略与脚部运动学诊断�
 centroidal 不生成 `structural_id`，也不把其输入解释为加速度计算力矩。
 求解诊断直接使用传入的 tick，不再按固定采样周期反推 tick。
 
-重力补偿输入统一到 `model/humanoid_common_mpc`：两种来源都使用
-`pinocchio::computeTotalMass` 的质量，按支撑脚均分重力，关节部分置零。
-公共函数接受质量或 Pinocchio 实例，删除 centroidal 的重复辅助文件。
-移除静态质量缓存，防止同一进程的不同实例共享第一个模型的质量。
+重力补偿保留两个上游包原有的独立实现和质量缓存行为。此前尝试合并
+辅助函数并移除静态缓存，已单独提交后恢复；共用运行接口不依赖该整理。
 
 `InverseDynamics` 仍然是独立的全身模型接口，状态/输入保持 58/35。
 它不依赖规划目标或共用控制器；原生回放适配器显式把全身策略复制到
@@ -57,8 +55,7 @@ centroidal 不生成 `structural_id`，也不把其输入解释为加速度计�
 `g1_shared_runtime_smoke` 只通过公共控制器接口验证两种实例并存、
 centroidal 维度检查、参考包、真实求解、已有策略查询、重复调用、
 失败后关闭重建，以及诊断开关下策略逐值一致。
-`g1_centroidal_smoke` 保留直接 OCP 基线，并检查重力补偿的两种质量来源
-等价及不同质量调用之间没有静态缓存污染。
+`g1_centroidal_smoke` 保留直接 OCP 基线，使用原有 centroidal 重力补偿函数。
 
 ```powershell
 cmake --build native/build/windows/gcc16-ucrt64/core --parallel 1
@@ -75,7 +72,7 @@ python native/scripts/verify_layers.py
 - `final/acceptance.json`：两种实例并存，centroidal 维度/阶段检查、失败重建
   通过；开关诊断时策略逐值一致。
 - `direct_centroidal/policy.csv`：直接 OCP 的六次查询与第一阶段基线逐值一致；
-  重力补偿的质量来源与多次不同质量调用检查通过。
+  其中质量来源与多质量缓存检查属于恢复前的尝试版本，恢复后不再执行。
 - 全身原生 2401 tick 回放统计与整理前一致；MATLAB 阶段和诊断验证通过，
   2401 tick、289 次更新的模型回放策略/力矩与整理前 Windows 基线逐值一致。
 

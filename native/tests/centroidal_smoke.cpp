@@ -1,5 +1,5 @@
 #include <humanoid_centroidal_mpc/CentroidalMpcInterface.h>
-#include <humanoid_common_mpc/pinocchio_model/DynamicsHelperFunctions.h>
+#include <humanoid_centroidal_mpc/dynamics/DynamicsHelperFunctions.h>
 #include <ocs2_mpc/MPC_MRT_Interface.h>
 #include <ocs2_sqp/SqpMpc.h>
 #include <cmath>
@@ -29,15 +29,7 @@ int main(int argc, char** argv) {
     ocs2::MPC_MRT_Interface mrt(mpc);
     ocs2::SystemObservation observation;
     observation.state = interface.getInitialState();
-    observation.input = ocs2::humanoid::weightCompensatingInput(info.robotMass, {true, true}, model);
-    const auto fromPinocchio = ocs2::humanoid::weightCompensatingInput(interface.getPinocchioInterface(), {true, true}, model);
-    if (observation.input != fromPinocchio)
-      throw std::runtime_error("Mass and Pinocchio weight compensation differ");
-    for (double mass : {20.0,40.0,20.0}) {
-      const auto input = ocs2::humanoid::weightCompensatingInput(mass, {true,true}, model);
-      if (input[2]+input[8] != mass*9.81)
-        throw std::runtime_error("Weight compensation reused another instance's mass");
-    }
+    observation.input = ocs2::humanoid::weightCompensatingInput(info, {true, true}, model);
     observation.mode = 3;
     observation.time = 0;
     if (!observation.state.allFinite() || info.robotMass <= 0)

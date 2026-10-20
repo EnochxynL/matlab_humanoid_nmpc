@@ -175,11 +175,10 @@ inline size_t numberOfLegsInContacts(const contact_flag_t& contactFlags) {
 /******************************************************************************************************/
 /******************************************************************************************************/
 
-inline vector_t weightCompensatingInput(scalar_t robotMass,
+inline vector_t weightCompensatingInput(const PinocchioInterface& pinocchioInterface,
                                         const contact_flag_t& contactFlags,
                                         const MpcRobotModelBase<scalar_t>& mpcRobotModel) {
-  // 每次使用调用者模型的质量，不能把第一个实例的质量缓存为进程静态值。
-  const scalar_t totalGravitationalForce = robotMass * 9.81;
+  const static scalar_t totalGravitationalForce = computeTotalMass(pinocchioInterface.getModel()) * 9.81;
   const auto numStanceLegs = numberOfLegsInContacts(contactFlags);
   vector_t input = vector_t::Zero(mpcRobotModel.getInputDim());
   if (numStanceLegs > 0) {
@@ -191,12 +190,6 @@ inline vector_t weightCompensatingInput(scalar_t robotMass,
     }
   }
   return input;
-}
-
-inline vector_t weightCompensatingInput(const PinocchioInterface& pinocchioInterface,
-                                      const contact_flag_t& contactFlags,
-                                      const MpcRobotModelBase<scalar_t>& mpcRobotModel) {
-  return weightCompensatingInput(computeTotalMass(pinocchioInterface.getModel()), contactFlags, mpcRobotModel);
 }
 
 /******************************************************************************************************/
