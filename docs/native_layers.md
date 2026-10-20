@@ -1,7 +1,8 @@
 # 原生代码的 model / problem / dynamics 边界
 
-三层位于 `native/src/g1_controller/`，保留原来的包名、命名空间和
-`include/src` 布局。按实际内容选择文件，不为凑齐包名建立空目录。
+共享模型与规划问题分别位于 `native/src/g1_controller/model/` 和 `problem/`，
+保留原来的包名、命名空间和 `include/src` 布局。
+逆动力学入口保留在外层；下文 `dynamics` 表示独立构建目标的职责边界，并非目录。
 
 | 层 | 内容 | 项目内依赖 |
 | --- | --- | --- |
@@ -18,9 +19,10 @@
 其中力矩算法既供独立逆动力学使用，也供规划代价和原生诊断使用，
 因此属于共享模型层，不能放到 dynamics 后再让 problem 引用它。
 
-`problem` 保留两套原包的规划问题代码。`dynamics/humanoid_wb_mpc`
-保存独立的 `InverseDynamics` 类；当前没有 common 包专属的逆动力学入口，
-故不创建空的 `dynamics/humanoid_common_mpc`。公共维度与力矩类型位于
+`problem` 保留两套原包的规划问题代码。独立的 `InverseDynamics` 类位于
+`native/src/g1_controller/InverseDynamics.cpp`，公共接口位于
+`native/include/g1_controller/InverseDynamics.h`，不额外包装成包目录。
+公共维度与力矩类型位于
 `native/include/g1_controller/ModelTypes.h`，逆动力学头文件不再引用
 `G1Controller.h`。
 

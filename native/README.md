@@ -9,7 +9,8 @@ assets and configuration stay in the application root.
 - `include/g1_controller/G1Controller.h`: public controller and data types.
 - `src/g1_controller/model/`: shared robot model and numerical functions.
 - `src/g1_controller/problem/`: planning problem, costs, constraints and references.
-- `src/g1_controller/dynamics/`: independent inverse-dynamics implementation and API.
+- `src/g1_controller/InverseDynamics.cpp`, `include/g1_controller/InverseDynamics.h`:
+  independent inverse-dynamics implementation and API, linked in a separate target.
 - `src/g1_controller/controller/`: OCS2 runtime and reference integration.
 - `src/g1_controller_mex/`: MATLAB adapter.
 - `conanfile.txt`, `conan.lock`: dependency declarations and recipe revisions.

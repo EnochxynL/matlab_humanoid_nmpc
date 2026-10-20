@@ -23,14 +23,13 @@ install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/" DESTINATION include)
 
 # Independent inverse-dynamics facade: model only, never the planning targets.
 add_library(g1_dynamics_core SHARED
-  g1_controller/dynamics/humanoid_wb_mpc/src/InverseDynamics.cpp)
+  g1_controller/InverseDynamics.cpp)
 set_target_properties(g1_dynamics_core PROPERTIES OUTPUT_NAME g1_dynamics)
 if(WIN32)
   set_target_properties(g1_dynamics_core PROPERTIES PREFIX "")
 endif()
 target_include_directories(g1_dynamics_core PUBLIC
   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
-  "$<BUILD_INTERFACE:${G1_CORE_DIR}/dynamics/humanoid_wb_mpc/include>"
   "$<INSTALL_INTERFACE:include>")
 target_link_libraries(g1_dynamics_core PRIVATE humanoid_model)
 if(UNIX AND NOT APPLE)
@@ -39,7 +38,6 @@ if(UNIX AND NOT APPLE)
     BUILD_RPATH "${CMAKE_BINARY_DIR}/lib;$ORIGIN" INSTALL_RPATH "$ORIGIN")
 endif()
 install(TARGETS g1_dynamics_core LIBRARY DESTINATION lib RUNTIME DESTINATION lib ARCHIVE DESTINATION lib)
-install(DIRECTORY "${G1_CORE_DIR}/dynamics/humanoid_wb_mpc/include/" DESTINATION include)
 option(G1_BUILD_TESTS "Build the public-API standalone replay driver" OFF)
 if(G1_BUILD_TESTS)
   if(WIN32)

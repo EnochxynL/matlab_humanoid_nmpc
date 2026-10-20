@@ -18,6 +18,9 @@ def verify(native: Path):
                 headers.setdefault(path.relative_to(root).as_posix(), set()).add(path)
 
     def owner(path):
+        if path in (core / "InverseDynamics.cpp",
+                    native / "include/g1_controller/InverseDynamics.h"):
+            return "dynamics"
         for layer in ("model", "problem", "dynamics"):
             if path.is_relative_to(core / layer):
                 return layer
