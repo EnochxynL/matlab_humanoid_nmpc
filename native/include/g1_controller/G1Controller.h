@@ -100,8 +100,8 @@ public:
  */
   void setReference(const Reference &reference);
 /** @brief 外部决定更新时刻；requested=true 同步求解，否则沿用已有策略。 */
-  // 独立 Extraction 已校验观测；这里只登记状态和 [tick, canonical time, raw time]。
-  PlannerTick installOcpObservation(const std::array<double, StateDimension>& state, const std::array<double,3>& identity);
+  // 调用者负责生成规范时间；这里只登记状态和 [tick, canonical time]。
+  PlannerTick installOcpObservation(const std::array<double, StateDimension>& state, const std::array<double,2>& identity);
   PlannerTick updateMpc(const PlannerTick &tick, bool requested);
   Policy queryPrepared(const PlannerTick &tick);
 /** @brief 取走当前批次；重复读取返回空数据，不触发求解或额外诊断计算。 */

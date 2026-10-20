@@ -158,7 +158,7 @@ mxArray* encodeDiagnostics(const g1_controller::DiagnosticBatch& batch) {
  * @brief MEX 命令分发入口，仅暴露当前分阶段运行接口。
  * init(config)：使用 MATLAB 提供的路径创建核心并 mexLock；close：关闭并解锁。
  * install_reference(r428)：安装已提取参考。
- * install_observation(x58, identity3) → tick3：登记独立提取的观测，不求解。
+ * install_observation(x58, identity2) → tick3：登记独立提取的观测，不求解。
  * update_mpc(tick3,request) → tick3：按外部请求同步求解或沿用策略。
  * query_policy(tick3) → p95：只查询已准备好的策略，不触发求解。
  * 动作计算和完成检查由 MATLAB 协调层负责，力矩不回传本 MEX。
@@ -212,11 +212,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       const double *values = readDoubles(prhs[1], 428);
       runtime().setReference(decodeReference(values));
     } else if (command == "install_observation") {
-      if(nrhs!=3 || nlhs!=1) throw std::runtime_error("install_observation requires x58, identity3 and one output");
+      if(nrhs!=3 || nlhs!=1) throw std::runtime_error("install_observation requires x58, identity2 and one output");
       std::array<double,58> state;
-      std::array<double,3> identity;
+      std::array<double,2> identity;
       std::copy_n(readDoubles(prhs[1],58),58,state.begin());
-      std::copy_n(readDoubles(prhs[2],3),3,identity.begin());
+      std::copy_n(readDoubles(prhs[2],2),2,identity.begin());
       plhs[0]=encodeTick(runtime().installOcpObservation(state,identity));
     } else if (command == "update_mpc") {
       if (nrhs != 3 || nlhs != 1) throw std::runtime_error("update_mpc requires tick3, request and one output");

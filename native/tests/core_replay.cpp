@@ -97,13 +97,16 @@ int main(int argc, char **argv) {
       if(!states) throw std::runtime_error("Truncated OCP state fixture");
       core.setReference(reference(a.data()+74));
       const double t=double(k)*.002;
-      auto token=core.installOcpObservation(state,{double(k),t,a[0]});
+      // Replay input adapter supplies time, just as MATLAB does in production.
+      if (!std::isfinite(a[0]) || std::abs(a[0]-t)>1e-12)
+        throw std::runtime_error("Fixture raw time does not match its tick");
+      auto token=core.installOcpObservation(state,{double(k),t});
       if (k==0) {
         requireRejected([&]{core.queryPrepared(token);}, "Query before MPC update accepted");
         requireRejected([&]{core.updateMpc(token,false);}, "Initial update without solve accepted");
         auto altered=token; altered.time+=.002;
         requireRejected([&]{core.updateMpc(altered,true);}, "Altered tick identity accepted");
-        requireRejected([&]{core.installOcpObservation(state,{1.,.002,.002});},
+        requireRejected([&]{core.installOcpObservation(state,{1.,.002});},
                         "Next observation before completing current tick accepted");
       }
       bool due=k==0 || t+1e-12>=epoch+nextSlot*period;

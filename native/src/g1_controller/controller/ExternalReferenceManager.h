@@ -19,11 +19,14 @@ class ExternalReferenceManager final : public ocs2::ReferenceManagerDecorator,
       PacketManager& packets, diagnostics::Diagnostics* diagnostics);
 
   void setMeasuredMode(size_t mode) override { ref_->setMeasuredMode(mode); }
+  void setObservation(uint64_t tick, double time) { observationTick_ = tick; observationTime_ = time; }
   void preSolverRun(double time, double endTime, const ocs2::vector_t& state) override;
 
  private:
   std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> ref_;
   PacketManager& packets_;
   diagnostics::Diagnostics* diagnostics_;
+  uint64_t observationTick_ = UINT64_MAX;
+  double observationTime_ = 0;
 };
 }  // namespace g1_controller

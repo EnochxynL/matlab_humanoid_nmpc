@@ -65,6 +65,15 @@ classdef DiagnosticWriter < handle
                 'configurationJson','','loadedLibraries','');
             obj.append(batch);
         end
+        function timeIdentity(obj,tick,rawTime,canonicalTime)
+            columns = {'raw_backend_time','control_tick','canonical_control_time', ...
+                'raw_minus_canonical','session_id','state_sequence'};
+            values = num2cell([rawTime tick canonicalTime rawTime-canonicalTime 1 tick]);
+            table = struct('name','time_identity','columns',{columns},'values',{values});
+            batch = struct('tables',table,'snapshot',[], ...
+                'configurationJson','','loadedLibraries','');
+            obj.append(batch);
+        end
         function flush(obj)
             names = keys(obj.files);
             for k=1:numel(names)

@@ -27,7 +27,7 @@ class PacketManager {
  public:
   uint64_t currentTick() const { return current_.tick; }
   void publish(ReferencePacket packet) { current_ = std::move(packet); }
-  ReferencePacket referenceForSolve(double observationTime) const;
+  ReferencePacket referenceForSolve(uint64_t observationTick) const;
   void validate(const ReferencePacket& packet, double time, double endTime);
   void markConsumed(const ReferencePacket& packet);
 

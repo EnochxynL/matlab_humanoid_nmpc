@@ -1,25 +1,24 @@
 #include "controller/PacketManager.h"
-#include "controller/CanonicalControlTime.h"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
 namespace g1_controller {
-ReferencePacket PacketManager::referenceForSolve(double observationTime) const {
+ReferencePacket PacketManager::referenceForSolve(uint64_t observationTick) const {
   // 返回本轮参考的副本；校验依据是实际求解观测，而非调度截止时间。
   // 当前运行协议每次初始化建立一个 session，编号固定为 1。
   auto packet = current_;
   if (packet.session != 1) {
     throw std::runtime_error("Reference session does not match the controller session");
   }
-  if (control_time::fromTick(packet.tick) != observationTime) {
+  if (packet.tick != observationTick) {
     throw std::runtime_error("Reference tick does not match the solver observation time");
   }
   return packet;
 }
 
 void PacketManager::validate(const ReferencePacket& p, double t, double end) {
-  if (p.session == 0 || p.sequence == 0 || control_time::fromTick(p.tick) != t)
+  if (p.session == 0 || p.sequence == 0)
     throw std::runtime_error("G: Reference identity rejected");
   if (initialized_ &&
       (p.session != previous_.session || p.epoch != previous_.epoch ||

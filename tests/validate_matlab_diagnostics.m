@@ -17,13 +17,14 @@ assert(str2double(string(info.state_dim))==58);
 assertEmpty(g1_ocp_mex('diagnostics'));
 
 g1_ocp_mex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
-token = g1_ocp_mex('install_observation',golden.expected(1,:)',[0;0;fixture.raw(1,1)]);
+token = g1_ocp_mex('install_observation',golden.expected(1,:)',[0;0]);
 completed = g1_ocp_mex('update_mpc',token,1);
 policy = g1_ocp_mex('query_policy',completed);
 g1_inverse_dynamics_mex('init',config);
 torque = g1_inverse_dynamics_mex('compute',policy(1:58),policy(59:93));
 batch = g1_ocp_mex('diagnostics');
 names = {batch.tables.name};
+assert(~any(strcmp(names,'time_identity')));
 assert(~any(strcmp(names,'planner_samples')));
 assert(size(batch.tables(strcmp(names,'solver_timing')).values,1)==1);
 assert(numel(batch.snapshot)==218);

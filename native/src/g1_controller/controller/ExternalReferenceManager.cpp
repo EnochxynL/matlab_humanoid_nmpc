@@ -19,7 +19,9 @@ ExternalReferenceManager::ExternalReferenceManager(
 
 // OCS2 调用的主入口：取参考、校验、安装、更新原管理器、核对并记录消费。
 void ExternalReferenceManager::preSolverRun(double t, double end, const ocs2::vector_t& x) {
-  ReferencePacket packet = packets_.referenceForSolve(t);
+  if (t != observationTime_)
+    throw std::runtime_error("Solver time does not match the installed observation");
+  ReferencePacket packet = packets_.referenceForSolve(observationTick_);
   packets_.validate(packet, t, end);
 
   if (diagnostics_) {

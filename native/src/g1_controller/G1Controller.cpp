@@ -40,7 +40,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "controller/diagnostics/Diagnostics.h"
 #include <algorithm>
 #include <cmath>
-#include "controller/CanonicalControlTime.h"
 #include <stdexcept>
 
 namespace g1_controller {
@@ -153,7 +152,7 @@ void G1Controller::setReference(const Reference &r) {
 }
 
 PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDimension>& state,
-                                               const std::array<double,3>& identity) {
+                                               const std::array<double,2>& identity) {
   requireFinite(state.data(),state.size());
   requireFinite(identity.data(),identity.size());
   if(!impl_) throw std::runtime_error("Initialize MEX first");
@@ -161,10 +160,12 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
   if(identity[0]<0 || identity[0]>static_cast<double>(uint64_t{1}<<53) || identity[0]!=std::floor(identity[0]))
     throw std::runtime_error("Invalid extracted tick");
   const auto tick=static_cast<uint64_t>(identity[0]);
-  const double t = control_time::validateRawTime(tick, identity[2]);
-  if(identity[1]!=t)
-    throw std::runtime_error("Extracted canonical time identity mismatch");
-  if(runtime.preparedTick==tick) return tickIdentity();
+  const double t = identity[1];
+  if(runtime.preparedTick==tick) {
+    if (t != runtime.preparedObservation.time)
+      throw std::runtime_error("Repeated observation changed its time");
+    return tickIdentity();
+  }
   if(runtime.preparedTick!=UINT64_MAX && runtime.preparedTick!=runtime.lastTick)
     throw std::runtime_error("Query prepared observation before advancing tick");
   // 新会话从 tick 0 开始；其后必须先查询上一 tick，再顺序推进。
@@ -172,8 +173,6 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
     throw std::runtime_error("First physical tick must be zero");
   if(runtime.lastTick!=UINT64_MAX && tick!=runtime.lastTick+1)
     throw std::runtime_error("Nonsequential physical tick");
-  if (runtime.diagnostics)
-    runtime.diagnostics->time(tick,identity[2],t);
   runtime.preparedObservation.state=Eigen::Map<const vector_t>(state.data(),StateDimension);
   runtime.preparedObservation.time=t;
   runtime.preparedObservation.input=vector_t::Zero(35);
@@ -207,6 +206,7 @@ PlannerTick G1Controller::updateMpc(const PlannerTick& tick, bool requested) {
         runtime.mrt.resetMpcNode({{observation.time}, {state}, {vector_t::Zero(observation.input.size())}});
       }
       runtime.referenceManager->setMeasuredMode(observation.mode);
+      runtime.referenceManager->setObservation(runtime.preparedTick, observation.time);
       if (runtime.diagnostics) runtime.diagnostics->trace("solver_started", observation.time);
       runtime.mrt.advanceMpc();
       if (runtime.diagnostics) runtime.diagnostics->trace("solver_finished", observation.time);

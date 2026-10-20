@@ -57,8 +57,10 @@ diagnostic observers or diagnostic files. OCS2's own logging and AD code caches
 are separate from this switch. `run_walking` keeps diagnostics enabled because
 its acceptance checks consume the logs.
 
-`controller/CanonicalControlTime.h` provides stateless tick/time conversion and
-raw-time validation. `G1Controller` checks the initial tick and tick continuity.
+`matlab/+g1/plannerMex.m` converts ticks to canonical time and validates raw time.
+The native observation API receives `[tick, canonical time]`; `G1Controller`
+checks the initial tick and tick continuity. References match observations by tick.
+MATLAB also writes the `time_identity` diagnostic table.
 `controller/diagnostics/Diagnostics.h` owns native diagnostic objects and typed
 in-memory batches, including extra structural evaluations. It creates no files.
 `g1_ocp_mex('diagnostics')` drains these batches; direct native callers use

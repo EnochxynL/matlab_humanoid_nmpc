@@ -6,6 +6,12 @@ Simulink 已有 `g1_planner/MPCSchedule`，C++ 又维护 epoch、nextSlot 和更
 
 ## 职责
 
+物理时间的生成及原始时间容差检查由 `matlab/+g1/plannerMex.m` 负责。
+模型侧仍传入 `[tick, canonical time, raw time]`，原生 MEX 与 C++ API
+只接收 `[tick, canonical time]`，不再持有采样周期或原始时间。
+C++ 检查 tick 从 0 连续推进，参考管理器按 tick 匹配求解观测；
+`time_identity.csv` 由 MATLAB 写入，保留原有列格式。
+
 | 位置 | 职责 |
 | --- | --- |
 | `matlab/+g1/plannerConfiguration.m` | 选择 task、reference、URDF 和日志路径 |

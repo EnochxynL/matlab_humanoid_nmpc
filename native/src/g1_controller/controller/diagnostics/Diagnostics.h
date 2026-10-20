@@ -18,13 +18,9 @@ class Diagnostics {
     mpc.getSolverPtr()->addSynchronizedModule(structure_);
     buffer_.configurationJson=configurationJson(interface,config.taskFile);
     buffer_.loadedLibraries=g1_controller::describeLoadedModules();
-    buffer_.define("time_identity","raw_backend_time,control_tick,canonical_control_time,raw_minus_canonical,session_id,state_sequence");
     buffer_.define("adapter_consumption","session,epoch,sequence,control_tick,canonical_control_time,target_count,event_count,event_mode_max_error,target_max_error,legacy_filter_calls,legacy_gait_decisions");
   }
   DiagnosticBatch drain() { return buffer_.drain(); }
-  void time(uint64_t tick,double raw,double canonical) {
-    buffer_.row("time_identity",{raw,tick,canonical,raw-canonical,1,tick});
-  }
   void reference(double t,const ocs2::vector4_t& command) { timing_->reference(t,command); }
   void consumed(const ReferencePacket& packet,double t,double error) {
     buffer_.row("adapter_consumption",{packet.session,packet.epoch,packet.sequence,packet.tick,t,

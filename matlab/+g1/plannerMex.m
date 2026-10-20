@@ -53,18 +53,28 @@ else
             varargout{1} = torque;
             collect();
         else
+            nativeArguments = varargin;
+            if strcmp(command,'install_observation')
+                if numel(varargin) ~= 2
+                    error('G1:PlannerMex','install_observation requires state and time identity');
+                end
+                nativeArguments{2} = validateObservationTime(varargin{2});
+            end
             if strcmp(command,'install_observation') && numel(varargin) == 2 && ...
                     isnumeric(varargin{2}) && numel(varargin{2}) == 3 && ...
                     ~isempty(currentToken) && varargin{2}(1) ~= currentToken(1) && ...
                     isempty(lastTorque)
                 error('G1:PlannerMex','Complete current action before advancing tick');
             end
-            [varargout{1:nargout}] = g1_ocp_mex(command,varargin{:});
+            [varargout{1:nargout}] = g1_ocp_mex(command,nativeArguments{:});
             if strcmp(command,'install_observation')
                 token = varargout{1};
                 if isempty(currentToken) || token(1) ~= currentToken(1)
                     currentToken = token; rawTime = varargin{2}(3);
                     lastPolicy = []; lastTorque = [];
+                    if ~isempty(writer)
+                        writer.timeIdentity(token(1),rawTime,token(2));
+                    end
                 end
             elseif strcmp(command,'query_policy')
                 lastPolicy = varargout{1}(:);
@@ -82,6 +92,7 @@ else
         rethrow(exception);
     end
 end
+
     function collect()
         if isempty(writer), return; end
         batch = g1_ocp_mex('diagnostics');
@@ -101,4 +112,21 @@ end
             g1_inverse_dynamics_mex('close'); inverseInitialized = false;
         end
     end
+end
+
+function identity = validateObservationTime(extracted)
+% MATLAB 维护 2 ms 物理时钟；原生接口只接收 tick 和规范时间。
+if ~isa(extracted,'double') || ~isreal(extracted) || issparse(extracted) || ...
+        numel(extracted) ~= 3 || ~all(isfinite(extracted(:)))
+    error('G1:PlannerMex','Expected finite double [tick, canonical time, raw time]');
+end
+tick = extracted(1);
+if tick < 0 || tick > flintmax || tick ~= floor(tick)
+    error('G1:PlannerMex','Invalid extracted tick');
+end
+canonical = tick * 0.002;
+if abs(extracted(3)-canonical) > 1e-12 || extracted(2) ~= canonical
+    error('G1:PlannerMex','Extracted time does not match the physical tick');
+end
+identity = [tick;canonical];
 end
