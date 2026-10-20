@@ -1,7 +1,7 @@
 #pragma once
 
 #include "controller/Ocs2Backend.h"
-#include "controller/reference/ExternalReferenceManager.h"
+#include "controller/ExternalReferenceManager.h"
 #include "g1_controller/G1Controller.h"
 
 #include <humanoid_wb_mpc/WBMpcInterface.h>
@@ -31,13 +31,11 @@ struct PlannerContext {
   // 按依赖顺序声明：MPC 先于诊断销毁，机器人/OCP 接口最后销毁。
   ocs2::humanoid::WBMpcInterface interface;
   std::unique_ptr<diagnostics::Diagnostics> diagnostics;
-  ocs2::SqpMpc mpc;
   ReferencePacket currentPacket;
+  ocs2::SqpMpc mpc;
 
  private:
-  static constexpr uint64_t SessionId = 1;
   void installReferenceManager();
-  ReferencePacket referenceForSolve(double observationTime) const;
 
   std::shared_ptr<ExternalReferenceManager> referenceManager_;
 };

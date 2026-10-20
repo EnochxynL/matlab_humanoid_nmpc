@@ -1,7 +1,7 @@
 #pragma once
 #include "StructuralDiagnostics.h"
 #include "ProcessModules.h"
-#include "controller/reference/ExternalReferenceManager.h"
+#include "controller/ExternalReferenceManager.h"
 #include "g1_controller/G1Controller.h"
 
 namespace g1_controller::diagnostics {

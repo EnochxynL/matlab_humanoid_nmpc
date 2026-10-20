@@ -1,9 +1,7 @@
 #include "controller/PlannerContext.h"
 
-#include "controller/CanonicalControlTime.h"
 #include "controller/diagnostics/Diagnostics.h"
 
-#include <stdexcept>
 
 namespace g1_controller {
 
@@ -22,34 +20,9 @@ PlannerContext::PlannerContext(const ControllerConfig& config)
 PlannerContext::~PlannerContext() = default;
 
 void PlannerContext::installReferenceManager() {
-  // 创建适配器，并用几个匿名函数来填充 preSolverRun 中未定义的行为（注册二级回调）
   referenceManager_ = std::make_shared<ExternalReferenceManager>(
-      // 1. 取得原项目已有的参考管理器。
-      interface.getSwitchedModelReferenceManagerPtr(),
-      // 2. 定义“求解前如何取得参考包”。
-      [this](double observationTime) {
-        return referenceForSolve(observationTime);
-      },
-      // 3. 定义“参考被消费后如何记录诊断”。
-      [this](const ReferencePacket& packet, double observationTime, double error) {
-        if (diagnostics) diagnostics->consumed(packet, observationTime, error);
-      });
-  // 告诉 OCS2，求解时使用这个适配器。（注册一级回调）
+      interface.getSwitchedModelReferenceManagerPtr(), currentPacket, diagnostics.get());
   mpc.getSolverPtr()->setReferenceManager(referenceManager_);
-}
-
-ReferencePacket PlannerContext::referenceForSolve(double observationTime) const {
-  // 返回本轮参考的副本；校验依据是实际求解观测，而非调度截止时间。
-  // 当前运行协议每次初始化建立一个 session，编号固定为 1。
-  auto packet = currentPacket;
-  if (packet.session != SessionId) {
-    throw std::runtime_error("Reference session does not match the controller session");
-  }
-  if (CanonicalControlTime::time(packet.tick) != observationTime) {
-    throw std::runtime_error("Reference tick does not match the solver observation time");
-  }
-  if (diagnostics) diagnostics->reference(observationTime, packet.filtered);
-  return packet;
 }
 
 void PlannerContext::attachBackendDiagnostics(Ocs2Backend& backend) {
