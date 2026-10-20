@@ -71,7 +71,6 @@ class Ocs2Backend final {
   std::shared_ptr<ExternalReferenceManager> referenceManager_;
   ocs2::MPC_MRT_Interface mrt_;
   ocs2::SystemObservation observation_;
-  size_t solveCount_ = 0;
   bool prepared_ = false;
   bool failed_ = false;
 };

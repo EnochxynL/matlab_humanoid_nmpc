@@ -47,6 +47,14 @@ assert(height(solves)==2);
 assert(isequal(solves.solver_target_control_time_s,[0;0.002]));
 samples = readtable(fullfile(folder,'planner_samples.csv'));
 assert(height(samples)==11);
+trace = readtable(fullfile(folder,'timing_trace.csv'));
+assert(isequal(trace.Properties.VariableNames, ...
+    {'event','control_time_s','wall_monotonic_time_s'}));
+assert(all(ismember(trace.event,{'observation_arrived','solver_started', ...
+    'solver_finished','policy_installed','policy_consumed'})));
+assert(sum(strcmp(trace.event,'solver_finished'))==2);
+assert(sum(strcmp(trace.event,'policy_installed'))==2);
+assert(sum(strcmp(trace.event,'policy_consumed'))==11);
 
 % 关闭后允许重新创建、正常求解和重复关闭。
 g1.plannerMex('init',g1.plannerConfiguration(root,fullfile(folder,'reinitialized')));

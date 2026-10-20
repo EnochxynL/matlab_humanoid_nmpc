@@ -78,6 +78,8 @@ modes. See [MATLAB diagnostic ownership](../docs/matlab_diagnostics.md).
 
 Timing trace update timestamps now identify the actual externally requested
 observation time, rather than a separately reconstructed nominal deadline.
+The trace schema is `event,control_time_s,wall_monotonic_time_s`. The obsolete
+`update_eligible` event, duplicate scheduled time and request counter are removed.
 See [synchronous backend validation](../docs/synchronous_ocs2_backend.md).
 
 OCS2's recipe owns the selected upstream numerical modules and compatibility

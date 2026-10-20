@@ -64,7 +64,7 @@ void Ocs2Backend::prepare(const ocs2::SystemObservation& observation, bool reque
   prepared_ = false;
   observation_ = observation;
   mrt_.setCurrentObservation(observation_);
-  if (diagnostics_) diagnostics_->trace("observation_arrived", observation.time, observation.time, 0);
+  if (diagnostics_) diagnostics_->trace("observation_arrived", observation.time);
   if (request) {
     // 求解、安装策略均在当前 MEX 调用内完成，异常直接返回调用者。
     // 时间戳是外部请求的实际观测时刻，不再在 C++ 中重算调度截止时间。
@@ -73,13 +73,11 @@ void Ocs2Backend::prepare(const ocs2::SystemObservation& observation, bool reque
       auto* receiver = dynamic_cast<::humanoid::ocp_extensions::MeasuredModeReceiver*>(&mrt_.getReferenceManager());
       if (!receiver) throw std::runtime_error("G1 reference manager lacks measured-mode receiver");
       receiver->setMeasuredMode(observation.mode);
-      ++solveCount_;
-      if (diagnostics_) diagnostics_->trace("update_eligible", observation.time, observation.time, solveCount_);
-      if (diagnostics_) diagnostics_->trace("solver_started", observation.time, observation.time, solveCount_);
+      if (diagnostics_) diagnostics_->trace("solver_started", observation.time);
       mrt_.advanceMpc();
-      if (diagnostics_) diagnostics_->trace("solver_finished", observation.time, observation.time, solveCount_);
+      if (diagnostics_) diagnostics_->trace("solver_finished", observation.time);
       if (!mrt_.updatePolicy()) throw std::runtime_error("Requested solve did not install an OCS2 policy");
-      if (diagnostics_) diagnostics_->trace("policy_installed", observation.time, observation.time, solveCount_);
+      if (diagnostics_) diagnostics_->trace("policy_installed", observation.time);
     } catch (...) {
       failed_ = true;
       throw;
