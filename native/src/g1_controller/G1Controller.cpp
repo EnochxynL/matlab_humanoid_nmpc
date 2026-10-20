@@ -71,7 +71,6 @@ struct G1Controller::Impl {
   uint64_t preparedTick = UINT64_MAX;
   bool updateReady = false, updateRequested = false;
   SystemObservation preparedObservation;
-  CanonicalControlTime controlTime;
 
 };
 
@@ -162,14 +161,17 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
   if(identity[0]<0 || identity[0]>static_cast<double>(uint64_t{1}<<53) || identity[0]!=std::floor(identity[0]))
     throw std::runtime_error("Invalid extracted tick");
   const auto tick=static_cast<uint64_t>(identity[0]);
-  if(identity[1]!=CanonicalControlTime::validate(tick,identity[2]))
+  const double t = control_time::validateRawTime(tick, identity[2]);
+  if(identity[1]!=t)
     throw std::runtime_error("Extracted canonical time identity mismatch");
   if(runtime.preparedTick==tick) return tickIdentity();
   if(runtime.preparedTick!=UINT64_MAX && runtime.preparedTick!=runtime.lastTick)
     throw std::runtime_error("Query prepared observation before advancing tick");
+  // 新会话从 tick 0 开始；其后必须先查询上一 tick，再顺序推进。
+  if(runtime.lastTick==UINT64_MAX && tick!=0)
+    throw std::runtime_error("First physical tick must be zero");
   if(runtime.lastTick!=UINT64_MAX && tick!=runtime.lastTick+1)
     throw std::runtime_error("Nonsequential physical tick");
-  const double t=runtime.controlTime.accept(tick,identity[2],1);
   if (runtime.diagnostics)
     runtime.diagnostics->time(tick,identity[2],t);
   runtime.preparedObservation.state=Eigen::Map<const vector_t>(state.data(),StateDimension);

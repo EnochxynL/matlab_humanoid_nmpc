@@ -12,14 +12,14 @@ ReferencePacket PacketManager::referenceForSolve(double observationTime) const {
   if (packet.session != 1) {
     throw std::runtime_error("Reference session does not match the controller session");
   }
-  if (CanonicalControlTime::time(packet.tick) != observationTime) {
+  if (control_time::fromTick(packet.tick) != observationTime) {
     throw std::runtime_error("Reference tick does not match the solver observation time");
   }
   return packet;
 }
 
 void PacketManager::validate(const ReferencePacket& p, double t, double end) {
-  if (p.session == 0 || p.sequence == 0 || CanonicalControlTime::time(p.tick) != t)
+  if (p.session == 0 || p.sequence == 0 || control_time::fromTick(p.tick) != t)
     throw std::runtime_error("G: Reference identity rejected");
   if (initialized_ &&
       (p.session != previous_.session || p.epoch != previous_.epoch ||

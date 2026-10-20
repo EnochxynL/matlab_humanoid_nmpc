@@ -2,7 +2,6 @@
 
 #include "controller/diagnostics/Diagnostics.h"
 #include <algorithm>
-#include <cmath>
 #include <stdexcept>
 
 namespace g1_controller {

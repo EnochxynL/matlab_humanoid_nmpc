@@ -57,7 +57,8 @@ diagnostic observers or diagnostic files. OCS2's own logging and AD code caches
 are separate from this switch. `run_walking` keeps diagnostics enabled because
 its acceptance checks consume the logs.
 
-`controller/CanonicalControlTime.h` retains runtime time/continuity checks.
+`controller/CanonicalControlTime.h` provides stateless tick/time conversion and
+raw-time validation. `G1Controller` checks the initial tick and tick continuity.
 `controller/diagnostics/Diagnostics.h` owns native diagnostic objects and typed
 in-memory batches, including extra structural evaluations. It creates no files.
 `g1_ocp_mex('diagnostics')` drains these batches; direct native callers use
