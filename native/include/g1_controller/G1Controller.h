@@ -118,6 +118,10 @@ public:
   void shutdown() noexcept;
 
 private:
+  PlannerTick tickIdentity() const;
+  void validateTick(const PlannerTick& token) const;
+
+  // 仅保存内部状态，具体行为由 G1Controller 成员函数实现。
   struct Impl;
   std::unique_ptr<Impl> impl_;
 };

@@ -29,59 +29,6 @@ struct G1Controller::Impl {
   SystemObservation preparedObservation;
   double preparedTime = 0;
   CanonicalControlTime controlTime;
-/**
- * @brief 幂等、无异常关闭：后端内部按依赖顺序释放原生对象。
- */
-  void close() {
-    controlTime = CanonicalControlTime{};
-    controller.reset();
-    lastTick = UINT64_MAX;
-    sequence = 0;
-    preparedTick = UINT64_MAX;
-    updateReady = false;
-  }
-/**
- * @brief 创建完整原生后端；外部仍负责观测转换、关节映射和求解调度。
- * 配置由 MATLAB 提供，首次求解由外部更新请求触发。
- */
-  void init(const ControllerConfig &config) {
-    if (controller)
-      throw std::runtime_error(
-          "Close existing MEX controller before initialization");
-    controller = std::make_unique<Ocs2Backend>(config);
-  }
-  PlannerTick tickIdentity() const {
-    if (!controller || preparedTick == UINT64_MAX)
-      throw std::runtime_error("Prepare observation first");
-    return {preparedTick, preparedTime, controller->mpcPeriod()};
-  }
-  void validateTick(const PlannerTick& token) const {
-    const auto current = tickIdentity();
-    if (token.tick != current.tick || token.time != current.time || token.mpcPeriod != current.mpcPeriod)
-      throw std::runtime_error("Planner tick identity mismatch");
-  }
-  void update(const PlannerTick& token, bool requested) {
-    validateTick(token);
-    if (updateReady) {
-      if (requested != updateRequested)
-        throw std::runtime_error("Repeated MPC stage changed its request");
-      return;
-    }
-    controller->prepare(preparedObservation, requested);
-    updateRequested = requested;
-    updateReady = true;
-  }
-  void queryPrepared(const PlannerTick& token) {
-    validateTick(token);
-    if (!updateReady) throw std::runtime_error("Complete MPC update stage before querying policy");
-    if (lastTick == preparedTick) return;
-    vector_t x, u;
-    size_t mode;
-    controller->queryPolicy(x, u, mode);
-    lastPolicy << x, u, double(mode), preparedTime + .005;
-    lastTick = preparedTick;
-  }
-
 
 };
 
@@ -115,9 +62,33 @@ DiagnosticBatch G1Controller::drainDiagnostics() {
                                        : DiagnosticBatch{};
 }
 void G1Controller::initialize(const ControllerConfig &config) {
-  impl_->init(config);
+  if (impl_->controller)
+    throw std::runtime_error("Close existing MEX controller before initialization");
+  impl_->controller = std::make_unique<Ocs2Backend>(config);
 }
-void G1Controller::shutdown() noexcept { impl_->close(); }
+
+void G1Controller::shutdown() noexcept {
+  auto& runtime = *impl_;
+  runtime.controlTime = CanonicalControlTime{};
+  runtime.controller.reset();
+  runtime.lastTick = UINT64_MAX;
+  runtime.sequence = 0;
+  runtime.preparedTick = UINT64_MAX;
+  runtime.updateReady = false;
+}
+
+PlannerTick G1Controller::tickIdentity() const {
+  const auto& runtime = *impl_;
+  if (!runtime.controller || runtime.preparedTick == UINT64_MAX)
+    throw std::runtime_error("Prepare observation first");
+  return {runtime.preparedTick, runtime.preparedTime, runtime.controller->mpcPeriod()};
+}
+
+void G1Controller::validateTick(const PlannerTick& token) const {
+  const auto current = tickIdentity();
+  if (token.tick != current.tick || token.time != current.time || token.mpcPeriod != current.mpcPeriod)
+    throw std::runtime_error("Planner tick identity mismatch");
+}
 /** @brief 安装具名参考：只构造 OCS2 容器并写入缓存；不再往返428向量。 */
 void G1Controller::setReference(const Reference &r) {
   if(!impl_->controller) throw std::runtime_error("Initialize MEX first");
@@ -149,7 +120,7 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
   const auto tick=static_cast<uint64_t>(identity[0]);
   if(identity[1]!=CanonicalControlTime::validate(tick,identity[2]))
     throw std::runtime_error("Extracted canonical time identity mismatch");
-  if(runtime.preparedTick==tick) return runtime.tickIdentity();
+  if(runtime.preparedTick==tick) return tickIdentity();
   if(runtime.preparedTick!=UINT64_MAX && runtime.preparedTick!=runtime.lastTick)
     throw std::runtime_error("Query prepared observation before advancing tick");
   if(runtime.lastTick!=UINT64_MAX && tick!=runtime.lastTick+1)
@@ -164,16 +135,36 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
   runtime.preparedTime=t;
   runtime.preparedTick=tick;
   runtime.updateReady=false;
-  return runtime.tickIdentity();
+  return tickIdentity();
 }
 
 PlannerTick G1Controller::updateMpc(const PlannerTick& tick, bool requested) {
-  impl_->update(tick, requested);
+  validateTick(tick);
+  auto& runtime = *impl_;
+  if (runtime.updateReady) {
+    if (requested != runtime.updateRequested)
+      throw std::runtime_error("Repeated MPC stage changed its request");
+    return tick;
+  }
+  runtime.controller->prepare(runtime.preparedObservation, requested);
+  runtime.updateRequested = requested;
+  runtime.updateReady = true;
   return tick;
 }
+
 Policy G1Controller::queryPrepared(const PlannerTick& tick) {
-  impl_->queryPrepared(tick);
-  return decodePolicy(impl_->lastPolicy.data());
+  validateTick(tick);
+  auto& runtime = *impl_;
+  if (!runtime.updateReady)
+    throw std::runtime_error("Complete MPC update stage before querying policy");
+  if (runtime.lastTick != runtime.preparedTick) {
+    vector_t state, input;
+    size_t mode;
+    runtime.controller->queryPolicy(state, input, mode);
+    runtime.lastPolicy << state, input, double(mode), runtime.preparedTime + .005;
+    runtime.lastTick = runtime.preparedTick;
+  }
+  return decodePolicy(runtime.lastPolicy.data());
 }
 
 } // namespace g1_controller
