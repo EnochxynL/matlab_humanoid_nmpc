@@ -17,7 +17,7 @@ assets and configuration stay in the application root.
 
 MATLAB selects task, reference, URDF and log paths through
 `g1.plannerConfiguration(root, logDirectory)`. Initialize with
-`g1_ocp_mex('init', config)`; the old `init(root, folder)` signature is retired.
+`g1.plannerMex('init', config)`; the old `init(root, folder)` signature is retired.
 `run_walking` supplies this configuration automatically.
 
 The `g1_planner/MPCSchedule` MATLAB Function block owns update deadlines.
@@ -32,7 +32,8 @@ objects. `Ocs2Backend` owns MRT access, synchronous solve/policy installation,
 policy evaluation and inverse dynamics. There is no application solver worker,
 condition variable, duplicate 60 Hz clock or five-second worker wait timeout.
 OCS2's own numerical parallelism remains configured by its solver settings.
-Whole policies stay native; MATLAB receives only the evaluated policy sample.
+The control path returns evaluated policy samples. Enabled diagnostics also
+stream per-knot values for inspection, without transferring native objects.
 
 Application diagnostics are optional. `ControllerConfig::diagnosticsEnabled`
 defaults to true for existing acceptance tooling. MATLAB can use
@@ -43,10 +44,18 @@ are separate from this switch. `run_walking` keeps diagnostics enabled because
 its acceptance checks consume the logs.
 
 `controller/CanonicalControlTime.h` retains runtime time/continuity checks.
-`controller/data/RunDiagnostics.h` owns CSV output, reference-consumption logs,
-configuration/library export and extra structural evaluations. The reference
-adapter validates and installs packets without owning file streams. Runtime
-stage, tick, reference and policy identity checks stay enabled in both modes.
+`controller/diagnostics/Diagnostics.h` owns native diagnostic objects and typed
+in-memory batches, including extra structural evaluations. It creates no files.
+`g1_ocp_mex('diagnostics')` drains these batches; direct native callers use
+`G1Controller::drainDiagnostics()`. Consumers must drain regularly: exceeding
+250,000 buffered rows raises an explicit error instead of dropping data.
+
+`matlab/+g1/plannerMex.m` wraps the same native MEX and drains after each action.
+`DiagnosticWriter` owns CSV/metadata/snapshot files. Use the wrapper for normal
+MATLAB/Simulink operation, and call `g1.plannerMex('flush')` before inspecting
+live files. Close drains the final batch and closes all MATLAB file handles.
+Runtime stage, tick, reference and policy identity checks stay enabled in both
+modes. See [MATLAB diagnostic ownership](../docs/matlab_diagnostics.md).
 
 Timing trace update timestamps now identify the actual externally requested
 observation time, rather than a separately reconstructed nominal deadline.

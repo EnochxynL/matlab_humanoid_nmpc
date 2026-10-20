@@ -4,7 +4,7 @@
  * 初始化和 configure 不直接求解；求解时刻由 MATLAB/Simulink 决定。
  */
 #include "controller/PlannerContext.h"
-#include "controller/data/RunDiagnostics.h"
+#include "controller/diagnostics/Diagnostics.h"
 #include "extensions/Environment.h"
 
 #include <cmath>
@@ -21,7 +21,7 @@ PlannerContext::PlannerContext(const ControllerConfig &i)
       migrated(g1_platform::environmentVariable("TASK5A_AUTHORITY") ==
                    "SIMULINK_REFERENCE") {
   if (i.diagnosticsEnabled)
-    diagnostics = std::make_unique<diagnostics::RunDiagnostics>(i, interface, mpc);
+    diagnostics = std::make_unique<diagnostics::Diagnostics>(i, interface, mpc);
   if (migrated) {
     external = std::make_shared<ExternalReferenceManager>(
         interface.getSwitchedModelReferenceManagerPtr(),

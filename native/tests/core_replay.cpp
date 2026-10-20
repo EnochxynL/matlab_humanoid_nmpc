@@ -17,6 +17,7 @@ static int setenv(const char* name, const char* value, int overwrite) {
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <filesystem>
 #include <stdexcept>
 using namespace g1_controller;
 struct ControlResult { Policy policy; Torque torque; };
@@ -72,6 +73,7 @@ int main(int argc, char **argv) {
     if(!states) throw std::runtime_error("Missing preconverted OCP state fixture");
     double epoch=0, period=1./60.;size_t nextSlot=1;
     G1Controller core;
+    std::filesystem::create_directories(folder);
     core.initialize({root + "/config/task.info", root + "/config/reference.info",
                      root + "/assets/g1_29dof.urdf", folder});
     const bool measure = argc == 6 && std::string(argv[5]) == "measure";
@@ -105,6 +107,8 @@ int main(int argc, char **argv) {
       if(k==0 && core.inverseDynamics(control.policy)!=control.torque)
         throw std::runtime_error("Repeated ID changed");
       auto actual = result(control);
+      // Native consumers own persistence too; keep the library buffer bounded.
+      auto diagnostics = core.drainDiagnostics();
       const double *expected = a.data() + 502;
       for (std::size_t j = 0; j < 118; ++j) {
         if (!std::isfinite(actual[j]))

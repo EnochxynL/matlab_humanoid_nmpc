@@ -15,7 +15,7 @@
 #include <memory>
 #include <string>
 namespace g1_controller {
-namespace diagnostics { class RunDiagnostics; }
+namespace diagnostics { class Diagnostics; }
 
 /**
  * @brief 拥有一套完整规划上下文。成员按声明顺序初始化、按逆序析构。
@@ -23,9 +23,10 @@ namespace diagnostics { class RunDiagnostics; }
  */
 struct PlannerContext {
   ocs2::humanoid::WBMpcInterface interface;
+  // Keep diagnostic references and buffers alive while the solver is destroyed.
+  std::unique_ptr<diagnostics::Diagnostics> diagnostics;
   ocs2::SqpMpc mpc;
   std::shared_ptr<ExternalReferenceManager> external;
-  std::unique_ptr<diagnostics::RunDiagnostics> diagnostics;
   ReferencePacket currentPacket;
   bool migrated;
   uint64_t expectedSession = 0;

@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <string>
 #include <memory>
+#include "Diagnostics.h"
 
 #if defined(_WIN32)
 #if defined(g1_controller_core_EXPORTS)
@@ -114,6 +115,8 @@ public:
  * 完成此步骤后才允许推进下一物理 tick，重复调用返回已缓存力矩。
  */
   Torque inverseDynamics(const Policy &policy);
+/** @brief 取走当前批次；重复读取返回空数据，不触发求解或额外诊断计算。 */
+  DiagnosticBatch drainDiagnostics();
 /**
  * @brief 释放数值后端；允许重复调用，析构也会调用。
  */

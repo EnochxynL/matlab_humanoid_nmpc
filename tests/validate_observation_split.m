@@ -22,14 +22,14 @@ bad=indices;bad(2)=bad(1);reject(@()kernels.extractObservation(raw,state,bad),'G
 keys={'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};old={getenv(keys{1}),getenv(keys{2})};
 envCleanup=onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
 setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
-g1_ocp_mex('init',g1.plannerConfiguration(root,fullfile(folder,'install_guards')));
-cleanup=onCleanup(@()g1_ocp_mex('close'));
+g1.plannerMex('init',g1.plannerConfiguration(root,fullfile(folder,'install_guards')));
+cleanup=onCleanup(@()g1.plannerMex('close'));
 identity=kernels.extractObservation(raw,state,indices);
-bad=identity;bad(2)=.001;reject(@()g1_ocp_mex('install_observation',state,bad),'G1:PlannerMex');
-token=g1_ocp_mex('install_observation',state,identity);
-reject(@()g1_ocp_mex('query_policy',token),'G1:PlannerMex');
+bad=identity;bad(2)=.001;reject(@()g1.plannerMex('install_observation',state,bad),'G1:PlannerMex');
+token=g1.plannerMex('install_observation',state,identity);
+reject(@()g1.plannerMex('query_policy',token),'G1:PlannerMex');
 nextIdentity=kernels.extractObservation(fixture.raw(2,:)',golden.expected(2,:)',indices);
-reject(@()g1_ocp_mex('install_observation',golden.expected(2,:)',nextIdentity),'G1:PlannerMex');
+reject(@()g1.plannerMex('install_observation',golden.expected(2,:)',nextIdentity),'G1:PlannerMex');
 clear cleanup;
 replay=validate_planner_dataflow(evidenceName,true);
 result=struct('passed',true,'independent_extraction_ticks',2401,'negative_cases',8,'replay',replay);

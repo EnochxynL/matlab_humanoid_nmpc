@@ -20,7 +20,7 @@ fid=fopen(fullfile(folder,'memory_before.txt'),'w');fprintf(fid,'%s',mem);fclose
 
 session=struct('root',root,'folder',folder,'duration',4.8,'transport','IN_PROCESS_MEX','ocp','accepted OCS2 SQP','query_lead_s',.005,'physical_period_s',.002,'environment',env,'baseline_sha','7565b42006be8b0f8c7b21f441f50c7b773431d9');
 g1log.writeJson(fullfile(folder,'configuration.json'),session);
-wall=tic;g1_ocp_mex('init',g1.plannerConfiguration(root,folder));startup=toc(wall);session.startup_wall_s=startup;
+wall=tic;g1.plannerMex('init',g1.plannerConfiguration(root,folder));startup=toc(wall);session.startup_wall_s=startup;
 if ~ispc,open_system(fullfile(root,'models',[cfg.modelName '.slx']));end
 in=Simulink.SimulationInput(cfg.modelName);
 in=in.setModelParameter('StopTime','4.8','OutputOption','SpecifiedOutputTimes', ...
@@ -36,6 +36,7 @@ end
 g1log.writeJson(fullfile(root,'runtime/current_run.json'),struct('folder',folder,'status','SIMULATING'));
 fprintf('Starting genuine Simscape walking: StopTime=4.8 s; evidence=%s\n',folder);
 wall=tic;out=sim(in);session.execution_wall_s=toc(wall);
+g1.plannerMex('flush');
 clear layoutHold;
 save(fullfile(folder,'simulation_output.mat'),'out','session','-v7.3');
 g1log.writeJson(fullfile(folder,'configuration.json'),session);
@@ -83,6 +84,6 @@ legend('Left','Right');ylabel('Actual foot Fz (N)');xlabel('Physical time (s)');
 exportgraphics(f,fullfile(folder,'physical_summary.png'));close(f);
 fprintf('Run complete; Mechanics Explorer replay and evidence: %s\n',folder);
  function finish(envKeys,envPrevious)
-  g1_ocp_mex('close');diary off;for j=1:numel(envKeys),setenv(envKeys{j},envPrevious{j});end
+  g1.plannerMex('close');diary off;for j=1:numel(envKeys),setenv(envKeys{j},envPrevious{j});end
  end
 end

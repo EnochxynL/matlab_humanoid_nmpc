@@ -136,6 +136,33 @@ mxArray* encodeTick(const g1_controller::PlannerTick& tick) {
   a[0] = static_cast<double>(tick.tick); a[1] = tick.time; a[2] = tick.mpcPeriod;
   return result;
 }
+
+mxArray* encodeDiagnostics(const g1_controller::DiagnosticBatch& batch) {
+  const char* fields[]={"tables","snapshot","configurationJson","loadedLibraries"};
+  auto* result=mxCreateStructMatrix(1,1,4,fields);
+  const char* tableFields[]={"name","columns","values"};
+  auto* tables=mxCreateStructMatrix(1,batch.tables.size(),3,tableFields);
+  for(size_t k=0;k<batch.tables.size();++k) {
+    const auto& table=batch.tables[k];
+    mxSetField(tables,k,"name",mxCreateString(table.name.c_str()));
+    auto* columns=mxCreateCellMatrix(1,table.columns.size());
+    for(size_t j=0;j<table.columns.size();++j)mxSetCell(columns,j,mxCreateString(table.columns[j].c_str()));
+    mxSetField(tables,k,"columns",columns);
+    auto* values=mxCreateCellMatrix(table.rows.size(),table.columns.size());
+    for(size_t i=0;i<table.rows.size();++i)for(size_t j=0;j<table.columns.size();++j) {
+      const auto& value=table.rows[i][j];
+      mxSetCell(values,i+j*table.rows.size(),value.textual?mxCreateString(value.text.c_str()):mxCreateDoubleScalar(value.number));
+    }
+    mxSetField(tables,k,"values",values);
+  }
+  mxSetField(result,0,"tables",tables);
+  auto* snapshot=mxCreateDoubleMatrix(batch.snapshot.size(),1,mxREAL);
+  std::copy(batch.snapshot.begin(),batch.snapshot.end(),mxGetPr(snapshot));
+  mxSetField(result,0,"snapshot",snapshot);
+  mxSetField(result,0,"configurationJson",mxCreateString(batch.configurationJson.c_str()));
+  mxSetField(result,0,"loadedLibraries",mxCreateString(batch.loadedLibraries.c_str()));
+  return result;
+}
 } // namespace
 
 /**
@@ -183,6 +210,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         throw;
       }
       mexLock();
+    } else if (command == "diagnostics") {
+      if (nrhs!=1 || nlhs!=1) throw std::runtime_error("diagnostics requires one output");
+      plhs[0]=encodeDiagnostics(runtime().drainDiagnostics());
     } else if (command == "close") {
       closeController();
       if (mexIsLocked())

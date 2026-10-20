@@ -2,7 +2,7 @@ add_library(g1_controller_core SHARED
   g1_controller/G1Controller.cpp
   g1_controller/controller/PlannerContext.cpp
   g1_controller/controller/Ocs2Backend.cpp
-  g1_controller/controller/data/LoadedLibraries.cpp)
+  g1_controller/controller/diagnostics/LoadedLibraries.cpp)
 set_target_properties(g1_controller_core PROPERTIES OUTPUT_NAME g1_controller)
 if(WIN32)
   set_target_properties(g1_controller_core PROPERTIES PREFIX "")

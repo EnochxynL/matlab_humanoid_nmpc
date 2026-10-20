@@ -14,21 +14,21 @@ keys = {'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};
 old = {getenv(keys{1}),getenv(keys{2})};
 setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
 envCleanup = onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
-g1_ocp_mex('init',g1.plannerConfiguration(root,folder));
-cleanup = onCleanup(@()g1_ocp_mex('close'));
-g1_ocp_mex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
+g1.plannerMex('init',g1.plannerConfiguration(root,folder));
+cleanup = onCleanup(@()g1.plannerMex('close'));
+g1.plannerMex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
 identity=kernels.extractObservation(fixture.raw(1,:)',golden.expected(1,:)',double(cfg.mpcIndices(:)'));
-token = g1_ocp_mex('install_observation',golden.expected(1,:)',identity);
-assertRejected(@()g1_ocp_mex('query_policy',token));
-assertRejected(@()g1_ocp_mex('update_mpc',token,0));
+token = g1.plannerMex('install_observation',golden.expected(1,:)',identity);
+assertRejected(@()g1.plannerMex('query_policy',token));
+assertRejected(@()g1.plannerMex('update_mpc',token,0));
 bad = token;bad(2) = bad(2)+0.002;
-assertRejected(@()g1_ocp_mex('update_mpc',bad,1));
+assertRejected(@()g1.plannerMex('update_mpc',bad,1));
 nextIdentity=kernels.extractObservation(fixture.raw(2,:)',golden.expected(2,:)',double(cfg.mpcIndices(:)'));
-assertRejected(@()g1_ocp_mex('install_observation',golden.expected(2,:)',nextIdentity));
+assertRejected(@()g1.plannerMex('install_observation',golden.expected(2,:)',nextIdentity));
 clear cleanup;
 % Fresh runtime and model persistent state; do not reuse guard-test state.
-g1_ocp_mex('init',g1.plannerConfiguration(root,folder));
-cleanup = onCleanup(@()g1_ocp_mex('close')); %#ok<NASGU>
+g1.plannerMex('init',g1.plannerConfiguration(root,folder));
+cleanup = onCleanup(@()g1.plannerMex('close')); %#ok<NASGU>
 ds = Simulink.SimulationData.Dataset;
 t = (0:2400)'*0.002;
 ds{1} = timeseries(fixture.raw,t);

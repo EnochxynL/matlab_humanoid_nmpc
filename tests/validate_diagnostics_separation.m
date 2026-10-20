@@ -14,23 +14,23 @@ previous = {getenv(keys{1}),getenv(keys{2})};
 cleanup = onCleanup(@()finish(keys,previous));
 setenv(keys{1},'SIMULINK_REFERENCE'); setenv(keys{2},'IN_PROCESS_ONLY');
 
-g1_ocp_mex('init',config);
+g1.plannerMex('init',config);
 assert(~isfolder(unusedFolder),'Disabled diagnostics created a log directory');
-g1_ocp_mex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
-assertRejected(@()g1_ocp_mex('install_observation',golden.expected(1,:)',[0;0;0.1]));
-token = g1_ocp_mex('install_observation',golden.expected(1,:)',[0;0;fixture.raw(1,1)]);
-assertRejected(@()g1_ocp_mex('query_policy',token));
-assertRejected(@()g1_ocp_mex('update_mpc',token,0));
-completed = g1_ocp_mex('update_mpc',token,1);
-policy = g1_ocp_mex('query_policy',completed);
+g1.plannerMex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
+assertRejected(@()g1.plannerMex('install_observation',golden.expected(1,:)',[0;0;0.1]));
+token = g1.plannerMex('install_observation',golden.expected(1,:)',[0;0;fixture.raw(1,1)]);
+assertRejected(@()g1.plannerMex('query_policy',token));
+assertRejected(@()g1.plannerMex('update_mpc',token,0));
+completed = g1.plannerMex('update_mpc',token,1);
+policy = g1.plannerMex('query_policy',completed);
 bad = policy; bad(1) = bad(1) + 0.01;
-assertRejected(@()g1_ocp_mex('inverse_dynamics',bad));
-torque = g1_ocp_mex('inverse_dynamics',policy); %#ok<NASGU>
-assertRejected(@()g1_ocp_mex('install_observation',golden.expected(3,:)',[2;0.004;fixture.raw(3,1)]));
-g1_ocp_mex('close');
+assertRejected(@()g1.plannerMex('inverse_dynamics',bad));
+torque = g1.plannerMex('inverse_dynamics',policy); %#ok<NASGU>
+assertRejected(@()g1.plannerMex('install_observation',golden.expected(3,:)',[2;0.004;fixture.raw(3,1)]));
+g1.plannerMex('close');
 
 % 新实例和新的模型仿真状态，完整执行 2401 个控制 tick。
-g1_ocp_mex('init',config);
+g1.plannerMex('init',config);
 ds = Simulink.SimulationData.Dataset;
 t = (0:2400)'*0.002;
 ds{1} = timeseries(fixture.raw,t);
@@ -40,7 +40,7 @@ in = in.setExternalInput(ds);
 in = in.setModelParameter('StopTime','4.8','SaveOutput','on', ...
     'OutputSaveName','yout','SaveFormat','Dataset');
 out = sim(in);
-g1_ocp_mex('close');
+g1.plannerMex('close');
 assert(~isfolder(unusedFolder),'Disabled diagnostics wrote application log files');
 actual = g1log.signalMatrix(out.yout{3}.Values);
 enabled = readtable(fullfile(evidence,'enabled','model_replay','planner_samples.csv'));
@@ -67,6 +67,6 @@ assert(rejected,'Runtime guard was disabled with diagnostics');
 end
 
 function finish(keys,previous)
-g1_ocp_mex('close');
+g1.plannerMex('close');
 for k=1:numel(keys), setenv(keys{k},previous{k}); end
 end

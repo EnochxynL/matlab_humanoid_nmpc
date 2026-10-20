@@ -1,4 +1,5 @@
 #include "LoadedLibraries.h"
+#include <sstream>
 #include <fstream>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -10,13 +11,14 @@
 #endif
 
 namespace g1_controller {
-void writeLoadedLibraries(const std::string& filename) {
+std::string loadedLibraries() {
+  std::ostringstream output;
 #ifdef _WIN32
-  std::ofstream output(filename);
+
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,GetCurrentProcessId());
   if (snapshot == INVALID_HANDLE_VALUE) {
     output << "Module enumeration failed: " << GetLastError() << '\n';
-    return;
+    return output.str();
   }
   MODULEENTRY32 module{};
   module.dwSize = sizeof(module);
@@ -27,7 +29,8 @@ void writeLoadedLibraries(const std::string& filename) {
   CloseHandle(snapshot);
 #else
   std::ifstream maps("/proc/self/maps");
-  std::ofstream(filename) << maps.rdbuf();
+  output << maps.rdbuf();
 #endif
+  return output.str();
 }
 }

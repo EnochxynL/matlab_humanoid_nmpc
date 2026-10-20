@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include "controller/CanonicalControlTime.h"
-#include "controller/data/RunDiagnostics.h"
+#include "controller/diagnostics/Diagnostics.h"
 #include <stdexcept>
 
 namespace g1_controller {
@@ -152,6 +152,10 @@ void requireFinite(const double *data, std::size_t count) {
 
 G1Controller::G1Controller() : impl_(std::make_unique<Impl>()) {}
 G1Controller::~G1Controller() { shutdown(); }
+DiagnosticBatch G1Controller::drainDiagnostics() {
+  if (!impl_->context) throw std::runtime_error("Initialize MEX first");
+  return impl_->context->diagnostics ? impl_->context->diagnostics->drain() : DiagnosticBatch{};
+}
 void G1Controller::initialize(const ControllerConfig &config) {
   impl_->init(config);
 }

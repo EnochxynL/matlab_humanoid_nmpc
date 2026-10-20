@@ -1,18 +1,19 @@
 #pragma once
-#include "controller/data/Filesystem.h"
+#include "DiagnosticBuffer.h"
+#include <limits>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
 #include <humanoid_common_mpc/common/MpcRobotModelBase.h>
 #include <humanoid_common_mpc/reference_manager/SwitchedModelReferenceManager.h>
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/algorithm/frames.hpp>
-class FootLog {
+class FootDiagnostics {
  std::unique_ptr<ocs2::PinocchioInterface> pin_;
  std::unique_ptr<ocs2::humanoid::MpcRobotModelBase<double>> model_;
  std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> ref_;
- std::ofstream out_;std::array<pinocchio::FrameIndex,2> ids_;
+ g1_controller::diagnostics::DiagnosticBuffer& buffer_;std::array<pinocchio::FrameIndex,2> ids_;
  public:
- explicit FootLog(const g1_filesystem::path&root):out_((root/"foot_kinematics.csv").string()){
-  out_<<std::setprecision(17)<<"solver_target_time,observation_time,sample_time,kind,leg,mode,planned_support,z_reference,x,y,z,vx,vy,vz,min_sole_z\n";
+ explicit FootDiagnostics(g1_controller::diagnostics::DiagnosticBuffer& buffer):buffer_(buffer){
+  buffer_.define("foot_kinematics","solver_target_time,observation_time,sample_time,kind,leg,mode,planned_support,z_reference,x,y,z,vx,vy,vz,min_sole_z");
  }
  void configure(const ocs2::PinocchioInterface&pin,const ocs2::humanoid::MpcRobotModelBase<double>&m,std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager>ref){
   pin_=std::make_unique<ocs2::PinocchioInterface>(pin);model_.reset(m.clone());ref_=ref;
@@ -25,8 +26,11 @@ class FootLog {
   for(int leg=0;leg<2;++leg){auto pose=data.oMf[ids_[leg]];auto velocity=pinocchio::getFrameVelocity(model,data,ids_[leg],pinocchio::LOCAL_WORLD_ALIGNED);double clearance=std::numeric_limits<double>::infinity();
    // Accepted contact-frame point-cloud geometry, both feet; ground z=0.
    for(auto point:{Eigen::Vector3d(-.085,.025,0),Eigen::Vector3d(-.085,-.025,0),Eigen::Vector3d(.085,.03,0),Eigen::Vector3d(.085,-.03,0)})clearance=std::min(clearance,(pose.translation()+pose.rotation()*point)[2]);
-   out_<<target<<','<<observation<<','<<t<<','<<kind<<','<<leg<<','<<mode<<','<<flags[leg]<<','<<ref_->getSwingTrajectoryPlanner()->getZpositionConstraint(leg,t);
-   for(auto val:{pose.translation()[0],pose.translation()[1],pose.translation()[2],velocity.linear()[0],velocity.linear()[1],velocity.linear()[2],clearance})out_<<','<<val;out_<<'\n';
-  }out_<<std::flush;
+   buffer_.row("foot_kinematics",{target,observation,t,kind,leg,mode,flags[leg],
+       ref_->getSwingTrajectoryPlanner()->getZpositionConstraint(leg,t),
+       pose.translation()[0],pose.translation()[1],pose.translation()[2],
+       velocity.linear()[0],velocity.linear()[1],velocity.linear()[2],clearance});
+  }
+
  }
 };
