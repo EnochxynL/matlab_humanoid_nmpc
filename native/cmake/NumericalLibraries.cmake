@@ -18,6 +18,7 @@ target_compile_options(humanoid_model PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wn
 
 set(G1_NUMERICAL_LIBRARY_TYPE STATIC)
 file(GLOB humanoid_extension_sources CONFIGURE_DEPENDS "${G1_CORE_DIR}/extensions/*.cpp")
+list(REMOVE_ITEM humanoid_extension_sources "${G1_CORE_DIR}/extensions/PinocchioEndEffectorKinematicsCppAd.cpp")
 add_library(humanoid_ocp_extensions ${G1_NUMERICAL_LIBRARY_TYPE} ${humanoid_extension_sources})
 target_include_directories(humanoid_ocp_extensions PUBLIC "${G1_CORE_DIR}")
 target_link_libraries(humanoid_ocp_extensions PUBLIC ocs2_core ocs2_robotic_tools)
@@ -66,3 +67,33 @@ add_library(humanoid_wb_mpc ${G1_NUMERICAL_LIBRARY_TYPE}
 target_include_directories(humanoid_wb_mpc PUBLIC "${G1_CORE_DIR}/problem/humanoid_wb_mpc/include" "${G1_CORE_DIR}" "${G1_CORE_DIR}/problem")
 target_link_libraries(humanoid_wb_mpc PUBLIC humanoid_common_mpc ocs2_sqp ocs2_ddp ocs2_centroidal_model)
 target_compile_options(humanoid_wb_mpc PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
+
+# Second OCP implementation; no dependency on the whole-body OCP or its facade.
+option(G1_BUILD_CENTROIDAL "Build the experimental centroidal OCP and native smoke test" OFF)
+if(G1_BUILD_CENTROIDAL)
+  add_library(humanoid_pinocchio_kinematics STATIC
+    "${G1_CORE_DIR}/extensions/PinocchioEndEffectorKinematicsCppAd.cpp")
+  target_link_libraries(humanoid_pinocchio_kinematics PUBLIC
+    humanoid_ocp_extensions ocs2_pinocchio_interface pinocchio::pinocchio)
+  target_compile_options(humanoid_pinocchio_kinematics PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
+  add_library(humanoid_centroidal_model INTERFACE)
+  target_include_directories(humanoid_centroidal_model INTERFACE
+    "${G1_CORE_DIR}/model/humanoid_centroidal_mpc/include")
+  target_link_libraries(humanoid_centroidal_model INTERFACE humanoid_model ocs2_centroidal_model)
+  add_library(humanoid_centroidal_mpc STATIC
+    "${G1_CORE_DIR}/problem/humanoid_centroidal_mpc/src/CentroidalMpcInterface.cpp"
+    "${G1_CORE_DIR}/problem/humanoid_centroidal_mpc/src/dynamics/CentroidalDynamicsAD.cpp"
+    "${G1_CORE_DIR}/problem/humanoid_centroidal_mpc/src/cost/CentroidalMpcEndEffectorFootCost.cpp"
+    "${G1_CORE_DIR}/problem/humanoid_centroidal_mpc/src/cost/ICPCost.cpp"
+    "${G1_CORE_DIR}/problem/humanoid_centroidal_mpc/src/constraint/JointMimicKinematicConstraint.cpp"
+    "${G1_CORE_DIR}/problem/humanoid_centroidal_mpc/src/constraint/NormalVelocityConstraintCppAd.cpp"
+    "${G1_CORE_DIR}/problem/humanoid_centroidal_mpc/src/constraint/ZeroVelocityConstraintCppAd.cpp"
+    "${G1_CORE_DIR}/problem/humanoid_centroidal_mpc/src/initialization/CentroidalWeightCompInitializer.cpp")
+  target_include_directories(humanoid_centroidal_mpc PUBLIC
+    "${G1_CORE_DIR}/problem/humanoid_centroidal_mpc/include")
+  target_link_libraries(humanoid_centroidal_mpc PUBLIC
+    humanoid_centroidal_model humanoid_common_mpc humanoid_pinocchio_kinematics ocs2_sqp ocs2_ddp)
+  target_compile_options(humanoid_centroidal_mpc PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-ignored-attributes>)
+endif()

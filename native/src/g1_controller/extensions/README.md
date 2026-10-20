@@ -25,6 +25,10 @@ similarly named official classes.
 - `TermRegistry`: application term names mapped to official collection indices.
 - `EndEffectorKinematics`, `geometry` in `RotationTransforms`: retained 6D
   interfaces and rotation math with no robot-specific assumptions.
+- `PinocchioEndEffectorKinematicsCppAd`: the matching 6D implementation from
+  the same pinned OCS2 fork, built as `humanoid_pinocchio_kinematics` when the
+  centroidal OCP is enabled. It uses generic state/input mappings and does not
+  depend on the whole-body OCP or inverse-dynamics facade.
 
 The penalty and owning-cost implementations originated at manumerous/ocs2_ros2
 commit bf9ae46f3c6dc751348d8002c03aa2f4a7cc17e7. Their BSD notices remain in the

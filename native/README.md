@@ -6,6 +6,11 @@ assets and configuration stay in the application root.
 
 ## Source and dependency boundaries
 
+The optional centroidal OCP is enabled with `-DG1_BUILD_CENTROIDAL=ON`.
+Build `g1_centroidal_smoke` with `G1_BUILD_TESTS=ON` for a native construction,
+SQP solve and MRT query check. Its configuration is in `config/centroidal/`;
+it does not use the whole-body controller API or inverse-dynamics MEX.
+
 - `include/g1_controller/G1Controller.h`: public controller and data types.
 - `src/g1_controller/model/`: shared robot model and numerical functions.
 - `src/g1_controller/problem/`: planning problem, costs, constraints and references.
