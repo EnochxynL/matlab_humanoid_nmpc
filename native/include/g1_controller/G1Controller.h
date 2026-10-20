@@ -86,7 +86,7 @@ using Torque = std::array<double, ControlledJointCount>;
 
 /**
  * @brief 一个实例拥有一套同步数值后端及当前策略缓存。
- * 典型调用：initialize → setReference → installOcpObservation → updateMpc → queryPrepared → completeAction → shutdown。
+ * 典型调用：initialize → setReference → installOcpObservation → updateMpc → queryPrepared → shutdown。
  * 同 tick 的重复策略查询使用缓存。
  * 接口不承诺可由多个调用线程同时操作；求解在调用线程同步完成。
  */
@@ -110,11 +110,6 @@ public:
   PlannerTick installOcpObservation(const std::array<double, StateDimension>& state, const std::array<double,3>& identity);
   PlannerTick updateMpc(const PlannerTick &tick, bool requested);
   Policy queryPrepared(const PlannerTick &tick);
-/**
- * @brief 只接受当前 tick 最近查询的原样策略；拒绝陈旧或被修改的数据。
- * 完成后允许推进下一物理 tick；重复提交必须使用相同策略和力矩，不重复记录诊断。
- */
-  void completeAction(const Policy &policy, const Torque& torque);
 /** @brief 取走当前批次；重复读取返回空数据，不触发求解或额外诊断计算。 */
   DiagnosticBatch drainDiagnostics();
 /**

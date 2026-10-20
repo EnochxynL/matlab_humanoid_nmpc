@@ -112,19 +112,7 @@ int main(int argc, char **argv) {
       core.updateMpc(token,due);
       ControlResult control;
       control.policy=core.queryPrepared(token);
-      if(k==0){
-        auto bad=control.policy;bad.state[0]+=.01;
-        bool rejected=false;try{core.completeAction(bad,{});}catch(const std::exception&){rejected=true;}
-        if(!rejected) throw std::runtime_error("Altered policy accepted");
-      }
       control.torque=inverseDynamics.compute(control.policy.state,control.policy.input);
-      core.completeAction(control.policy,control.torque);
-      if(k==0) {
-        core.completeAction(control.policy,control.torque);
-        auto changedTorque=control.torque;changedTorque[0]+=.01;
-        requireRejected([&]{core.completeAction(control.policy,changedTorque);},
-                        "Repeated action with altered torque accepted");
-      }
       auto actual = result(control);
       // Native consumers own persistence too; keep the library buffer bounded.
       auto diagnostics = core.drainDiagnostics();

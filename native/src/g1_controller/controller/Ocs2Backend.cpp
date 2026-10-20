@@ -93,9 +93,6 @@ void Ocs2Backend::queryPolicy(ocs2::vector_t& state, ocs2::vector_t& input, size
   if (!prepared_) throw std::runtime_error("Prepare current observation before policy query");
   mrt_.evaluatePolicy(observation_.time + 0.005, observation_.state, state, input, mode);
   if (!state.allFinite() || !input.allFinite()) throw std::runtime_error("Nonfinite policy output");
-}
-
-void Ocs2Backend::recordPolicyDiagnostics() {
   if (diagnostics_) diagnostics_->policy(observation_, mrt_.getPolicy(), mrt_.getCommand());
 }
 } // namespace g1_controller

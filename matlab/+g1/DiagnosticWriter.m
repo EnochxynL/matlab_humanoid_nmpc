@@ -56,6 +56,15 @@ classdef DiagnosticWriter < handle
             for k=1:numel(identifiers), fclose(identifiers{k}); end
             remove(obj.files,keys(obj.files));
         end
+        function sample(obj,tick,rawTime,canonicalTime,result)
+            columns = [{'control_tick','raw_time','canonical_time'}, ...
+                arrayfun(@(j)sprintf('value%d',j),0:117,'UniformOutput',false)];
+            values = num2cell([tick rawTime canonicalTime reshape(result,1,[])]);
+            table = struct('name','planner_samples','columns',{columns},'values',{values});
+            batch = struct('tables',table,'snapshot',[], ...
+                'configurationJson','','loadedLibraries','');
+            obj.append(batch);
+        end
         function flush(obj)
             names = keys(obj.files);
             for k=1:numel(names)

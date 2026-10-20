@@ -18,20 +18,12 @@ class Diagnostics {
     mpc.getSolverPtr()->addSynchronizedModule(structure_);
     buffer_.configurationJson=configurationJson(interface,config.taskFile);
     buffer_.loadedLibraries=g1_controller::describeLoadedModules();
-    std::string columns="control_tick,raw_time,canonical_time";
-    for (int j=0;j<118;++j) columns+=",value"+std::to_string(j);
-    buffer_.define("planner_samples",columns.c_str());
     buffer_.define("time_identity","raw_backend_time,control_tick,canonical_control_time,raw_minus_canonical,session_id,state_sequence");
     buffer_.define("adapter_consumption","session,epoch,sequence,control_tick,canonical_control_time,target_count,event_count,event_mode_max_error,target_max_error,legacy_filter_calls,legacy_gait_decisions");
   }
   DiagnosticBatch drain() { return buffer_.drain(); }
   void time(uint64_t tick,double raw,double canonical) {
     buffer_.row("time_identity",{raw,tick,canonical,raw-canonical,1,tick});
-  }
-  void sample(uint64_t tick,double raw,double canonical,const ocs2::vector_t& result) {
-    std::vector<DiagnosticValue> row{tick,raw,canonical};
-    for(int j=0;j<result.size();++j) row.emplace_back(result[j]);
-    buffer_.row("planner_samples",std::move(row));
   }
   void reference(double t,const ocs2::vector4_t& command) { timing_->reference(t,command); }
   void consumed(const ReferencePacket& packet,double t,double error) {

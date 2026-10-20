@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief G1Controller 的运行时实现：连接公共 API、已提取观测和内部 MPC 控制器。
- * 负责资源所有权、参考包缓存、物理 tick、输入安全检查和策略/力矩身份绑定。
+ * 负责原生资源、参考缓存、物理 tick 和规划阶段检查；不接收动作力矩。
  * 不在这里定义 OCP 方程；原生对象由 Ocs2Backend 装配，方程由 WBMpcInterface 创建。
  */
 #include "g1_controller/G1Controller.h"
@@ -17,20 +17,17 @@ using ocs2::vector_t;
 using ocs2::SystemObservation;
 /**
  * @brief PImpl 私有状态：controller 拥有原生模型、MPC 和诊断对象。
- * lastPolicy 保存95元素策略；lastResult 保存含23关节力矩的118元素兼容结果。
- * actionReady 区分“已查询”与“已完成逆动力学”，lastTick 防止跨 tick 混用。
+ * lastPolicy 保存当前 tick 的95元素策略；动作计算和结果汇总由外部消费者负责。
+ * lastTick 防止跨 tick 混用，查询后允许准备下一个观测。
  */
 struct G1Controller::Impl {
   std::unique_ptr<Ocs2Backend> controller;
   uint64_t lastTick = UINT64_MAX, sequence = 0;
-  vector_t lastResult = vector_t::Zero(118);
   vector_t lastPolicy = vector_t::Zero(95);
-  bool actionReady = false;
   uint64_t preparedTick = UINT64_MAX;
   bool updateReady = false, updateRequested = false;
   SystemObservation preparedObservation;
   double preparedTime = 0;
-  double lastRawTime = 0;
   CanonicalControlTime controlTime;
 /**
  * @brief 幂等、无异常关闭：后端内部按依赖顺序释放原生对象。
@@ -40,7 +37,6 @@ struct G1Controller::Impl {
     controller.reset();
     lastTick = UINT64_MAX;
     sequence = 0;
-    actionReady = false;
     preparedTick = UINT64_MAX;
     updateReady = false;
   }
@@ -84,48 +80,12 @@ struct G1Controller::Impl {
     controller->queryPolicy(x, u, mode);
     lastPolicy << x, u, double(mode), preparedTime + .005;
     lastTick = preparedTick;
-    actionReady = false;
   }
 
-/**
- * @brief 核对当前策略，接收独立逆动力学计算的力矩并记录完成；本入口不计算力矩。
- * 完成后写一行118元素样本；重复调用不重复求解或记录。
- */
-  void completeAction(const double *p, const Torque& torque) {
-    if (!controller || lastTick == UINT64_MAX || lastTick != preparedTick)
-      throw std::runtime_error("Query a policy before inverse dynamics");
-    // Bind the action to exactly the policy queried in this tick; reject
-    // stale/mutated packets.
-    if (!(Eigen::Map<const vector_t>(p, 95).array() == lastPolicy.array())
-             .all())
-      throw std::runtime_error("Inverse dynamics policy identity mismatch");
-    const Eigen::Map<const vector_t> tau(torque.data(), torque.size());
-    if (actionReady) {
-      if (!(tau.array() == lastResult.segment(93, 23).array()).all())
-        throw std::runtime_error("Repeated action changed its torque");
-      return;
-    }
-    vector_t x = lastPolicy.head(58), u = lastPolicy.segment(58, 35);
-    controller->recordPolicyDiagnostics();
-    lastResult << x, u, tau, lastPolicy[93], lastPolicy[94];
-    actionReady = true;
-    if (controller->diagnostics_)
-      controller->diagnostics_->sample(lastTick, lastRawTime, preparedTime, lastResult);
-  }
+
 };
 
 namespace {
-/**
- * @brief 将公共策略转为内部身份校验使用的95元素布局。
- */
-std::array<double, 95> encodePolicy(const Policy &p) {
-  std::array<double, 95> a{};
-  std::copy(p.state.begin(), p.state.end(), a.begin());
-  std::copy(p.input.begin(), p.input.end(), a.begin() + 58);
-  a[93] = p.mode;
-  a[94] = p.queryTime;
-  return a;
-}
 /**
  * @brief 将内部缓存转回公共策略结构，避免向外暴露 Eigen。
  */
@@ -192,8 +152,6 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
   if(runtime.preparedTick==tick) return runtime.tickIdentity();
   if(runtime.preparedTick!=UINT64_MAX && runtime.preparedTick!=runtime.lastTick)
     throw std::runtime_error("Query prepared observation before advancing tick");
-  if(runtime.lastTick!=UINT64_MAX && !runtime.actionReady)
-    throw std::runtime_error("Complete inverse dynamics before advancing policy tick");
   if(runtime.lastTick!=UINT64_MAX && tick!=runtime.lastTick+1)
     throw std::runtime_error("Nonsequential physical tick");
   const double t=runtime.controlTime.accept(tick,identity[2],1);
@@ -206,7 +164,6 @@ PlannerTick G1Controller::installOcpObservation(const std::array<double, StateDi
   runtime.preparedTime=t;
   runtime.preparedTick=tick;
   runtime.updateReady=false;
-  runtime.lastRawTime=identity[2];
   return runtime.tickIdentity();
 }
 
@@ -217,15 +174,6 @@ PlannerTick G1Controller::updateMpc(const PlannerTick& tick, bool requested) {
 Policy G1Controller::queryPrepared(const PlannerTick& tick) {
   impl_->queryPrepared(tick);
   return decodePolicy(impl_->lastPolicy.data());
-}
-/**
- * @brief 动作完成入口：检查策略与力矩，缓存本 tick 结果并采集诊断。
- */
-void G1Controller::completeAction(const Policy &policy, const Torque& torque) {
-  const auto p = encodePolicy(policy);
-  requireFinite(p.data(), p.size());
-  requireFinite(torque.data(), torque.size());
-  impl_->completeAction(p.data(), torque);
 }
 
 } // namespace g1_controller

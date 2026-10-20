@@ -10,12 +10,13 @@
 
 1. OCS2 MEX 返回 95 元素策略。
 2. MATLAB 将其中 state/input 传给独立逆动力学 MEX。
-3. MATLAB 调用 OCS2 的 `complete_action(policy95, torque23)`。
-4. OCS2 核对当前策略身份，记录策略诊断和完成样本，允许进入下一个 tick。
+3. MATLAB 核对策略身份并缓存力矩，重复调用直接使用缓存。
+4. MATLAB 汇总完整动作样本，允许进入下一个 tick。
 
-`complete_action` 不计算力矩。它只接受有限数据和当前 tick 的原样策略；
-重复提交还必须使用相同力矩，不重复记录诊断。应用诊断仍由 OCS2 MEX 管理，
-文件输出仍由 MATLAB 管理。不跨 MEX 传递原生指针。
+OCS2 在策略查询时记录依赖 MRT 的策略诊断，本轮规划由此完成。
+动作顺序、策略身份和重复调用检查由 MATLAB 包装层管理，关闭诊断时也保持有效。
+完整 `planner_samples` 由 MATLAB 根据策略和力矩汇总；力矩不再传回 OCS2，
+原生接口不再包含 `complete_action`。不跨 MEX 传递原生指针。
 
 独立使用逆动力学：
 
@@ -26,7 +27,7 @@ g1_inverse_dynamics_mex('close');
 ```
 
 原生 C++ 用户分别创建 `G1Controller` 和 `InverseDynamics`，通过
-`InverseDynamics::compute()` 计算力矩，再调用 `G1Controller::completeAction()`。
+`InverseDynamics::compute()` 计算力矩，由消费者自行协调动作与保存结果。
 两个模型分别持有数据；共享已编译的核心库不等于共享求解器实例。
 
 验证入口为 `inverseDynamicsMexTest`、`validate_synchronous_backend`、

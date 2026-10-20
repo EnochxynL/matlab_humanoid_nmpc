@@ -57,7 +57,6 @@ class Ocs2Backend final {
   // request=false 仅登记当前观测，继续使用已有策略；首次调用必须求解。
   void prepare(const ocs2::SystemObservation& observation, bool request);
   void queryPolicy(ocs2::vector_t& state, ocs2::vector_t& input, size_t& mode);
-  void recordPolicyDiagnostics();
 
  private:
   ocs2::TargetTrajectories resetTarget(const ocs2::SystemObservation& observation) const;

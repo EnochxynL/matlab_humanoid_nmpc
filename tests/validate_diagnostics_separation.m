@@ -20,9 +20,13 @@ assertRejected(@()g1.plannerMex('query_policy',token));
 assertRejected(@()g1.plannerMex('update_mpc',token,0));
 completed = g1.plannerMex('update_mpc',token,1);
 policy = g1.plannerMex('query_policy',completed);
+assertRejected(@()g1.plannerMex('install_observation',golden.expected(2,:)',[1;0.002;fixture.raw(2,1)]));
 bad = policy; bad(1) = bad(1) + 0.01;
 assertRejected(@()g1.plannerMex('inverse_dynamics',bad));
 torque = g1.plannerMex('inverse_dynamics',policy); %#ok<NASGU>
+duplicate = g1.plannerMex('inverse_dynamics',policy);
+assert(isequal(torque,duplicate),'Repeated action did not use the cached torque');
+assert(isequal(g1.plannerMex('query_policy',completed),policy));
 assertRejected(@()g1.plannerMex('install_observation',golden.expected(3,:)',[2;0.004;fixture.raw(3,1)]));
 g1.plannerMex('close');
 

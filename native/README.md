@@ -61,9 +61,10 @@ in-memory batches, including extra structural evaluations. It creates no files.
 
 `matlab/+g1/plannerMex.m` initializes and closes both MEX instances. Its
 `inverse_dynamics(policy95)` operation calls
-`g1_inverse_dynamics_mex('compute', state58, input35)`, then sends the policy
-and torque to `g1_ocp_mex('complete_action', policy95, torque23)` for identity
-checks, action completion and diagnostics. OCS2 no longer computes torque.
+`g1_inverse_dynamics_mex('compute', state58, input35)`. MATLAB checks the
+current policy identity, caches completed actions and assembles full
+`planner_samples` rows. Torque is never sent back to OCS2. The native
+planning stage completes at policy query, where MRT diagnostics are captured.
 No native handles are passed between MEX files. The Simulink block interfaces
 and model files are unchanged. Direct users can initialize the inverse dynamics
 MEX alone with a struct containing `taskFile` and `urdfFile`.

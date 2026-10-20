@@ -1,5 +1,9 @@
 # MATLAB 管理诊断文件
 
+后续双 MEX 拆分中，完整 `planner_samples` 的汇总也已迁入 MATLAB：
+OCS2 查询时采集原生策略诊断，独立逆动力学返回力矩后由
+`g1.plannerMex` 调用 `DiagnosticWriter.sample()`，不再将力矩传回 OCS2。
+
 本轮移除 `controller/data/`。C++ 仅保存诊断对象并计算、采集数值；
 MATLAB 管理文件、目录、CSV 编码和验收所需的存储格式。
 
