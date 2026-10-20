@@ -19,9 +19,6 @@ bad=raw;bad(5:8)=0;reject(@()kernels.extractObservation(bad,state,indices),'G1:O
 bad=raw;bad(9)=NaN;reject(@()kernels.extractObservation(bad,state,indices),'G1:ObservationExtraction');
 bad=state;bad(7)=bad(7)+1;reject(@()kernels.extractObservation(raw,bad,indices),'G1:ObservationExtraction');
 bad=indices;bad(2)=bad(1);reject(@()kernels.extractObservation(raw,state,bad),'G1:ObservationExtraction');
-keys={'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};old={getenv(keys{1}),getenv(keys{2})};
-envCleanup=onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
-setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
 g1.plannerMex('init',g1.plannerConfiguration(root,fullfile(folder,'install_guards')));
 cleanup=onCleanup(@()g1.plannerMex('close'));
 identity=kernels.extractObservation(raw,state,indices);
@@ -43,8 +40,4 @@ catch e
     rejected=strcmp(e.identifier,id);
 end
 assert(rejected,'Invalid input or stage was accepted');
-end
-
-function restoreEnvironment(keys,values)
-for k=1:numel(keys),setenv(keys{k},values{k});end
 end

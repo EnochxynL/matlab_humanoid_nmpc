@@ -10,10 +10,6 @@ cacheCleanup=g1.useBuildCache(); %#ok<NASGU>
 golden=load(fullfile(root,'runtime','evidence','observation_hybrid','conversion_values.mat'));
 folder = fullfile(root,'runtime','evidence',evidenceName,'model_replay');
 fixture = load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
-keys = {'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};
-old = {getenv(keys{1}),getenv(keys{2})};
-setenv(keys{1},'SIMULINK_REFERENCE');setenv(keys{2},'IN_PROCESS_ONLY');
-envCleanup = onCleanup(@()restoreEnvironment(keys,old)); %#ok<NASGU>
 g1.plannerMex('init',g1.plannerConfiguration(root,folder));
 cleanup = onCleanup(@()g1.plannerMex('close'));
 g1.plannerMex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
@@ -75,7 +71,4 @@ catch exception
     rejected = strcmp(exception.identifier,'G1:PlannerMex');
 end
 assert(rejected,'Illegal stage ordering/token was accepted.');
-end
-function restoreEnvironment(keys,values)
-for k=1:numel(keys),setenv(keys{k},values{k});end
 end

@@ -5,10 +5,7 @@ g1.initialize();
 [kernels,blockCleanup] = planner_block_functions(); %#ok<ASGLU>
 fixture = load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
 golden = load(fullfile(root,'runtime','evidence','observation_hybrid','conversion_values.mat'));
-keys = {'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};
-previous = {getenv(keys{1}),getenv(keys{2})};
-cleanup = onCleanup(@()finish(keys,previous));
-setenv(keys{1},'SIMULINK_REFERENCE'); setenv(keys{2},'IN_PROCESS_ONLY');
+cleanup = onCleanup(@()g1_ocp_mex('close'));
 unusedFolder = tempname(fullfile(root,'native','build'));
 config = g1.plannerConfiguration(root,unusedFolder);
 g1_ocp_mex('init',config);
@@ -76,9 +73,4 @@ end
 function assertEmpty(batch)
 assert(isempty(batch.snapshot) && isempty(batch.configurationJson) && isempty(batch.loadedLibraries));
 for k=1:numel(batch.tables), assert(isempty(batch.tables(k).values)); end
-end
-
-function finish(keys,previous)
-g1_ocp_mex('close');
-for k=1:numel(keys), setenv(keys{k},previous{k}); end
 end

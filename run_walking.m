@@ -7,7 +7,6 @@ assert(exist('g1_ocp_mex','file')==3,'Build native/scripts/build_mex.sh first.')
 assert(isfile(cfg.modelFile),'Missing models/g1_walking.slx.');
 folder=fullfile(root,'runtime',['walking_' char(datetime('now','TimeZone','Asia/Shanghai','Format','yyyyMMdd_HHmmss'))]);mkdir(folder);
 env=jsondecode(fileread(fullfile(root,'config/controller_environment.json')));
-env.TASK5A_AUTHORITY='SIMULINK_REFERENCE';env.TASK5A_PACKET_FILE='IN_PROCESS_ONLY';
 keys=fieldnames(env);old=cell(size(keys));for k=1:numel(keys),old{k}=getenv(keys{k});setenv(keys{k},env.(keys{k}));end
 cleanup=onCleanup(@()finish(keys,old));diary(fullfile(folder,'matlab.log'));
 g1log.writeJson(fullfile(root,'runtime/current_run.json'),struct('folder',folder,'status','STARTING'));

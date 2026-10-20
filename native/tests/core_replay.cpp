@@ -21,6 +21,12 @@ static int setenv(const char* name, const char* value, int overwrite) {
 #include <stdexcept>
 using namespace g1_controller;
 struct ControlResult { Policy policy; Torque torque; };
+template<class Action>
+void requireRejected(Action action, const char* message) {
+  try { action(); }
+  catch (const std::exception&) { return; }
+  throw std::runtime_error(message);
+}
 
 Reference reference(const double *a) {
   Reference r;
@@ -61,8 +67,6 @@ int main(int argc, char **argv) {
         root + "/config/controller_environment.json", env);
     for (const auto &x : env)
       setenv(x.first.c_str(), x.second.get_value<std::string>().c_str(), 1);
-    setenv("TASK5A_AUTHORITY", "SIMULINK_REFERENCE", 1);
-    setenv("TASK5A_PACKET_FILE", "IN_PROCESS_ONLY", 1);
     std::ifstream input(argv[2], std::ios::binary);
     std::uint64_t rows = 0;
     input.read(reinterpret_cast<char *>(&rows), 8);
@@ -92,6 +96,14 @@ int main(int argc, char **argv) {
       core.setReference(reference(a.data()+74));
       const double t=double(k)*.002;
       auto token=core.installOcpObservation(state,{double(k),t,a[0]});
+      if (k==0) {
+        requireRejected([&]{core.queryPrepared(token);}, "Query before MPC update accepted");
+        requireRejected([&]{core.updateMpc(token,false);}, "Initial update without solve accepted");
+        auto altered=token; altered.time+=.002;
+        requireRejected([&]{core.updateMpc(altered,true);}, "Altered tick identity accepted");
+        requireRejected([&]{core.installOcpObservation(state,{1.,.002,.002});},
+                        "Next observation before completing current tick accepted");
+      }
       bool due=k==0 || t+1e-12>=epoch+nextSlot*period;
       if(k==0){epoch=t;period=token.mpcPeriod;}
       else if(due){while(epoch+(nextSlot+1)*period<=t+1e-12)++nextSlot;++nextSlot;}

@@ -9,10 +9,7 @@ golden = load(fullfile(root,'runtime','evidence','observation_hybrid','conversio
 evidence = fullfile(root,'runtime','evidence','diagnostic_separation');
 unusedFolder = tempname(fullfile(root,'native','build'));
 config = g1.plannerConfiguration(root,unusedFolder,false);
-keys = {'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};
-previous = {getenv(keys{1}),getenv(keys{2})};
-cleanup = onCleanup(@()finish(keys,previous));
-setenv(keys{1},'SIMULINK_REFERENCE'); setenv(keys{2},'IN_PROCESS_ONLY');
+cleanup = onCleanup(@()g1.plannerMex('close'));
 
 g1.plannerMex('init',config);
 assert(~isfolder(unusedFolder),'Disabled diagnostics created a log directory');
@@ -64,9 +61,4 @@ catch exception
     rejected = strcmp(exception.identifier,'G1:PlannerMex');
 end
 assert(rejected,'Runtime guard was disabled with diagnostics');
-end
-
-function finish(keys,previous)
-g1.plannerMex('close');
-for k=1:numel(keys), setenv(keys{k},previous{k}); end
 end

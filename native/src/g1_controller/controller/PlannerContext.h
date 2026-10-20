@@ -1,47 +1,45 @@
-/**
- * @file
- * @brief 控制核心的对象装配入口：模型/OCP → SQP MPC → 参考与诊断。
- * 本文件主要管理依赖关系，不是 SQP 算法实现。TASK5A 名称是保留的参考接入配置。
- */
 #pragma once
+
 #include "controller/Ocs2Backend.h"
 #include "controller/reference/ExternalReferenceManager.h"
-#include <ocs2_sqp/SqpMpc.h>
 #include "g1_controller/G1Controller.h"
 
 #include <humanoid_wb_mpc/WBMpcInterface.h>
+#include <ocs2_sqp/SqpMpc.h>
 
 #include <cstdint>
 #include <memory>
-#include <string>
+
 namespace g1_controller {
 namespace diagnostics { class Diagnostics; }
 
 /**
- * @brief 拥有一套完整规划上下文。成员按声明顺序初始化、按逆序析构。
- * interface 提供完整 OCP 与初始化器，mpc 直接使用其 C++ 实现。
+ * @brief 装配并拥有一套 OCP、MPC 和外部参考接入，可选挂接诊断。
+ * 不生成参考、不安排求解时刻；这些由 MATLAB/Simulink 负责。
+ * G1Controller 先销毁使用本上下文的 Ocs2Backend，再销毁本对象。
  */
 struct PlannerContext {
-  ocs2::humanoid::WBMpcInterface interface;
-  // Keep diagnostic references and buffers alive while the solver is destroyed.
-  std::unique_ptr<diagnostics::Diagnostics> diagnostics;
-  ocs2::SqpMpc mpc;
-  std::shared_ptr<ExternalReferenceManager> external;
-  ReferencePacket currentPacket;
-  bool migrated;
-  uint64_t expectedSession = 0;
-  /**
-   * @brief 构建 WBMpcInterface，直接以原 C++ OCP 和初始化器创建 SqpMpc。
-   * 随后绑定 Simulink 外部参考：每次求解都检查 session 与实际观测 tick 一致。
-   * 日志和结构观察器挂到求解同步接口。
-   */
-  PlannerContext(const ControllerConfig &config);
+  explicit PlannerContext(const ControllerConfig& config);
   ~PlannerContext();
 
-  /**
-   * @brief 为同步数值后端绑定诊断回调；调度由外部负责。
-   */
-  void configure(Ocs2Backend &c);
+  // 回调捕获本对象地址，禁止复制或移动上下文。
+  PlannerContext(const PlannerContext&) = delete;
+  PlannerContext& operator=(const PlannerContext&) = delete;
+
+  void attachBackendDiagnostics(Ocs2Backend& backend);
+
+  // 按依赖顺序声明：MPC 先于诊断销毁，机器人/OCP 接口最后销毁。
+  ocs2::humanoid::WBMpcInterface interface;
+  std::unique_ptr<diagnostics::Diagnostics> diagnostics;
+  ocs2::SqpMpc mpc;
+  ReferencePacket currentPacket;
+
+ private:
+  static constexpr uint64_t SessionId = 1;
+  void installReferenceManager();
+  ReferencePacket referenceForSolve(double observationTime) const;
+
+  std::shared_ptr<ExternalReferenceManager> referenceManager_;
 };
 
 } // namespace g1_controller

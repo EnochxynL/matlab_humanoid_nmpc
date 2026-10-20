@@ -27,6 +27,13 @@ must request a solve. Duplicate updates must retain the same request and do not
 solve twice. C++ checks stage and policy identities, not external scheduling
 eligibility. A failed solve requires closing and initializing a fresh backend.
 
+External reference packets are the sole reference path. `PlannerContext`
+always installs the external reference manager; no migration flag or
+`TASK5A_AUTHORITY`/`TASK5A_PACKET_FILE` environment selector is required.
+It checks each packet against the actual solver observation time and the
+current single-session protocol. Optional backend diagnostic callbacks are
+attached separately by `attachBackendDiagnostics`.
+
 `PlannerContext` only assembles and owns the native OCP, MPC and diagnostic
 objects. `Ocs2Backend` owns MRT access, synchronous solve/policy installation,
 policy evaluation and inverse dynamics. There is no application solver worker,

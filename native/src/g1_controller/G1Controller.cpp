@@ -55,11 +55,10 @@ struct G1Controller::Impl {
       throw std::runtime_error(
           "Close existing MEX controller before initialization");
     context = std::make_unique<PlannerContext>(config);
-    context->expectedSession = 1;
     controller = std::make_unique<Ocs2Backend>(
         context->interface.modelSettings(), context->mpc,
         context->interface.getPinocchioInterface());
-    context->configure(*controller);
+    context->attachBackendDiagnostics(*controller);
   }
   PlannerTick tickIdentity() const {
     if (!controller || preparedTick == UINT64_MAX)

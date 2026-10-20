@@ -7,10 +7,7 @@ fixture = load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat
 golden = load(fullfile(root,'runtime','evidence','observation_hybrid','conversion_values.mat'));
 folder = fullfile(root,'runtime','evidence','synchronous_backend','external_requests');
 config = g1.plannerConfiguration(root,folder);
-keys = {'TASK5A_AUTHORITY','TASK5A_PACKET_FILE'};
-previous = {getenv(keys{1}),getenv(keys{2})};
-cleanup = onCleanup(@()finish(keys,previous));
-setenv(keys{1},'SIMULINK_REFERENCE'); setenv(keys{2},'IN_PROCESS_ONLY');
+cleanup = onCleanup(@()g1.plannerMex('close'));
 
 % 无效配置不能留下锁定实例。
 assertInitRejected(struct());
@@ -85,9 +82,4 @@ catch exception
     rejected = strcmp(exception.identifier,'G1:PlannerMex');
 end
 assert(rejected,'Invalid backend configuration was accepted');
-end
-
-function finish(keys,previous)
-g1.plannerMex('close');
-for k=1:numel(keys), setenv(keys{k},previous{k}); end
 end

@@ -1,60 +1,63 @@
-/**
- * @file
- * @brief 规划上下文的装配实现：构造 OCP/MPC，注册参考接入与诊断回调。
- * 初始化和 configure 不直接求解；求解时刻由 MATLAB/Simulink 决定。
- */
 #include "controller/PlannerContext.h"
-#include "controller/diagnostics/Diagnostics.h"
-#include "extensions/Environment.h"
 
-#include <cmath>
-#include <cstdlib>
-#include <fstream>
+#include "controller/CanonicalControlTime.h"
+#include "controller/diagnostics/Diagnostics.h"
+
 #include <stdexcept>
 
 namespace g1_controller {
 
-PlannerContext::PlannerContext(const ControllerConfig &i)
-    : interface(i.taskFile, i.urdfFile, i.referenceFile),
+PlannerContext::PlannerContext(const ControllerConfig& config)
+    : interface(config.taskFile, config.urdfFile, config.referenceFile),
       mpc(interface.mpcSettings(), interface.sqpSettings(),
-          interface.getOptimalControlProblem(), interface.getInitializer()),
-      migrated(g1_platform::environmentVariable("TASK5A_AUTHORITY") ==
-                   "SIMULINK_REFERENCE") {
-  if (i.diagnosticsEnabled)
-    diagnostics = std::make_unique<diagnostics::Diagnostics>(i, interface, mpc);
-  if (migrated) {
-    external = std::make_shared<ExternalReferenceManager>(
-        interface.getSwitchedModelReferenceManagerPtr(),
-        [this](double t) {
-          uint64_t tick = std::llround(t / .002);
-          auto p = currentPacket;
-          if (expectedSession && p.session != expectedSession)
-            throw std::runtime_error(
-                "G: Reference and PlantState sessions disagree");
-          if (p.tick != tick)
-            throw std::runtime_error(
-                "G: Reference tick does not match actual solver observation");
-          if (diagnostics) diagnostics->reference(t, p.filtered);
-          return p;
-        },
-        [this](const ReferencePacket& p, double t, double error) {
-          if (diagnostics) diagnostics->consumed(p, t, error);
-        });
-    mpc.getSolverPtr()->setReferenceManager(external);
-  } else
-    throw std::runtime_error("MEX requires SIMULINK_REFERENCE authority");
+          interface.getOptimalControlProblem(), interface.getInitializer()) {
+  // 诊断仅观察已有对象；关闭后仍建立同一套 OCP 和外部参考接入。
+  if (config.diagnosticsEnabled) {
+    diagnostics = std::make_unique<diagnostics::Diagnostics>(config, interface, mpc);
+  }
+  installReferenceManager();
 }
 
+// Diagnostics 在头文件中只有前置声明，因此在这里定义析构函数。
 PlannerContext::~PlannerContext() = default;
 
-void PlannerContext::configure(Ocs2Backend &c) {
+void PlannerContext::installReferenceManager() {
+  referenceManager_ = std::make_shared<ExternalReferenceManager>(
+      interface.getSwitchedModelReferenceManagerPtr(),
+      [this](double observationTime) {
+        return referenceForSolve(observationTime);
+      },
+      [this](const ReferencePacket& packet, double observationTime, double error) {
+        if (diagnostics) diagnostics->consumed(packet, observationTime, error);
+      });
+  mpc.getSolverPtr()->setReferenceManager(referenceManager_);
+}
+
+ReferencePacket PlannerContext::referenceForSolve(double observationTime) const {
+  // 返回本轮参考的副本；校验依据是实际求解观测，而非调度截止时间。
+  // 当前运行协议每次初始化建立一个 session，编号固定为 1。
+  auto packet = currentPacket;
+  if (packet.session != SessionId) {
+    throw std::runtime_error("Reference session does not match the controller session");
+  }
+  if (CanonicalControlTime::time(packet.tick) != observationTime) {
+    throw std::runtime_error("Reference tick does not match the solver observation time");
+  }
+  if (diagnostics) diagnostics->reference(observationTime, packet.filtered);
+  return packet;
+}
+
+void PlannerContext::attachBackendDiagnostics(Ocs2Backend& backend) {
   if (!diagnostics) return;
-  c.setTraceCallback([this](const char *e, double t, double d, double r) {
-    diagnostics->trace(e, t, d, r);
-  });
-  c.setPolicyCallback([this](const auto& observation, const auto& solution, const auto& command) {
-    diagnostics->policy(observation, solution, command);
-  });
+
+  backend.setTraceCallback(
+      [this](const char* event, double time, double deadline, double request) {
+        diagnostics->trace(event, time, deadline, request);
+      });
+  backend.setPolicyCallback(
+      [this](const auto& observation, const auto& solution, const auto& command) {
+        diagnostics->policy(observation, solution, command);
+      });
 }
 
 } // namespace g1_controller
