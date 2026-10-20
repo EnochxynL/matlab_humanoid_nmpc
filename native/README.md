@@ -1,6 +1,6 @@
 # Native OCS2 controller and MATLAB MEX
 
-This CMake subproject owns the controller, humanoid problem, Planner MEX and
+This CMake subproject owns the controller, humanoid problem, both MEX adapters and
 Conan recipes. Run the commands below from the repository root. Runtime robot
 assets and configuration stay in the application root.
 
@@ -36,7 +36,8 @@ inside the backend, without separate callback attachment.
 
 `Ocs2Backend(config)` assembles and owns the native OCP, MPC, reference and
 diagnostic objects, along with MRT access, synchronous solve/policy installation,
-policy evaluation and inverse dynamics. `G1Controller` manages the external
+policy evaluation. The independent `InverseDynamics` model owns its own
+Pinocchio model and computes torque without MPC or MRT. `G1Controller` manages the external
 tick/stage protocol through backend methods. There is no application solver worker,
 condition variable, duplicate 60 Hz clock or five-second worker wait timeout.
 OCS2's own numerical parallelism remains configured by its solver settings.
@@ -58,7 +59,16 @@ in-memory batches, including extra structural evaluations. It creates no files.
 `G1Controller::drainDiagnostics()`. Consumers must drain regularly: exceeding
 250,000 buffered rows raises an explicit error instead of dropping data.
 
-`matlab/+g1/plannerMex.m` wraps the same native MEX and drains after each action.
+`matlab/+g1/plannerMex.m` initializes and closes both MEX instances. Its
+`inverse_dynamics(policy95)` operation calls
+`g1_inverse_dynamics_mex('compute', state58, input35)`, then sends the policy
+and torque to `g1_ocp_mex('complete_action', policy95, torque23)` for identity
+checks, action completion and diagnostics. OCS2 no longer computes torque.
+No native handles are passed between MEX files. The Simulink block interfaces
+and model files are unchanged. Direct users can initialize the inverse dynamics
+MEX alone with a struct containing `taskFile` and `urdfFile`.
+
+The wrapper drains after each completed action.
 `DiagnosticWriter` owns CSV/metadata/snapshot files. Use the wrapper for normal
 MATLAB/Simulink operation, and call `g1.plannerMex('flush')` before inspecting
 live files. Close drains the final batch and closes all MATLAB file handles.

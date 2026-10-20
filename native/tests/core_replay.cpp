@@ -1,5 +1,6 @@
 // Integration acceptance: only public core API + saved real observations.
 #include "g1_controller/G1Controller.h"
+#include "g1_controller/InverseDynamics.h"
 #include <algorithm>
 #include <array>
 #include <boost/property_tree/json_parser.hpp>
@@ -77,6 +78,7 @@ int main(int argc, char **argv) {
     if(!states) throw std::runtime_error("Missing preconverted OCP state fixture");
     double epoch=0, period=1./60.;size_t nextSlot=1;
     G1Controller core;
+    g1_controller::InverseDynamics inverseDynamics(root + "/config/task.info", root + "/assets/g1_29dof.urdf");
     std::filesystem::create_directories(folder);
     core.initialize({root + "/config/task.info", root + "/config/reference.info",
                      root + "/assets/g1_29dof.urdf", folder});
@@ -112,12 +114,17 @@ int main(int argc, char **argv) {
       control.policy=core.queryPrepared(token);
       if(k==0){
         auto bad=control.policy;bad.state[0]+=.01;
-        bool rejected=false;try{core.inverseDynamics(bad);}catch(const std::exception&){rejected=true;}
+        bool rejected=false;try{core.completeAction(bad,{});}catch(const std::exception&){rejected=true;}
         if(!rejected) throw std::runtime_error("Altered policy accepted");
       }
-      control.torque=core.inverseDynamics(control.policy);
-      if(k==0 && core.inverseDynamics(control.policy)!=control.torque)
-        throw std::runtime_error("Repeated ID changed");
+      control.torque=inverseDynamics.compute(control.policy.state,control.policy.input);
+      core.completeAction(control.policy,control.torque);
+      if(k==0) {
+        core.completeAction(control.policy,control.torque);
+        auto changedTorque=control.torque;changedTorque[0]+=.01;
+        requireRejected([&]{core.completeAction(control.policy,changedTorque);},
+                        "Repeated action with altered torque accepted");
+      }
       auto actual = result(control);
       // Native consumers own persistence too; keep the library buffer bounded.
       auto diagnostics = core.drainDiagnostics();

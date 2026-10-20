@@ -39,7 +39,7 @@ std::string readString(const mxArray *argument) {
  * 不强制行/列形状；指针仅在本次 MEX 调用期间使用，不转移所有权。
  */
 const double *readDoubles(const mxArray *argument, std::size_t count) {
-  if (!mxIsDouble(argument) || mxIsComplex(argument) ||
+  if (!mxIsDouble(argument) || mxIsComplex(argument) || mxIsSparse(argument) ||
       mxGetNumberOfElements(argument) != count)
     throw std::runtime_error("Invalid numeric argument dimensions");
   const double *values = mxGetPr(argument);
@@ -172,7 +172,7 @@ mxArray* encodeDiagnostics(const g1_controller::DiagnosticBatch& batch) {
  * install_observation(x58, identity3) → tick3：登记独立提取的观测，不求解。
  * update_mpc(tick3,request) → tick3：按外部请求同步求解或沿用策略。
  * query_policy(tick3) → p95：只查询已准备好的策略，不触发求解。
- * inverse_dynamics(p95) → tau23：计算该策略的前馈力矩。
+ * complete_action(p95,tau23)：核对策略并接收独立 MEX 的力矩，记录本 tick 完成。
  * 标准 C++ 异常统一转换为 G1:PlannerMex 错误；此处不实现控制算法。
  */
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -238,14 +238,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     } else if (command == "query_policy") {
       if (nrhs != 2 || nlhs != 1) throw std::runtime_error("query_policy requires tick3 and one output");
       plhs[0] = encodePolicy(runtime().queryPrepared(decodeTick(readDoubles(prhs[1], 3))));
-    } else if (command == "inverse_dynamics") {
-      if (nrhs != 2 || nlhs != 1)
-        throw std::runtime_error(
-            "inverse_dynamics requires queried 95-value policy and one output");
+    } else if (command == "complete_action") {
+      if (nrhs != 3 || nlhs != 0)
+        throw std::runtime_error("complete_action requires policy95, torque23 and no outputs");
       const double *values = readDoubles(prhs[1], 95);
-      const auto torque = runtime().inverseDynamics(decodePolicy(values));
-      plhs[0] = mxCreateDoubleMatrix(23, 1, mxREAL);
-      std::copy(torque.begin(), torque.end(), mxGetPr(plhs[0]));
+      g1_controller::Torque torque;
+      std::copy_n(readDoubles(prhs[2], 23), 23, torque.begin());
+      runtime().completeAction(decodePolicy(values), torque);
     } else {
       throw std::runtime_error("Unknown MEX command");
     }

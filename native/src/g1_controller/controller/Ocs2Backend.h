@@ -57,7 +57,7 @@ class Ocs2Backend final {
   // request=false 仅登记当前观测，继续使用已有策略；首次调用必须求解。
   void prepare(const ocs2::SystemObservation& observation, bool request);
   void queryPolicy(ocs2::vector_t& state, ocs2::vector_t& input, size_t& mode);
-  ocs2::vector_t inverseDynamics(const ocs2::vector_t& state, const ocs2::vector_t& input);
+  void recordPolicyDiagnostics();
 
  private:
   ocs2::TargetTrajectories resetTarget(const ocs2::SystemObservation& observation) const;
@@ -71,8 +71,6 @@ class Ocs2Backend final {
   ocs2::SqpMpc mpc_;
   std::shared_ptr<ExternalReferenceManager> referenceManager_;
   ocs2::MPC_MRT_Interface mrt_;
-  ocs2::PinocchioInterface pinocchio_;
-  ocs2::humanoid::WBAccelMpcRobotModel<ocs2::scalar_t> robotModel_;
   ocs2::SystemObservation observation_;
   size_t solveCount_ = 0;
   bool prepared_ = false;

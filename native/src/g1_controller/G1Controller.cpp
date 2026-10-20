@@ -88,10 +88,10 @@ struct G1Controller::Impl {
   }
 
 /**
- * @brief 验证95元素策略与当前缓存逐元素相同，再计算并缓存前馈力矩。
+ * @brief 核对当前策略，接收独立逆动力学计算的力矩并记录完成；本入口不计算力矩。
  * 完成后写一行118元素样本；重复调用不重复求解或记录。
  */
-  void inverseDynamics(const double *p) {
+  void completeAction(const double *p, const Torque& torque) {
     if (!controller || lastTick == UINT64_MAX || lastTick != preparedTick)
       throw std::runtime_error("Query a policy before inverse dynamics");
     // Bind the action to exactly the policy queried in this tick; reject
@@ -99,10 +99,14 @@ struct G1Controller::Impl {
     if (!(Eigen::Map<const vector_t>(p, 95).array() == lastPolicy.array())
              .all())
       throw std::runtime_error("Inverse dynamics policy identity mismatch");
-    if (actionReady)
+    const Eigen::Map<const vector_t> tau(torque.data(), torque.size());
+    if (actionReady) {
+      if (!(tau.array() == lastResult.segment(93, 23).array()).all())
+        throw std::runtime_error("Repeated action changed its torque");
       return;
+    }
     vector_t x = lastPolicy.head(58), u = lastPolicy.segment(58, 35);
-    vector_t tau = controller->inverseDynamics(x, u);
+    controller->recordPolicyDiagnostics();
     lastResult << x, u, tau, lastPolicy[93], lastPolicy[94];
     actionReady = true;
     if (controller->diagnostics_)
@@ -215,15 +219,13 @@ Policy G1Controller::queryPrepared(const PlannerTick& tick) {
   return decodePolicy(impl_->lastPolicy.data());
 }
 /**
- * @brief 公共力矩入口：检查策略身份并提取缓存中的23维力矩。
+ * @brief 动作完成入口：检查策略与力矩，缓存本 tick 结果并采集诊断。
  */
-Torque G1Controller::inverseDynamics(const Policy &policy) {
+void G1Controller::completeAction(const Policy &policy, const Torque& torque) {
   const auto p = encodePolicy(policy);
   requireFinite(p.data(), p.size());
-  impl_->inverseDynamics(p.data());
-  Torque torque;
-  std::copy_n(impl_->lastResult.data() + 93, 23, torque.begin());
-  return torque;
+  requireFinite(torque.data(), torque.size());
+  impl_->completeAction(p.data(), torque);
 }
 
 } // namespace g1_controller

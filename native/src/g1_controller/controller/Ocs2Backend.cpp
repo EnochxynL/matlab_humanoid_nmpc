@@ -30,7 +30,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "controller/Ocs2Backend.h"
 #include "controller/diagnostics/Diagnostics.h"
 #include "extensions/MeasuredMode.h"
-#include <humanoid_wb_mpc/dynamics/DynamicsHelperFunctions.h>
 #include <stdexcept>
 
 namespace g1_controller {
@@ -39,8 +38,7 @@ Ocs2Backend::Ocs2Backend(const ControllerConfig& config)
     : interface_(config.taskFile, config.urdfFile, config.referenceFile),
       mpc_(interface_.mpcSettings(), interface_.sqpSettings(),
            interface_.getOptimalControlProblem(), interface_.getInitializer()),
-      mrt_(mpc_), pinocchio_(interface_.getPinocchioInterface()),
-      robotModel_(interface_.modelSettings()) {
+      mrt_(mpc_) {
   // 诊断观察已有 OCP/MPC 对象；外部参考接入在关闭诊断时同样建立。
   if (config.diagnosticsEnabled) {
     diagnostics_ = std::make_unique<diagnostics::Diagnostics>(config, interface_, mpc_);
@@ -55,7 +53,7 @@ Ocs2Backend::~Ocs2Backend() = default;
 
 ocs2::TargetTrajectories Ocs2Backend::resetTarget(const ocs2::SystemObservation& observation) const {
   auto state = observation.state;
-  state.tail(robotModel_.getGenCoordinatesDim()).setZero();
+  state.tail(interface_.getMpcRobotModel().getGenCoordinatesDim()).setZero();
   state.segment<2>(4).setZero();
   return {{observation.time}, {state}, {ocs2::vector_t::Zero(observation.input.size())}};
 }
@@ -97,12 +95,7 @@ void Ocs2Backend::queryPolicy(ocs2::vector_t& state, ocs2::vector_t& input, size
   if (!state.allFinite() || !input.allFinite()) throw std::runtime_error("Nonfinite policy output");
 }
 
-ocs2::vector_t Ocs2Backend::inverseDynamics(const ocs2::vector_t& state, const ocs2::vector_t& input) {
-  if (state.size() != 58 || input.size() != 35 || !state.allFinite() || !input.allFinite())
-    throw std::runtime_error("Invalid inverse dynamics inputs");
-  auto torque = ocs2::humanoid::computeJointTorques<ocs2::scalar_t>(state, input, pinocchio_, robotModel_);
+void Ocs2Backend::recordPolicyDiagnostics() {
   if (diagnostics_) diagnostics_->policy(observation_, mrt_.getPolicy(), mrt_.getCommand());
-  if (!torque.allFinite()) throw std::runtime_error("Nonfinite inverse dynamics output");
-  return torque;
 }
 } // namespace g1_controller

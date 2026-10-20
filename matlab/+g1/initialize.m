@@ -43,6 +43,8 @@ if isempty(currentCache) || strcmp(currentCache,getenv('G1_DEFAULT_AD_CACHE_ROOT
 end
 assert(isfile(fullfile(runtimeDirectory,['g1_ocp_mex.' mexext])), ...
     buildInstruction);
+assert(isfile(fullfile(runtimeDirectory,['g1_inverse_dynamics_mex.' mexext])), ...
+    buildInstruction);
 addpath(runtimeDirectory);
 cfg = g1.loadConfiguration();
 end
