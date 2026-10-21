@@ -42,6 +42,9 @@ classdef DiagnosticWriter < handle
             if ~isempty(batch.loadedLibraries)
                 obj.writeText('loaded_process_maps.txt',batch.loadedLibraries);
             end
+            if isfield(batch,'clockMetadata') && ~isempty(batch.clockMetadata)
+                obj.writeText('diagnostic_clock.json',jsonencode(batch.clockMetadata));
+            end
             if ~isempty(batch.snapshot)
                 file = fullfile(obj.folder,'structural_snapshot.bin');
                 fid = fopen(file,'w');

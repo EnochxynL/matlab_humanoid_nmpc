@@ -71,6 +71,14 @@ assert(all(ismember(trace.event,{'observation_arrived','solver_started', ...
 assert(sum(strcmp(trace.event,'solver_finished'))==2);
 assert(sum(strcmp(trace.event,'policy_installed'))==2);
 assert(sum(strcmp(trace.event,'policy_consumed'))==11);
+assert(all(isfinite(trace.wall_monotonic_time_s)) && all(diff(trace.wall_monotonic_time_s)>=0));
+clock=jsondecode(fileread(fullfile(folder,'diagnostic_clock.json')));
+assert(strcmp(clock.clock,'MATLAB tic/toc') && strcmp(clock.table,'timing_trace'));
+gait=readtable(fullfile(folder,'gait_queries.csv'));
+assert(height(gait)==11 && isequal(gait.observation_time_s,(0:10)'*.002));
+assert(all(gait.observation_mode==3));
+referenceRows=readtable(fullfile(folder,'reference.csv'));
+assert(height(referenceRows)==2 && isequal(referenceRows.control_time_s,[0;.002]));
 
 % 关闭后允许重新创建、正常求解和重复关闭。
 g1.plannerMex('init',g1.plannerConfiguration(root,fullfile(folder,'reinitialized')));

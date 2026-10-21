@@ -56,7 +56,7 @@ struct Problem {
     auto* definition=p.get();
     enableDiagnostics=[definition,task](Problem& owner) {
       g1_controller::ControllerConfig config;config.taskFile=task;
-      owner.diagnostics=std::make_unique<g1_controller::diagnostics::Diagnostics>(config,*definition,*owner.mpc);
+      owner.diagnostics=std::make_unique<g1_controller::diagnostics::Diagnostics>(config,*definition,*owner.mpc,false);
     };
     convert=[definition](const double* data)->vector_t {
       const size_t nq=6+definition->getMpcRobotModel().getJointDim();
@@ -255,14 +255,6 @@ void mexFunction(int nlhs,mxArray* plhs[],int nrhs,const mxArray* prhs[]) {
       require(nrhs==3&&nlhs==0,"diagnostics_observation(handle,tick)");
       const double tick=scalar(prhs[2]);require(tick>=0&&tick<=9007199254740992.&&tick==std::floor(tick),"Invalid diagnostic tick");
       if(p.diagnostics)p.diagnostics->observation(static_cast<uint64_t>(tick));
-    } else if(command=="diagnostics_trace") {
-      require(nrhs==4&&nlhs==0,"diagnostics_trace(handle,event,time)");
-      const auto event=text(prhs[2]);const double time=scalar(prhs[3]);
-      if(p.diagnostics)p.diagnostics->trace(event.c_str(),time);
-    } else if(command=="diagnostics_reference") {
-      require(nrhs==4&&nlhs==0,"diagnostics_reference(handle,time,command)");
-      const double time=scalar(prhs[2]);const auto* values=numbers(prhs[3],4);
-      if(p.diagnostics)p.diagnostics->reference(time,Eigen::Map<const ocs2::vector4_t>(values));
     } else if(command=="copyStats") {
       require(nrhs==2&&nlhs==1,"copyStats(handle)");
       const char* fields[]={"targets","schedules","observations","queryStates","policyOutputs"};

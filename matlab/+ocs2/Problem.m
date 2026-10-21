@@ -76,12 +76,6 @@ classdef Problem < handle
         function diagnostics_observation(obj,tick)
             ocs2_binding_mex('diagnostics_observation',obj.NativeHandle,tick);
         end
-        function diagnostics_trace(obj,event,time)
-            ocs2_binding_mex('diagnostics_trace',obj.NativeHandle,event,time);
-        end
-        function diagnostics_reference(obj,time,command)
-            ocs2_binding_mex('diagnostics_reference',obj.NativeHandle,time,command);
-        end
         function stats=copyStats(obj)
             % 各项为 [显式搬运次数, 元素总数]；不包括 OCS2 内部和 MATLAB 分配。
             stats=ocs2_binding_mex('copyStats',obj.NativeHandle);

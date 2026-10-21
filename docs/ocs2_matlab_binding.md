@@ -166,3 +166,9 @@ assertSuccess(results);
 运行 `validate_binding_migration`、`validate_centroidal_binding_migration`、
 `validate_binding_walking` 可复核。证据位于 `runtime/evidence/binding_migration/`。
 `G1Controller` 与旧 MEX 仍保留供独立 C++ 和回放对照使用，不在 MATLAB/Simulink 生产调用链中。
+
+首批诊断表已迁到 MATLAB：`reference`、`gait_queries`、`timing_trace`，以及
+`logging_load` 空表头和已有 `adapter_consumption` 的 schema。
+绑定删除了只负责写行的 `diagnostics_trace`、`diagnostics_reference` 命令。
+`timing_trace` 的会话相对时钟见 `diagnostic_clock.json`；逐表边界和验证记录见
+[诊断表清单](diagnostics_inventory.md)。

@@ -12,20 +12,23 @@ inline double wallTime(){return std::chrono::duration<double>(std::chrono::stead
 #include "controller/diagnostics/FootDiagnostics.h"
 class TimingDiagnostics final:public ocs2::SolverSynchronizedModule,public ocs2::DummyObserver {
  public:
- explicit TimingDiagnostics(g1_controller::diagnostics::DiagnosticBuffer& buffer):feet_(buffer),buffer_(buffer){
-  buffer_.define("timing_trace","event,control_time_s,wall_monotonic_time_s");
+ explicit TimingDiagnostics(g1_controller::diagnostics::DiagnosticBuffer& buffer,bool applicationTables=true):feet_(buffer),buffer_(buffer),applicationTables_(applicationTables){
+  // Legacy standalone controller keeps these tables; MATLAB owns them in the binding path.
+  if(applicationTables_){
+   buffer_.define("timing_trace","event,control_time_s,wall_monotonic_time_s");
+   buffer_.define("reference","control_time_s,v_x,v_y,height,yaw_rate");
+   buffer_.define("gait_queries","observation_time_s,query_control_time_s,observation_mode,policy_mode");
+   buffer_.define("logging_load","observation_time_s,repeat,knot_count,first_state_norm");
+  }
   buffer_.define("solver_timing","solver_target_control_time_s,wall_solver_start_s,wall_solver_end_s,solver_module_wall_duration_s,policy_start_time_s,policy_end_time_s");
-  buffer_.define("reference","control_time_s,v_x,v_y,height,yaw_rate");
   buffer_.define("policy_queries","observation_time_s,policy_query_time_s,policy_reference_time_s,policy_start_time_s,policy_end_time_s,policy_age_control_s,policy_observation_age_control_s,wall_query_time_s");
   buffer_.define("policy_vectors","observation_time_s,policy_query_time_s,kind,index,value");
   buffer_.define("policy_knots","solver_target_control_time_s,knot_control_time_s,kind,index,value");
   buffer_.define("gait_schedule","solver_target_control_time_s,kind,index,value");
-  buffer_.define("gait_queries","observation_time_s,query_control_time_s,observation_mode,policy_mode");
-  buffer_.define("logging_load","observation_time_s,repeat,knot_count,first_state_norm");
  }
  void configure(const ocs2::PinocchioInterface&pin,const ocs2::humanoid::MpcRobotModelBase<double>&m,std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager>ref){feet_.configure(pin,m,ref);}
- void trace(const char*event,double time){buffer_.row("timing_trace",{event,time,wallTime()});}
- void reference(double t,const ocs2::vector4_t&v){buffer_.row("reference",{t,v[0],v[1],v[2],v[3]});}
+ void trace(const char*event,double time){if(applicationTables_)buffer_.row("timing_trace",{event,time,wallTime()});}
+ void reference(double t,const ocs2::vector4_t&v){if(applicationTables_)buffer_.row("reference",{t,v[0],v[1],v[2],v[3]});}
  void preSolverRun(ocs2::scalar_t t,ocs2::scalar_t,const ocs2::vector_t&,const ocs2::ReferenceManagerInterface&)override{target_=t;start_=wallTime();}
  void postSolverRun(const ocs2::PrimalSolution&p)override{
   for(size_t k=0;k<p.timeTrajectory_.size();++k)feet_.write(target_,target_,p.timeTrajectory_[k],"policy_knot",p.stateTrajectory_[k],p.inputTrajectory_[std::min(k,p.inputTrajectory_.size()-1)],p.modeSchedule_);
@@ -41,7 +44,7 @@ class TimingDiagnostics final:public ocs2::SolverSynchronizedModule,public ocs2:
  void update(const ocs2::SystemObservation&o,const ocs2::PrimalSolution&p,const ocs2::CommandData&c)override{
   const double t=o.time+.005,ref=c.mpcInitObservation_.time;
   if(t<p.timeTrajectory_.front()-1e-12||t>p.timeTrajectory_.back()+1e-12)throw std::runtime_error("Query outside policy horizon");
-  buffer_.row("gait_queries",{o.time,t,o.mode,p.modeSchedule_.modeAtTime(t)});
+  if(applicationTables_)buffer_.row("gait_queries",{o.time,t,o.mode,p.modeSchedule_.modeAtTime(t)});
   buffer_.row("policy_queries",{o.time,t,ref,p.timeTrajectory_.front(),p.timeTrajectory_.back(),t-ref,o.time-ref,wallTime()});
   const auto x=ocs2::LinearInterpolation::interpolate(t,p.timeTrajectory_,p.stateTrajectory_);
   const auto u=ocs2::LinearInterpolation::interpolate(t,p.timeTrajectory_,p.inputTrajectory_);
@@ -49,6 +52,6 @@ class TimingDiagnostics final:public ocs2::SolverSynchronizedModule,public ocs2:
   for(const auto&pair:{std::pair<const char*,const ocs2::vector_t*>("observation_state",&o.state),{"state",&x},{"input",&u}})for(int j=0;j<pair.second->size();++j)buffer_.row("policy_vectors",{o.time,t,pair.first,j,(*pair.second)[j]});
   trace("policy_consumed",o.time);
  }
- private:FootDiagnostics feet_;g1_controller::diagnostics::DiagnosticBuffer& buffer_;double target_=0,start_=0;
+ private:FootDiagnostics feet_;g1_controller::diagnostics::DiagnosticBuffer& buffer_;bool applicationTables_;double target_=0,start_=0;
 
 };

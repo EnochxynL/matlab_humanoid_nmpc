@@ -10,8 +10,8 @@ class Diagnostics {
  public:
   template<class Problem>
   Diagnostics(const ControllerConfig& config, Problem& interface,
-              ocs2::SqpMpc& mpc)
-      : timing_(std::make_shared<TimingDiagnostics>(buffer_)) {
+              ocs2::SqpMpc& mpc,bool applicationTables=true)
+      : timing_(std::make_shared<TimingDiagnostics>(buffer_,applicationTables)) {
     timing_->configure(interface.getPinocchioInterface(), interface.getMpcRobotModel(),
                        interface.getSwitchedModelReferenceManagerPtr());
     auto structure = std::make_shared<StructuralObserver<Problem>>(interface,mpc,timing_,buffer_,observationTick_);
@@ -20,7 +20,7 @@ class Diagnostics {
     mpc.getSolverPtr()->addSynchronizedModule(structure);
     buffer_.configurationJson=configurationJson(interface,config.taskFile);
     buffer_.loadedLibraries=g1_controller::describeLoadedModules();
-    buffer_.define("adapter_consumption","session,epoch,sequence,control_tick,canonical_control_time,target_count,event_count,event_mode_max_error,target_max_error,legacy_filter_calls,legacy_gait_decisions");
+    if(applicationTables)buffer_.define("adapter_consumption","session,epoch,sequence,control_tick,canonical_control_time,target_count,event_count,event_mode_max_error,target_max_error,legacy_filter_calls,legacy_gait_decisions");
   }
   DiagnosticBatch drain() { return buffer_.drain(); }
   void observation(uint64_t tick) { observationTick_ = tick; }

@@ -87,6 +87,12 @@ in-memory batches, including extra structural evaluations. It creates no files.
 still use `G1Controller::drainDiagnostics()`. Consumers must drain regularly: exceeding
 250,000 buffered rows raises an explicit error instead of dropping data.
 
+`reference`, `gait_queries`, `timing_trace`, the empty `logging_load` schema and
+`adapter_consumption` are now assembled in MATLAB. The binding does not emit
+these tables. `timing_trace` uses session-relative MATLAB `tic/toc`; its clock
+origin and scope are declared in `diagnostic_clock.json`. Native solver and
+policy-query wall timestamps retain their separate steady-clock origin.
+
 `matlab/+g1/plannerMex.m` initializes and closes both MEX instances. Its
 `inverse_dynamics(policy95)` operation calls
 `g1_inverse_dynamics_mex('compute', state58, input35)`. MATLAB checks the
