@@ -24,22 +24,21 @@
 `native/include/g1_controller/InverseDynamics.h`，不额外包装成包目录。
 公共维度与力矩类型位于
 `native/include/g1_controller/ModelTypes.h`，逆动力学头文件不再引用
-`G1Controller.h`。
+旧控制器头文件。
 
 构建关系：
 
 ```text
-g1_ocp_mex → g1_controller.dll → humanoid_wb_mpc → humanoid_common_mpc
-                                            ↘        ↓
-                                              humanoid_model
-                                                    ↑
-g1_inverse_dynamics_mex → g1_dynamics.dll ─────────────┘
+ocs2_binding_mex -> humanoid_wb_mpc / humanoid_centroidal_mpc
+                         -> humanoid_common_mpc -> humanoid_model
+
+g1_inverse_dynamics_mex -> g1_dynamics.dll -> humanoid_model
 ```
 
-`humanoid_model` 是静态库。两个项目 DLL 各自链接所需数学代码，各自创建
+`humanoid_model` 是静态库。绑定 MEX 与逆动力学 DLL 各自链接所需数学代码，各自创建
 ModelSettings、Pinocchio 和状态输入映射对象，不共享求解器实例。
 独立逆动力学项目目标不链接 humanoid_common_mpc、humanoid_wb_mpc 或
-g1_controller_core。
+ocs2_binding_mex。
 
 运行 `python native/scripts/verify_layers.py` 检查直接和间接 include 边界。
 配置时的 `cmake/VerifyLayers.cmake` 同时禁止项目目标之间出现传递交叉链接；

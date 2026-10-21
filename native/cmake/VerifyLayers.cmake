@@ -33,17 +33,16 @@ endfunction()
 g1_forbid_dependencies(humanoid_model
   humanoid_ocp_extensions humanoid_common_mpc humanoid_wb_mpc
   humanoid_centroidal_mpc
-  g1_controller_core g1_dynamics_core)
+  g1_dynamics_core)
 g1_forbid_dependencies(g1_dynamics_core
-  humanoid_ocp_extensions humanoid_common_mpc humanoid_wb_mpc humanoid_centroidal_mpc g1_controller_core)
+  humanoid_ocp_extensions humanoid_common_mpc humanoid_wb_mpc humanoid_centroidal_mpc)
 
 if(TARGET humanoid_centroidal_mpc)
-  g1_forbid_dependencies(humanoid_centroidal_mpc humanoid_wb_mpc g1_controller_core g1_dynamics_core)
-  g1_forbid_dependencies(humanoid_centroidal_model humanoid_centroidal_mpc humanoid_wb_mpc g1_controller_core g1_dynamics_core)
+  g1_forbid_dependencies(humanoid_centroidal_mpc humanoid_wb_mpc g1_dynamics_core)
+  g1_forbid_dependencies(humanoid_centroidal_model humanoid_centroidal_mpc humanoid_wb_mpc g1_dynamics_core)
   g1_forbid_dependencies(humanoid_wb_mpc humanoid_centroidal_mpc)
 endif()
-g1_forbid_dependencies(g1_controller_core g1_dynamics_core)
 if(G1_BUILD_MATLAB)
-  g1_forbid_dependencies(g1_inverse_dynamics_mex g1_controller_core)
-  g1_forbid_dependencies(g1_ocp_mex g1_dynamics_core)
+  g1_forbid_dependencies(g1_inverse_dynamics_mex ocs2_binding_mex humanoid_wb_mpc humanoid_centroidal_mpc)
+  g1_forbid_dependencies(ocs2_binding_mex g1_dynamics_core)
 endif()

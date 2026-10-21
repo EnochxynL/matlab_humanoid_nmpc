@@ -1,6 +1,13 @@
+> 当前状态：旧 G1Controller、PlannerMex、PacketManager、ExternalReferenceManager 及其构建目标已删除。运行与应用诊断由 MATLAB 管理，原生诊断计算保留。下文迁移前对照描述属于历史记录；回放使用 tests/fixtures/legacy_controller 中冻结的旧输出。
+
+旧链路清理验证：新绑定与独立逆动力学重新构建、安装；7 项 MATLAB 测试通过。
+全身与质心各 2401 tick 的直接绑定回放均与冻结旧输出逐值一致，复制次数检查通过。
+完整全身 Simulink 回放完成 289 次求解，策略、力矩和动作总线与已验收 Windows 输出一致。
+此轮未重跑物理行走，也未验证 Linux 构建。
+
 # OCS2 MATLAB 直接绑定原型
 
-当前 MATLAB/Simulink 执行链已切换到此绑定；`g1_ocp_mex` 保留用于独立 C++ 回放和对照。
+当前 MATLAB/Simulink 执行链已切换到此绑定；旧 MEX 已删除，回放改用冻结基线。
 目的是验证：MATLAB 能否直接编排问题接口、SQP 和 MRT，并减少中间容器。
 `ocs2_binding_mex` 直接链接 humanoid 问题库和 OCS2，不调用 `G1Controller`、
 `PacketManager` 或 `ExternalReferenceManager`；原生诊断计算由现有诊断类提供。
@@ -143,7 +150,7 @@ assertSuccess(results);
 回放循环同时运行两个求解器，没有独立测量各自耗时，因此没有性能提升结论。
 
 迁移将时间、阶段和失败处理放在 MATLAB 中，原生层不再维护应用 tick 协议。
-旧独立 C++ 实现暂时保留作对照，MATLAB/Simulink 不再通过它运行。
+旧独立 C++ 实现已删除，冻结输出保留作回归基线。
 
 迁移版本已补齐诊断 API 和状态布局转换。为在 MATLAB 中保持参考消费检查，
 每次求解后读回原生目标和接触时间表，因此新增了一次参考快照传输；
@@ -165,7 +172,7 @@ assertSuccess(results);
 
 运行 `validate_binding_migration`、`validate_centroidal_binding_migration`、
 `validate_binding_walking` 可复核。证据位于 `runtime/evidence/binding_migration/`。
-`G1Controller` 与旧 MEX 仍保留供独立 C++ 和回放对照使用，不在 MATLAB/Simulink 生产调用链中。
+`G1Controller` 与旧 MEX 已删除。
 
 首批诊断表已迁到 MATLAB：`reference`、`gait_queries`、`timing_trace`，以及
 `logging_load` 空表头和已有 `adapter_consumption` 的 schema。

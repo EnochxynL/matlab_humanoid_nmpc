@@ -55,8 +55,7 @@ struct Problem {
       settings.impactProximityFactorTouchDownVelocity,settings.impactProximityFactorMidPointValue};
     auto* definition=p.get();
     enableDiagnostics=[definition,task](Problem& owner) {
-      g1_controller::ControllerConfig config;config.taskFile=task;
-      owner.diagnostics=std::make_unique<g1_controller::diagnostics::Diagnostics>(config,*definition,*owner.mpc,false);
+      owner.diagnostics=std::make_unique<g1_controller::diagnostics::Diagnostics>(task,*definition,*owner.mpc);
     };
     convert=[definition](const double* data)->vector_t {
       const size_t nq=6+definition->getMpcRobotModel().getJointDim();

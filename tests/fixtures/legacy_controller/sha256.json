@@ -1,0 +1,10 @@
+﻿[
+    {
+        "file":  "centroidal.mat",
+        "sha256":  "b372977048db4bb0bc4cd679d75c3d2d53aa49b263e1ffe83f528a24fa086447"
+    },
+    {
+        "file":  "whole_body.mat",
+        "sha256":  "be3554102c02798a96ecb64fd3f39132c3733479fd7541dd6d0d870d312fbff5"
+    }
+]

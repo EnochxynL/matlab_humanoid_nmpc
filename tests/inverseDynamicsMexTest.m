@@ -18,7 +18,7 @@ classdef inverseDynamicsMexTest < matlab.unittest.TestCase
         function independentModel(testCase)
             g1_inverse_dynamics_mex('init',testCase.Config);
             testCase.verifyTrue(mislocked('g1_inverse_dynamics_mex'));
-            testCase.verifyFalse(mislocked('g1_ocp_mex'));
+            testCase.verifyFalse(mislocked('ocs2_binding_mex'));
             first = compute(zeros(58,1),zeros(35,1));
             second = compute(zeros(58,1),zeros(35,1));
             testCase.verifySize(first,[23 1]);
@@ -46,17 +46,17 @@ classdef inverseDynamicsMexTest < matlab.unittest.TestCase
                 'G1:InverseDynamicsMex');
             testCase.verifyFalse(mislocked('g1_inverse_dynamics_mex'));
             g1.plannerMex('init',testCase.Config);
-            testCase.verifyTrue(mislocked('g1_ocp_mex'));
+            testCase.verifyTrue(mislocked('ocs2_binding_mex'));
             testCase.verifyTrue(mislocked('g1_inverse_dynamics_mex'));
             g1.plannerMex('close');
-            testCase.verifyFalse(mislocked('g1_ocp_mex'));
+            testCase.verifyFalse(mislocked('ocs2_binding_mex'));
             testCase.verifyFalse(mislocked('g1_inverse_dynamics_mex'));
         end
         function existingIndependentModelSurvivesWrapperFailure(testCase)
             g1_inverse_dynamics_mex('init',testCase.Config);
             testCase.verifyError(@()g1.plannerMex('init',testCase.Config), ...
-                'G1:InverseDynamicsMex');
-            testCase.verifyFalse(mislocked('g1_ocp_mex'));
+                'G1:PlannerMex');
+            testCase.verifyFalse(mislocked('ocs2_binding_mex'));
             testCase.verifyTrue(mislocked('g1_inverse_dynamics_mex'));
             testCase.verifySize(compute(zeros(58,1),zeros(35,1)),[23 1]);
         end
@@ -67,6 +67,5 @@ function torque = compute(state,input)
 torque = g1_inverse_dynamics_mex('compute',state,input);
 end
 function closeRaw()
-g1_ocp_mex('close');
 g1_inverse_dynamics_mex('close');
 end

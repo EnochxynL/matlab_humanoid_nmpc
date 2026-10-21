@@ -8,28 +8,29 @@ golden = load(fullfile(root,'runtime','evidence','observation_hybrid','conversio
 cleanup = onCleanup(@closeNative);
 unusedFolder = tempname(fullfile(root,'native','build'));
 config = g1.plannerConfiguration(root,unusedFolder);
-g1_ocp_mex('init',config);
-initial = g1_ocp_mex('diagnostics');
+backend = g1.PlannerBackend(config);
+backendCleanup = onCleanup(@()delete(backend));
+initial = backend.execute('diagnostics');
 assert(~isfolder(unusedFolder),'Native diagnostics created a log folder');
 assert(~isempty(initial.configurationJson) && ~isempty(initial.tables));
 info = jsondecode(initial.configurationJson);
 assert(str2double(string(info.state_dim))==58);
-assertEmpty(g1_ocp_mex('diagnostics'));
+assertEmpty(backend.execute('diagnostics'));
 
-g1_ocp_mex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
-token = g1_ocp_mex('install_observation',golden.expected(1,:)',[0;0]);
-completed = g1_ocp_mex('update_mpc',token,1);
-policy = g1_ocp_mex('query_policy',completed);
+backend.execute('install_reference',kernels.extractReference(fixture.ref(1,:)'));
+token = backend.execute('install_observation',golden.expected(1,:)',[0;0]);
+completed = backend.execute('update_mpc',token,1);
+policy = backend.execute('query_policy',completed);
 g1_inverse_dynamics_mex('init',config);
 torque = g1_inverse_dynamics_mex('compute',policy(1:58),policy(59:93));
-batch = g1_ocp_mex('diagnostics');
+batch = backend.execute('diagnostics');
 names = {batch.tables.name};
 assert(~any(strcmp(names,'time_identity')));
 assert(~any(strcmp(names,'planner_samples')));
 assert(size(batch.tables(strcmp(names,'solver_timing')).values,1)==1);
 assert(numel(batch.snapshot)==218);
-assertEmpty(g1_ocp_mex('diagnostics'));
-g1_ocp_mex('close');
+assertEmpty(backend.execute('diagnostics'));
+delete(backend); clear backendCleanup;
 g1_inverse_dynamics_mex('close');
 assert(~isfolder(unusedFolder),'Native diagnostic computation wrote files');
 
@@ -49,10 +50,11 @@ delete(writer);
 
 % The disabled path has no schema, metadata, snapshot, or rows.
 config.diagnosticsEnabled = false;
-g1_ocp_mex('init',config);
-disabled = g1_ocp_mex('diagnostics');
+backend = g1.PlannerBackend(config);
+backendCleanup = onCleanup(@()delete(backend));
+disabled = backend.execute('diagnostics');
 assertEmpty(disabled); assert(isempty(disabled.tables));
-g1_ocp_mex('close');
+delete(backend); clear backendCleanup;
 assert(~isfolder(unusedFolder));
 
 % Writer initialization failure must release the already created native session.
@@ -76,7 +78,7 @@ disp(result);
 end
 
 function closeNative()
-g1_ocp_mex('close');
+g1.plannerMex('close');
 g1_inverse_dynamics_mex('close');
 end
 

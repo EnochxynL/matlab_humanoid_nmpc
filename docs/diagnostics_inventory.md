@@ -1,6 +1,8 @@
+> 当前状态：旧 G1Controller、PlannerMex、PacketManager、ExternalReferenceManager 及其构建目标已删除。运行与应用诊断由 MATLAB 管理，原生诊断计算保留。下文迁移前对照描述属于历史记录；回放使用 tests/fixtures/legacy_controller 中冻结的旧输出。
+
 # 诊断表清点与 MATLAB 迁移边界
 
-本清单针对当前 `ocs2_binding_mex` 执行链；旧 `G1Controller` 仅作为对照。
+本清单针对当前 `ocs2_binding_mex` 执行链；旧 `G1Controller` 已删除，其冻结输出作为回归基线。
 首次版本仅清点；当前清单同时记录已完成的直接生成表迁移。
 所有应用 CSV、JSON、TXT、BIN 文件已经由 MATLAB 写出；
 后续待迁移的是其余原生采样编排、组表、统计和部分计算调用。

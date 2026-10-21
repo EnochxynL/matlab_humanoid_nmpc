@@ -1,3 +1,5 @@
+> 当前状态：旧 G1Controller、PlannerMex、PacketManager、ExternalReferenceManager 及其构建目标已删除。运行与应用诊断由 MATLAB 管理，原生诊断计算保留。下文迁移前对照描述属于历史记录；回放使用 tests/fixtures/legacy_controller 中冻结的旧输出。
+
 # 两种 MPC 的共用原生运行接口
 
 `G1Controller` 直接管理两种 OCP 的实例生命周期、参考接入、观测阶段、

@@ -17,23 +17,17 @@ reference validation, first-reset targets, policy caching and consumption checks
 Native bindings own problem, SQP/MRT and optional native diagnostic objects.
 See [binding migration](../docs/ocs2_matlab_binding.md).
 
-`G1Controller` remains available for standalone C++ replay and comparison.
-Select `ControllerConfig::formulation` (`WholeBody` by default, or `Centroidal`
-when enabled), and obtain state/input sizes from `dimensions()`. Reference nodes,
-observations and policies use vectors sized for the selected OCP. The existing
-MATLAB transport defaults to the unchanged whole-body 428/95 layout; selecting
-`centroidal` uses 359/72. Build/run `g1_shared_runtime_smoke` to exercise the common API with both
-formulations and diagnostic modes. See [shared runtime](../docs/shared_mpc_runtime.md).
+Both formulations use the shared MATLAB runtime (reference/policy layouts: 428/95 and 359/72).
 The optional centroidal formulation also has a complete Simulink walking chain.
 See [centroidal Simulink integration](../docs/centroidal_simulink.md).
 
-- `include/g1_controller/G1Controller.h`: public controller and data types.
 - `src/g1_controller/model/`: shared robot model and numerical functions.
 - `src/g1_controller/problem/`: planning problem, costs, constraints and references.
 - `src/g1_controller/InverseDynamics.cpp`, `include/g1_controller/InverseDynamics.h`:
   independent inverse-dynamics implementation and API, linked in a separate target.
-- `src/g1_controller/controller/`: OCS2 runtime and reference integration.
-- `src/g1_controller_mex/`: MATLAB adapter.
+- `src/g1_controller/controller/`: native diagnostic computations.
+- `src/ocs2_binding_mex/`: direct OCS2 binding.
+- `src/g1_controller_mex/`: inverse-dynamics adapter.
 - `conanfile.txt`, `conan.lock`: dependency declarations and recipe revisions.
 - `conan/profiles/`: compiler configurations.
 - `conan/recipes/`: local Coal, Pinocchio, URDFDOM, BLASFEO, HPIPM and OCS2 recipes.
@@ -58,18 +52,10 @@ It submits native target trajectories and a padded contact schedule directly.
 The solver registers the original switched-model reference manager, without
 `PacketManager` or `ExternalReferenceManager` in the MATLAB execution path.
 
-For standalone C++ compatibility, `G1Controller::initialize(config)` still assembles the native OCP, MPC, reference and
-diagnostic objects, along with MRT access, synchronous solve/policy installation,
-policy evaluation. The independent `InverseDynamics` model in `g1_dynamics.dll` owns its own
-Pinocchio model and computes torque without MPC or MRT. `G1Controller` manages the external
-tick/stage protocol and solver calls directly, with one observation and stage state.
-There is no application solver worker,
-condition variable, duplicate 60 Hz clock or five-second worker wait timeout.
-OCS2's own numerical parallelism remains configured by its solver settings.
-The control path returns evaluated policy samples. Enabled diagnostics also
-stream per-knot values for inspection, without transferring native objects.
+The independent `InverseDynamics` model owns its Pinocchio instance and computes
+torque without MPC or MRT. OCS2 numerical parallelism follows solver settings.
 
-Application diagnostics are optional. `ControllerConfig::diagnosticsEnabled`
+Application diagnostics are optional. `config.diagnosticsEnabled`
 defaults to true for existing acceptance tooling. MATLAB can use
 `g1.plannerConfiguration(root, logDirectory, false)` to disable them. With that
 setting the backend creates no application log directory, diagnostic OCP clone,
@@ -83,8 +69,7 @@ explicit time/state/input/mode arguments. References match observations by tick.
 MATLAB also writes the `time_identity` diagnostic table.
 `controller/diagnostics/Diagnostics.h` owns native diagnostic objects and typed
 in-memory batches, including extra structural evaluations. It creates no files.
-`ocs2.Problem.diagnostics_drain()` drains these batches; standalone C++ callers can
-still use `G1Controller::drainDiagnostics()`. Consumers must drain regularly: exceeding
+`ocs2.Problem.diagnostics_drain()` drains these batches. Consumers must drain regularly: exceeding
 250,000 buffered rows raises an explicit error instead of dropping data.
 
 `reference`, `gait_queries`, `timing_trace`, the empty `logging_load` schema and

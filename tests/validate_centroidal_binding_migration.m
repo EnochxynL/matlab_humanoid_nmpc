@@ -1,7 +1,7 @@
 function result=validate_centroidal_binding_migration()
 [states,packets,config]=binding_replay_inputs('centroidal');
 root=fileparts(fileparts(mfilename('fullpath')));
-accepted=load(fullfile(root,'runtime','evidence','ocs2_binding','centroidal','replay.mat'),'old');
+accepted=load(fullfile(root,'tests','fixtures','legacy_controller','centroidal.mat'),'old');
 folder=fullfile(root,'runtime','evidence','binding_migration','centroidal');
 config.logDirectory=folder;config.diagnosticsEnabled=true;
 g1.plannerMex('init',config);cleanup=onCleanup(@()g1.plannerMex('close'));

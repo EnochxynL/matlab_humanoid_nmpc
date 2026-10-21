@@ -24,8 +24,6 @@ def verify(native: Path):
         for layer in ("model", "problem", "dynamics"):
             if path.is_relative_to(core / layer):
                 return layer
-        if path == native / "include/g1_controller/G1Controller.h":
-            return "problem"
         return None
 
     include = re.compile(r'^\s*#include\s*["<]([^">]+)[">]', re.MULTILINE)
