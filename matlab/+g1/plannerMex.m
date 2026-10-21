@@ -1,9 +1,11 @@
 function varargout = plannerMex(command,varargin)
 %PLANNERMEX Coordinate OCS2 and independent inverse dynamics MEX instances.
 % Simulink calls this wrapper; the native MEX never calls MATLAB callbacks.
+% policy = g1.plannerMex('step', observation, reference, [tick;canonical;raw], request)
+% runs one complete control step; inverse dynamics consumes the returned policy.
 persistent writer initialized inverseInitialized backend
 persistent queryOnly centroidal
-persistent currentToken rawTime lastPolicy lastTorque
+persistent currentIdentity rawTime lastPolicy lastTorque
 persistent lastExecutionInput
 if isempty(initialized), initialized = false; end
 if isempty(inverseInitialized), inverseInitialized = false; end
@@ -22,7 +24,7 @@ if strcmp(command,'init')
             g1_inverse_dynamics_mex('init',config);
             inverseInitialized = true;
         end
-        currentToken = []; rawTime = []; lastPolicy = []; lastTorque = [];
+        currentIdentity = []; rawTime = []; lastPolicy = []; lastTorque = [];
         lastExecutionInput = [];
         if ~isfield(config,'diagnosticsEnabled') || config.diagnosticsEnabled
             writer = g1.DiagnosticWriter(config.logDirectory);
@@ -60,7 +62,7 @@ else
                     [policy(36:47);acceleration(:)]);
                 lastExecutionInput=executionInput;
                 if ~isempty(writer)
-                    writer.sample(currentToken(1),rawTime,currentToken(2), ...
+                    writer.sample(currentIdentity(1),rawTime,currentIdentity(2), ...
                         [lastPolicy(1:70);lastTorque;lastPolicy(71:72)],'centroidal_samples');
                 end
                 collect();
@@ -86,39 +88,27 @@ else
             torque = g1_inverse_dynamics_mex('compute',policy(1:58),policy(59:93));
             lastTorque = torque;
             if ~isempty(writer)
-                writer.sample(currentToken(1),rawTime,currentToken(2), ...
+                writer.sample(currentIdentity(1),rawTime,currentIdentity(2), ...
                     [lastPolicy(1:93); torque; lastPolicy(94:95)]);
             end
             varargout{1} = torque;
             collect();
         else
-            nativeArguments = varargin;
-            if strcmp(command,'install_observation')
-                if numel(varargin) ~= 2
-                    error('G1:PlannerMex','install_observation requires state and time identity');
-                end
-                nativeArguments{2} = validateObservationTime(varargin{2});
-            end
-            if strcmp(command,'install_observation') && numel(varargin) == 2 && ...
-                    isnumeric(varargin{2}) && numel(varargin{2}) == 3 && ...
-                    ~isempty(currentToken) && varargin{2}(1) ~= currentToken(1) && ...
-                    ((queryOnly && isempty(lastPolicy)) || (~queryOnly && isempty(lastTorque)))
-                error('G1:PlannerMex','Complete current action before advancing tick');
-            end
             if ~initialized,error('G1:PlannerMex','Initialize planner first');end
-            [varargout{1:nargout}] = backend.execute(command,nativeArguments{:});
-            if strcmp(command,'install_observation')
-                token = varargout{1};
-                if isempty(currentToken) || token(1) ~= currentToken(1)
-                    currentToken = token; rawTime = varargin{2}(3);
-                    lastPolicy = []; lastTorque = [];
-                    lastExecutionInput = [];
-                    if ~isempty(writer)
-                        writer.timeIdentity(token(1),rawTime,token(2));
-                    end
+            if strcmp(command,'step')
+                if numel(varargin)~=4 || nargout~=1
+                    error('G1:PlannerMex','step requires observation, reference, time identity and request');
                 end
-            elseif strcmp(command,'query_policy')
-                lastPolicy = varargout{1}(:);
+                identity=validateObservationTime(varargin{3});
+                policy=backend.execute('step',varargin{1},varargin{2},identity,varargin{4});
+                if isempty(currentIdentity) || identity(1)~=currentIdentity(1)
+                    currentIdentity=identity;rawTime=varargin{3}(3);
+                    lastTorque=[];lastExecutionInput=[];
+                    if ~isempty(writer),writer.timeIdentity(identity(1),rawTime,identity(2));end
+                end
+                lastPolicy=policy(:);varargout{1}=lastPolicy;
+            else
+                [varargout{1:nargout}]=backend.execute(command,varargin{:});
             end
         end
     catch exception
@@ -144,7 +134,7 @@ end
         if ~isempty(backend),delete(backend);backend=[];end
         initialized = false;
         if ~isempty(writer), delete(writer); writer = []; end
-        currentToken = []; rawTime = []; lastPolicy = []; lastTorque = [];
+        currentIdentity = []; rawTime = []; lastPolicy = []; lastTorque = [];
         lastExecutionInput = [];
         queryOnly = false;
         centroidal = false;

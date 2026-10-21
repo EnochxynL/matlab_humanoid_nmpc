@@ -1,23 +1,17 @@
 classdef PlannerBackend < handle
-    %PLANNERBACKEND MATLAB 拥有参考协议、求解阶段和策略缓存。
-    % 原生 Problem 只保管模型、SQP/MRT、原生计算和只读诊断对象。
+    % 一个控制步显式接收观测和参考，顺序完成提交、可选求解及策略查询。
     properties (Access=private)
         problem
         dimensions
         settings
         wholeBody
         diagnosticsEnabled
-        token=[]
-        state=[]
-        policy=[]
-        updated=false
-        requested=false
         started=false
         failed=false
-        reference=[]
-        sequence=0
-        consumedSequence=0
-        consumedTick=-1
+        lastTick=[]
+        lastArguments={}
+        lastPolicy=[]
+        solveCount=0
         localTables=struct()
         wallClock=[]
         clockMetadata=[]
@@ -55,16 +49,12 @@ classdef PlannerBackend < handle
             switch command
                 case 'dimensions'
                     varargout{1}=obj.dimensions;
+                case 'mpc_period'
+                    varargout{1}=obj.problem.Dimensions(3);
                 case 'convert_observation'
                     varargout{1}=obj.problem.convertObservation(varargin{1});
-                case 'install_reference'
-                    obj.installReference(varargin{1});
-                case 'install_observation'
-                    varargout{1}=obj.installObservation(varargin{1},varargin{2});
-                case 'update_mpc'
-                    varargout{1}=obj.update(varargin{1},varargin{2});
-                case 'query_policy'
-                    varargout{1}=obj.query(varargin{1});
+                case 'step'
+                    varargout{1}=obj.step(varargin{:});
                 case 'diagnostics'
                     batch=obj.problem.diagnostics_drain();
                     names=fieldnames(obj.localTables);
@@ -80,71 +70,38 @@ classdef PlannerBackend < handle
         end
     end
     methods (Access=private)
-        function installReference(obj,a)
-            nx=obj.dimensions(1);nu=obj.dimensions(2);
-            vector(a,149+3*(nx+nu));a=a(:);
-            require(a(2)==0 || a(2)==1,'Invalid reference publication flag');
-            if a(2)==0,return;end
-            integer(a(1),0,flintmax);integer(a(3),1,3);
-            require(a(3)==1 || a(3)==3,'Invalid target count');
-            if ~isempty(obj.reference) && obj.reference.tick==a(1),return;end
-            offset=6+3*(nx+nu);count=a(offset+1);integer(count,1,64);
-            modes=a(offset+66:offset+130);
-            require(all(modes>=0 & modes<=3 & modes==floor(modes)),'Invalid contact mode');
-            r=struct('tick',a(1),'sequence',obj.sequence+1,'times',a(4:3+a(3)), ...
-                'states',reshape(a(7:6+3*nx),nx,3), ...
-                'inputs',reshape(a(7+3*nx:offset),nu,3), ...
-                'events',a(offset+2:offset+1+count),'modes',modes(1:count+1), ...
-                'terminal',a(offset+131),'swing',a(offset+132:offset+139), ...
-                'filtered',a(offset+140:offset+143));
-            r.states=r.states(:,1:a(3));r.inputs=r.inputs(:,1:a(3));
-            obj.sequence=r.sequence;obj.reference=r;
-        end
-        function token=installObservation(obj,x,identity)
-            vector(x,obj.dimensions(1));vector(identity,2);
-            tick=identity(1);integer(tick,0,flintmax);
-            if ~isempty(obj.token) && tick==obj.token(1)
-                require(identity(2)==obj.token(2),'Repeated observation changed time');
-                token=obj.token;return;
-            end
-            if isempty(obj.token)
-                require(tick==0,'First physical tick must be zero');
-            else
-                require(~isempty(obj.policy),'Query prepared observation before advancing tick');
-                require(tick==obj.token(1)+1,'Nonsequential physical tick');
-            end
-            obj.token=[tick;identity(2);obj.problem.Dimensions(3)];
-            obj.state=x(:);obj.policy=[];obj.updated=false;token=obj.token;
-        end
-        function token=update(obj,token,request)
-            obj.validateToken(token);vector(request,1);
+        function policy=step(obj,state,reference,identity,request)
+            vector(state,obj.dimensions(1));vector(identity,2);vector(request,1);
+            tick=identity(1);t=identity(2);integer(tick,0,flintmax);
             require(request==0 || request==1,'MPC request must be zero or one');
-            if obj.updated
-                require(logical(request)==obj.requested,'Repeated MPC stage changed request');return;
-            end
             require(~obj.failed,'Previous solve failed; close and initialize a fresh backend');
-            require(obj.started || request==1,'Initial observation requires a solve');
-            t=obj.token(2);nu=obj.dimensions(2);
-            obj.problem.mrt_setCurrentObservation(t,obj.state,zeros(nu,1),obj.observationMode);
-            if obj.diagnosticsEnabled
-                obj.trace('observation_arrived',t);
+            stepArguments={state(:),reference(:),identity(:),request};
+            if ~isempty(obj.lastTick) && tick==obj.lastTick
+                require(isequal(stepArguments,obj.lastArguments),'Repeated planner step changed inputs');
+                policy=obj.lastPolicy;return;
             end
-            if request
-                try
-                    obj.validateReference(t);
+            if isempty(obj.lastTick)
+                require(tick==0 && request==1,'First planner step requires tick zero and a solve');
+            else
+                require(tick==obj.lastTick+1,'Nonsequential physical tick');
+            end
+            % 参考仅在本步求解时使用，不预装到后端，也不跨步缓存参考包。
+            if request,r=obj.decodeReference(reference,tick,t);end
+            try
+                obj.problem.mrt_setCurrentObservation(t,state(:),zeros(obj.dimensions(2),1),obj.observationMode);
+                if obj.diagnosticsEnabled,obj.trace('observation_arrived',t);end
+                if request
                     if ~obj.started
-                        initial=obj.state;
+                        initial=state(:);
                         if obj.wholeBody
                             initial(end-(6+obj.settings.joints)+1:end)=0;initial(5:6)=0;
                         end
-                        obj.problem.mrt_resetMpcNode(t,initial,zeros(nu,1));
+                        obj.problem.mrt_resetMpcNode(t,initial,zeros(obj.dimensions(2),1));
                     end
-                    r=obj.reference;
                     obj.problem.reference_setTargetTrajectories(r.times,r.states,r.inputs);
                     obj.problem.reference_getGaitSchedule_updateModeSchedule([r.events;r.terminal],[r.modes;3]);
                     if obj.diagnosticsEnabled
-                        % tick 仅供原生求解统计使用，无需每个控制 tick 跨 MEX 传递。
-                        obj.problem.diagnostics_observation(obj.token(1));
+                        obj.problem.diagnostics_observation(tick);
                         obj.record('reference',num2cell([t;r.filtered]'));
                         obj.trace('solver_started',t);
                     end
@@ -152,47 +109,45 @@ classdef PlannerBackend < handle
                     if obj.diagnosticsEnabled,obj.trace('solver_finished',t);end
                     require(obj.problem.mrt_updatePolicy(),'Requested solve did not install a policy');
                     if obj.diagnosticsEnabled,obj.trace('policy_installed',t);end
-                    obj.verifyConsumption(t);obj.started=true;
-                catch exception
-                    obj.failed=true;rethrow(exception);
+                    obj.verifyReference(r,tick,t);obj.started=true;
                 end
-            end
-            obj.updated=true;obj.requested=logical(request);
-        end
-        function policy=query(obj,token)
-            obj.validateToken(token);
-            require(~obj.failed && obj.updated,'Complete MPC update before querying policy');
-            if isempty(obj.policy)
-                t=obj.token(2)+.005;
-                [x,u,mode]=obj.problem.mrt_evaluatePolicy(t,obj.state);
-                obj.policy=[x;u;mode;t];
+                queryTime=t+.005;
+                [x,u,mode]=obj.problem.mrt_evaluatePolicy(queryTime,state(:));
+                policy=[x;u;mode;queryTime];
                 if obj.diagnosticsEnabled
-                    obj.record('gait_queries',{obj.token(2),t,obj.observationMode,mode});
-                    obj.trace('policy_consumed',obj.token(2));
+                    obj.record('gait_queries',{t,queryTime,obj.observationMode,mode});
+                    obj.trace('policy_consumed',t);
                 end
+            catch exception
+                obj.failed=true;rethrow(exception);
             end
-            policy=obj.policy;
+            obj.lastTick=tick;obj.lastArguments=stepArguments;obj.lastPolicy=policy;
         end
-        function validateToken(obj,token)
-            vector(token,3);
-            require(~isempty(obj.token) && isequal(token(:),obj.token),'Planner tick identity mismatch');
-        end
-        function validateReference(obj,t)
-            r=obj.reference;
-            require(~isempty(r) && r.tick==obj.token(1),'Reference tick does not match solver observation');
-            require(r.sequence==obj.consumedSequence+1 && r.tick>obj.consumedTick,'Reference order rejected');
+        function r=decodeReference(obj,a,tick,t)
+            nx=obj.dimensions(1);nu=obj.dimensions(2);
+            vector(a,149+3*(nx+nu));a=a(:);
+            require(a(1)==tick && a(2)==1,'Requested solve requires a reference for the current tick');
+            integer(a(3),1,3);require(a(3)==1 || a(3)==3,'Invalid target count');
+            offset=6+3*(nx+nu);count=a(offset+1);integer(count,1,64);
+            modes=a(offset+66:offset+66+count);
+            require(all(modes>=0 & modes<=3 & modes==floor(modes)),'Invalid contact mode');
+            r=struct('times',a(4:3+a(3)),'states',reshape(a(7:6+3*nx),nx,3), ...
+                'inputs',reshape(a(7+3*nx:offset),nu,3),'events',a(offset+2:offset+1+count), ...
+                'modes',modes,'terminal',a(offset+131),'swing',a(offset+132:offset+139), ...
+                'filtered',a(offset+140:offset+143));
+            r.states=r.states(:,1:a(3));r.inputs=r.inputs(:,1:a(3));
             require(all(diff(r.times)>0) && all(diff(r.events)>=0),'Reference times not ordered');
             require(r.terminal>r.events(end) && r.terminal>t+2*obj.settings.horizon,'Terminal marker inside reference window');
             require(isequal(r.swing,obj.settings.swing),'Swing parameters differ from loaded problem');
         end
-        function verifyConsumption(obj,t)
-            r=obj.reference;actual=obj.problem.reference_getSnapshot();
+        function verifyReference(obj,r,tick,t)
+            actual=obj.problem.reference_getSnapshot();
             require(isequal(actual.events,r.events) && isequal(actual.modes,r.modes),'Adapter altered authoritative schedule');
             require(isequal(actual.times,r.times) && isequal(actual.states,r.states) && ...
                 isequal(actual.inputs,r.inputs),'Adapter altered authoritative target');
-            obj.consumedSequence=r.sequence;obj.consumedTick=r.tick;
+            obj.solveCount=obj.solveCount+1;
             if obj.diagnosticsEnabled
-                obj.record('adapter_consumption',num2cell([1,0,r.sequence,r.tick,t,numel(r.times),numel(r.events),0,0,0,0]));
+                obj.record('adapter_consumption',num2cell([1,0,obj.solveCount,tick,t,numel(r.times),numel(r.events),0,0,0,0]));
             end
         end
         function defineTable(obj,name,columns)

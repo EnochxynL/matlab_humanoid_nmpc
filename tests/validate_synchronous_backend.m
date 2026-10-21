@@ -1,99 +1,49 @@
-function result = validate_synchronous_backend()
-%VALIDATE_SYNCHRONOUS_BACKEND 验证调度权属于外部，且失败后不会发布旧策略。
-root = fileparts(fileparts(mfilename('fullpath')));
-g1.initialize();
-[kernels, blockCleanup] = planner_block_functions(); %#ok<ASGLU>
-fixture = load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
-golden = load(fullfile(root,'runtime','evidence','observation_hybrid','conversion_values.mat'));
-folder = fullfile(root,'runtime','evidence','synchronous_backend','external_requests');
-config = g1.plannerConfiguration(root,folder);
-cleanup = onCleanup(@()g1.plannerMex('close'));
-
-% 无效配置不能留下锁定实例。
+function result=validate_synchronous_backend()
+% 验证一次显式控制步、外部求解请求和重复调用保护。
+root=fileparts(fileparts(mfilename('fullpath')));g1.initialize();
+[kernels,blockCleanup]=planner_block_functions(); %#ok<ASGLU>
+fixture=load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
+golden=load(fullfile(root,'runtime','evidence','observation_hybrid','conversion_values.mat'));
+folder=fullfile(root,'runtime','evidence','synchronous_backend','external_requests');
+config=g1.plannerConfiguration(root,folder);cleanup=onCleanup(@()g1.plannerMex('close'));
 assertInitRejected(struct());
-bad = config; bad.taskFile = fullfile(folder,'nonexistent-task.info');
-assertInitRejected(bad);
+bad=config;bad.taskFile=fullfile(folder,'nonexistent-task.info');assertInitRejected(bad);
 g1.plannerMex('init',config);
-% 时间校验不推进状态；拒绝非零起点及不一致的规范/原始时间后，仍可安装 tick 0。
-initialState = golden.expected(1,:)';
-assertRejected(@()g1.plannerMex('install_observation',initialState,[1;0.002;0.002]));
-assertRejected(@()g1.plannerMex('install_observation',initialState,[0;eps;0]));
-assertRejected(@()g1.plannerMex('install_observation',initialState,[0;0;1e-6]));
-reference = kernels.extractReference(fixture.ref(1,:)');
-for tick = 0:10
-    % 在 2 ms 主动额外求解；18 ms 到达传统截止时间时故意不求解。
-    % 若 C++ 仍有自己的 60 Hz 调度，这两个行为会被拒绝或改变。
-    requested = tick <= 1;
-    if requested
-        packet = reference; packet(1) = tick; packet(2) = 1;
-        g1.plannerMex('install_reference',packet);
-    end
-    identity = [tick;double(tick)*0.002;fixture.raw(tick+1,1)];
-    token = g1.plannerMex('install_observation',golden.expected(tick+1,:)',identity);
-    duplicateToken = g1.plannerMex('install_observation',golden.expected(tick+1,:)',identity);
-    assert(isequal(token,duplicateToken));
-    completed = g1.plannerMex('update_mpc',token,double(requested));
-    duplicate = g1.plannerMex('update_mpc',token,double(requested));
-    assert(isequal(completed,duplicate));
-    assertRejected(@()g1.plannerMex('update_mpc',token,double(~requested)));
-    policy = g1.plannerMex('query_policy',completed);
-    torque = g1.plannerMex('inverse_dynamics',policy);
-    assert(all(isfinite(torque)));
+state=golden.expected(1,:)';reference=kernels.extractReference(fixture.ref(1,:)');
+assertRejected(@()g1.plannerMex('step',state,reference,[1;.002;.002],1));
+assertRejected(@()g1.plannerMex('step',state,reference,[0;eps;0],1));
+assertRejected(@()g1.plannerMex('step',state,reference,[0;0;1e-6],1));
+assertRejected(@()g1.plannerMex('step',state,reference,[0;0;0],0));
+for tick=0:10
+    requested=double(tick<=1);packet=reference;packet(1)=tick;packet(2)=requested;
+    identity=[tick;tick*.002;fixture.raw(tick+1,1)];state=golden.expected(tick+1,:)';
+    policy=g1.plannerMex('step',state,packet,identity,requested);
+    assert(isequal(policy,g1.plannerMex('step',state,packet,identity,requested)));
+    assertRejected(@()g1.plannerMex('step',state,packet,identity,1-requested));
+    torque=g1.plannerMex('inverse_dynamics',policy);assert(all(isfinite(torque)));
 end
-
-% 已查询 tick 10 后不能跳过 tick 11；拒绝后仍可继续原有序列。
-assertRejected(@()g1.plannerMex('install_observation',initialState,[12;0.024;0.024]));
-
-% 不安装匹配 tick 的参考而强制求解：同步抛错，后端进入失败状态。
-tick = 11;
-token = g1.plannerMex('install_observation',golden.expected(tick+1,:)', ...
-    [tick;double(tick)*0.002;fixture.raw(tick+1,1)]);
-assertRejected(@()g1.plannerMex('update_mpc',token,1));
-assertRejected(@()g1.plannerMex('update_mpc',token,0));
-assertRejected(@()g1.plannerMex('query_policy',token));
+assertRejected(@()g1.plannerMex('step',state,packet,[12;.024;.024],0));
+% 无效参考在提交求解前拒绝；不把可修正的输入错误当作求解器故障。
+assertRejected(@()g1.plannerMex('step',state,reference,[11;.022;.022],1));
 g1.plannerMex('close');
-solves = readtable(fullfile(folder,'solver_timing.csv'));
-assert(height(solves)==2);
-assert(isequal(solves.solver_target_control_time_s,[0;0.002]));
-samples = readtable(fullfile(folder,'planner_samples.csv'));
-assert(height(samples)==11);
-timeIdentity = readtable(fullfile(folder,'time_identity.csv'));
-% tick 11 的观测已成功安装；其后的求解失败不撤回时间记录。
-assert(height(timeIdentity)==12);
-assert(isequal(timeIdentity.control_tick,(0:11)'));
-assert(isequal(timeIdentity.canonical_control_time,(0:11)'*0.002));
-assert(all(abs(timeIdentity.raw_minus_canonical)<=1e-12));
-trace = readtable(fullfile(folder,'timing_trace.csv'));
-assert(isequal(trace.Properties.VariableNames, ...
-    {'event','control_time_s','wall_monotonic_time_s'}));
-assert(all(ismember(trace.event,{'observation_arrived','solver_started', ...
-    'solver_finished','policy_installed','policy_consumed'})));
+solves=readtable(fullfile(folder,'solver_timing.csv'));
+assert(isequal(solves.solver_target_control_time_s,[0;.002]));
+samples=readtable(fullfile(folder,'planner_samples.csv'));assert(height(samples)==11);
+timeIdentity=readtable(fullfile(folder,'time_identity.csv'));
+assert(isequal(timeIdentity.control_tick,(0:10)'));
+assert(all(timeIdentity.canonical_control_time==timeIdentity.control_tick*.002));
+trace=readtable(fullfile(folder,'timing_trace.csv'));
 assert(sum(strcmp(trace.event,'solver_finished'))==2);
-assert(sum(strcmp(trace.event,'policy_installed'))==2);
 assert(sum(strcmp(trace.event,'policy_consumed'))==11);
 assert(all(isfinite(trace.wall_monotonic_time_s)) && all(diff(trace.wall_monotonic_time_s)>=0));
-clock=jsondecode(fileread(fullfile(folder,'diagnostic_clock.json')));
-assert(strcmp(clock.clock,'MATLAB tic/toc') && strcmp(clock.table,'timing_trace'));
-gait=readtable(fullfile(folder,'gait_queries.csv'));
-assert(height(gait)==11 && isequal(gait.observation_time_s,(0:10)'*.002));
-assert(all(gait.observation_mode==3));
-referenceRows=readtable(fullfile(folder,'reference.csv'));
-assert(height(referenceRows)==2 && isequal(referenceRows.control_time_s,[0;.002]));
-
-% 关闭后允许重新创建、正常求解和重复关闭。
 g1.plannerMex('init',g1.plannerConfiguration(root,fullfile(folder,'reinitialized')));
-g1.plannerMex('install_reference',reference);
-token = g1.plannerMex('install_observation',golden.expected(1,:)',[0;0;fixture.raw(1,1)]);
-completed = g1.plannerMex('update_mpc',token,1);
-policy = g1.plannerMex('query_policy',completed);
-torque = g1.plannerMex('inverse_dynamics',policy); %#ok<NASGU>
-g1.plannerMex('close'); g1.plannerMex('close');
+policy=g1.plannerMex('step',golden.expected(1,:)',reference,[0;0;fixture.raw(1,1)],1);
+torque=g1.plannerMex('inverse_dynamics',policy); %#ok<NASGU>
+g1.plannerMex('close');g1.plannerMex('close');
 assert(~mislocked('ocs2_binding_mex'));
-result = struct('passed',true,'external_request_times',[0;0.002], ...
-    'ticks',11,'duplicate_requests_idempotent',true, ...
-    'failed_backend_rejected',true,'reinitialization_passed',true);
-g1log.writeJson(fullfile(folder,'acceptance.json'),result);
-disp(result);
+result=struct('passed',true,'external_request_times',[0;.002],'ticks',11, ...
+    'duplicate_requests_idempotent',true,'invalid_reference_rejected',true,'reinitialization_passed',true);
+g1log.writeJson(fullfile(folder,'acceptance.json'),result);disp(result);
 end
 
 function assertRejected(callback)

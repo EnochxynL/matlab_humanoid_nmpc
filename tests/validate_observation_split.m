@@ -1,7 +1,7 @@
 function result = validate_observation_split(evidenceName)
 [kernels,blockCleanup]=planner_block_functions();
 if nargin==0,evidenceName='observation_split';end
-%VALIDATE_OBSERVATION_SPLIT Independent extraction, install guards and full replay.
+%VALIDATE_OBSERVATION_SPLIT Independent extraction, explicit-step time guards and full replay.
 root=fileparts(fileparts(mfilename('fullpath')));cd(root);cfg=g1.initialize();
 folder=fullfile(root,'runtime','evidence',evidenceName);
 fixture=load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
@@ -22,11 +22,12 @@ bad=indices;bad(2)=bad(1);reject(@()kernels.extractObservation(raw,state,bad),'G
 g1.plannerMex('init',g1.plannerConfiguration(root,fullfile(folder,'install_guards')));
 cleanup=onCleanup(@()g1.plannerMex('close'));
 identity=kernels.extractObservation(raw,state,indices);
-bad=identity;bad(2)=.001;reject(@()g1.plannerMex('install_observation',state,bad),'G1:PlannerMex');
-token=g1.plannerMex('install_observation',state,identity);
-reject(@()g1.plannerMex('query_policy',token),'G1:PlannerMex');
-nextIdentity=kernels.extractObservation(fixture.raw(2,:)',golden.expected(2,:)',indices);
-reject(@()g1.plannerMex('install_observation',golden.expected(2,:)',nextIdentity),'G1:PlannerMex');
+reference=kernels.extractReference(fixture.ref(1,:)');
+bad=identity;bad(2)=.001;
+reject(@()g1.plannerMex('step',state,reference,bad,1),'G1:PlannerMex');
+policy=g1.plannerMex('step',state,reference,identity,1);
+assert(isequal(policy,g1.plannerMex('step',state,reference,identity,1)));
+reject(@()g1.plannerMex('step',state,reference,identity,0),'G1:PlannerMex');
 clear cleanup;
 replay=validate_planner_dataflow(evidenceName,true);
 result=struct('passed',true,'independent_extraction_ticks',2401,'negative_cases',8,'replay',replay);

@@ -13,21 +13,18 @@ cleanup = onCleanup(@()g1.plannerMex('close'));
 
 g1.plannerMex('init',config);
 assert(~isfolder(unusedFolder),'Disabled diagnostics created a log directory');
-g1.plannerMex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
-assertRejected(@()g1.plannerMex('install_observation',golden.expected(1,:)',[0;0;0.1]));
-token = g1.plannerMex('install_observation',golden.expected(1,:)',[0;0;fixture.raw(1,1)]);
-assertRejected(@()g1.plannerMex('query_policy',token));
-assertRejected(@()g1.plannerMex('update_mpc',token,0));
-completed = g1.plannerMex('update_mpc',token,1);
-policy = g1.plannerMex('query_policy',completed);
-assertRejected(@()g1.plannerMex('install_observation',golden.expected(2,:)',[1;0.002;fixture.raw(2,1)]));
-bad = policy; bad(1) = bad(1) + 0.01;
+reference=kernels.extractReference(fixture.ref(1,:)');
+state=golden.expected(1,:)';identity=[0;0;fixture.raw(1,1)];
+assertRejected(@()g1.plannerMex('step',state,reference,[0;0;.1],1));
+assertRejected(@()g1.plannerMex('step',state,reference,identity,0));
+policy=g1.plannerMex('step',state,reference,identity,1);
+bad=policy;bad(1)=bad(1)+.01;
 assertRejected(@()g1.plannerMex('inverse_dynamics',bad));
-torque = g1.plannerMex('inverse_dynamics',policy); %#ok<NASGU>
-duplicate = g1.plannerMex('inverse_dynamics',policy);
-assert(isequal(torque,duplicate),'Repeated action did not use the cached torque');
-assert(isequal(g1.plannerMex('query_policy',completed),policy));
-assertRejected(@()g1.plannerMex('install_observation',golden.expected(3,:)',[2;0.004;fixture.raw(3,1)]));
+torque=g1.plannerMex('inverse_dynamics',policy);
+assert(isequal(torque,g1.plannerMex('inverse_dynamics',policy)));
+assert(isequal(policy,g1.plannerMex('step',state,reference,identity,1)));
+assertRejected(@()g1.plannerMex('step',golden.expected(3,:)',reference,[2;.004;.004],0));
+
 g1.plannerMex('close');
 
 % 新实例和新的模型仿真状态，完整执行 2401 个控制 tick。

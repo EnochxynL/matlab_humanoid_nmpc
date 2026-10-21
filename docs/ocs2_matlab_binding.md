@@ -1,3 +1,7 @@
+> Simulink 当前通过 `g1.plannerMex('step', observation, reference, identity, request)`
+> 一次完成观测提交、可选求解和策略查询。不再预加载观测/参考或传递 token；
+> 本文早期的 install/update/query 描述属于历史接口。底层 `ocs2.Problem` 原生方法仍保留。
+
 > 当前状态：旧 G1Controller、PlannerMex、PacketManager、ExternalReferenceManager 及其构建目标已删除。运行与应用诊断由 MATLAB 管理，原生诊断计算保留。下文迁移前对照描述属于历史记录；回放使用 tests/fixtures/legacy_controller 中冻结的旧输出。
 
 旧链路清理验证：新绑定与独立逆动力学重新构建、安装；7 项 MATLAB 测试通过。

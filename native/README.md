@@ -39,18 +39,21 @@ MATLAB selects task, reference, URDF and log paths through
 `g1.plannerMex('init', config)`; the old `init(root, folder)` signature is retired.
 `run_walking` supplies this configuration automatically.
 
-The `g1_planner/MPCSchedule` MATLAB Function block owns update deadlines.
-`update_mpc(token, request)` solves synchronously only when requested; otherwise
-it prepares the observation for querying the cached policy. The first update
-must request a solve. Duplicate updates must retain the same request and do not
-solve twice. MATLAB checks stage and policy identities, not external scheduling
-eligibility. A failed solve requires closing and initializing a fresh backend.
+Both planner models have one `PlannerStep` block with explicit observation,
+reference, time identity and solve-request inputs. `MPCSchedule` owns deadlines,
+using `[tick; canonical time; raw time]` and the configured `mpc_period` (read once).
 
-External reference packets are decoded by `g1.PlannerBackend`, which checks each
-packet against the actual solver observation and single-session protocol.
-It submits native target trajectories and a padded contact schedule directly.
-The solver registers the original switched-model reference manager, without
-`PacketManager` or `ExternalReferenceManager` in the MATLAB execution path.
+`g1.plannerMex('step', observation, reference, identity, request)` submits the
+current observation, optionally sets references and solves/installs a policy,
+then queries that policy at `time + 0.005`. There are no Install blocks or tokens.
+Repeated identical steps reuse their result; changing inputs at the same tick
+is rejected. Solver failures require close/init; reference input errors are
+checked before invoking the solver. Independent inverse dynamics follows the
+returned policy through an ordinary data connection.
+
+The backend decodes references only for requested solves and checks target/event
+times, swing settings and current tick. OCS2 keeps its original switched-model
+reference manager. Native bindings and numerical problem definitions are unchanged.
 
 The independent `InverseDynamics` model owns its Pinocchio instance and computes
 torque without MPC or MRT. OCS2 numerical parallelism follows solver settings.
@@ -184,7 +187,7 @@ Validation logs and fixtures live in `runtime/evidence/`; walking runs remain in
 build trees. See `../docs/dependency_artifact_layout.md`.
 
 Floating-point roundoff is not a stopping gate. Same-run protocol identities,
-2401 control ticks, 289 updates and stage rejection checks remain required.
+2401 control ticks, 289 updates and duplicate-step rejection checks remain required.
 Historical walking passes are recorded in `../docs/windows_checkpoint_20261017.md`
 and `../docs/native_matlab_adapters.md`.
 

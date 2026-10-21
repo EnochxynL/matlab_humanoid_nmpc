@@ -1,6 +1,6 @@
 function result = validate_planner_dataflow(evidenceName,allowRoundoff)
 %VALIDATE_PLANNER_DATAFLOW Run the actual planner model on saved observations.
-% Checks staged API guards, then the complete 2401-tick/289-update contract.
+% Checks explicit step guards, then the complete 2401-tick/289-update contract.
 [kernels,blockCleanup]=planner_block_functions();
 if nargin==0,evidenceName='planner_dataflow';end
 if nargin<2,allowRoundoff=false;end
@@ -12,17 +12,16 @@ folder = fullfile(root,'runtime','evidence',evidenceName,'model_replay');
 fixture = load(fullfile(root,'runtime','evidence','core_extraction','fixture.mat'));
 g1.plannerMex('init',g1.plannerConfiguration(root,folder));
 cleanup = onCleanup(@()g1.plannerMex('close'));
-g1.plannerMex('install_reference',kernels.extractReference(fixture.ref(1,:)'));
+reference=kernels.extractReference(fixture.ref(1,:)');
 identity=kernels.extractObservation(fixture.raw(1,:)',golden.expected(1,:)',double(cfg.mpcIndices(:)'));
-token = g1.plannerMex('install_observation',golden.expected(1,:)',identity);
-assertRejected(@()g1.plannerMex('query_policy',token));
-assertRejected(@()g1.plannerMex('update_mpc',token,0));
-bad = token;bad(2) = bad(2)+0.002;
-assertRejected(@()g1.plannerMex('update_mpc',bad,1));
-nextIdentity=kernels.extractObservation(fixture.raw(2,:)',golden.expected(2,:)',double(cfg.mpcIndices(:)'));
-assertRejected(@()g1.plannerMex('install_observation',golden.expected(2,:)',nextIdentity));
+assertRejected(@()g1.plannerMex('step',golden.expected(1,:)',reference,identity,0));
+bad=identity;bad(2)=bad(2)+.002;
+assertRejected(@()g1.plannerMex('step',golden.expected(1,:)',reference,bad,1));
+policy=g1.plannerMex('step',golden.expected(1,:)',reference,identity,1);
+assert(isequal(policy,g1.plannerMex('step',golden.expected(1,:)',reference,identity,1)));
+assertRejected(@()g1.plannerMex('step',golden.expected(1,:)',reference,identity,0));
 clear cleanup;
-% Fresh runtime and model persistent state; do not reuse guard-test state.
+% Fresh runtime and model persistent state; do not reuse guard-check state.
 g1.plannerMex('init',g1.plannerConfiguration(root,folder));
 cleanup = onCleanup(@()g1.plannerMex('close')); %#ok<NASGU>
 ds = Simulink.SimulationData.Dataset;
@@ -70,7 +69,7 @@ identity = readtable(fullfile(folder,'time_identity.csv'));
 assert(all(identity.canonical_control_time == double(identity.control_tick)*0.002));
 assert(all(abs(identity.raw_minus_canonical)<=1e-12));
 result = struct('passed',true,'ticks',height(samples),'updates',height(solves), ...
-    'policy_action_exact_equal',true,'planner_action_bus_exact_equal',true,'stage_guards_passed',true, ...
+    'policy_action_exact_equal',true,'planner_action_bus_exact_equal',true,'step_guards_passed',true, ...
     'baseline_exact_equal',baselineExact,'baseline_max_absolute_error',baselineMaximum, ...
     'roundoff_continuation_authorized',logical(allowRoundoff), ...
     'physical_simulation',false,'execution_wall_s',execution);
@@ -85,5 +84,5 @@ try
 catch exception
     rejected = strcmp(exception.identifier,'G1:PlannerMex');
 end
-assert(rejected,'Illegal stage ordering/token was accepted.');
+assert(rejected,'Invalid planner step was accepted.');
 end

@@ -17,10 +17,8 @@ info = jsondecode(initial.configurationJson);
 assert(str2double(string(info.state_dim))==58);
 assertEmpty(backend.execute('diagnostics'));
 
-backend.execute('install_reference',kernels.extractReference(fixture.ref(1,:)'));
-token = backend.execute('install_observation',golden.expected(1,:)',[0;0]);
-completed = backend.execute('update_mpc',token,1);
-policy = backend.execute('query_policy',completed);
+policy = backend.execute('step',golden.expected(1,:)', ...
+    kernels.extractReference(fixture.ref(1,:)'),[0;0],1);
 g1_inverse_dynamics_mex('init',config);
 torque = g1_inverse_dynamics_mex('compute',policy(1:58),policy(59:93));
 batch = backend.execute('diagnostics');
