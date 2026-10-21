@@ -8,7 +8,7 @@ assert(isscalar(duration) && isfinite(duration) && duration>0 && ...
 assert(islogical(standing) && isscalar(standing));
 cfg=g1.initialize();root=cfg.projectRoot;
 cacheCleanup=g1.useBuildCache(); %#ok<NASGU>
-model='g1_centroidal_walking';
+model='g1_walking';
 parameters=jsondecode(fileread(fullfile(root,'config','centroidal','execution.json')));
 folder=fullfile(root,'runtime',['centroidal_' char(datetime('now', ...
     'TimeZone','Asia/Taipei','Format','yyyyMMdd_HHmmss_SSS'))]);
@@ -21,19 +21,13 @@ config=g1.plannerConfiguration(root,folder,true,'centroidal');config.executionEn
 g1.plannerMex('init',config);
 cleanup=onCleanup(@()g1.plannerMex('close'));
 open_system(fullfile(root,'models',[model '.slx']));
-in=Simulink.SimulationInput(model);
-in=in.setModelParameter('StopTime',num2str(duration,17),'MaxStep','0.0005', ...
-    'OutputOption','SpecifiedOutputTimes','OutputTimes',mat2str(0:cfg.driveTs:duration,17), ...
-    'SimMechanicsOpenEditorOnUpdate','on','CaptureErrors','on');
-names={'g1_q0','g1_qd0','g1_base_p0','g1_base_rpy0','g1_gravity','g1_standing', ...
-    'centroidal_height','centroidal_forward_command'};
-values={cfg.initialQ,cfg.initialQd,cfg.initialPosition,cfg.initialRpy,cfg.gravity, ...
-    double(standing),parameters.command_height_m,parameters.forward_command};
-for k=1:numel(names),in=in.setVariable(names{k},values{k},'Workspace',model);end
+in=g1.walkingSimulation(cfg,'centroidal',duration,standing);
+in=in.setVariable('g1_command_height',parameters.command_height_m,'Workspace',model);
+in=in.setVariable('g1_forward_command',parameters.forward_command,'Workspace',model);
 kp=parameters.fixed_joint_kp*ones(29,1);kp(cfg.mpcIndices)=parameters.joint_position_kp;
 kd=parameters.fixed_joint_kd*ones(29,1);kd(cfg.mpcIndices)=parameters.joint_velocity_kd;
-in=in.setVariable('g1_kp',kp,'Workspace',model);
-in=in.setVariable('g1_kd',kd,'Workspace',model);
+in=in.setVariable('g1_kp',kp,'Workspace','g1_centroidal_planner');
+in=in.setVariable('g1_kd',kd,'Workspace','g1_centroidal_planner');
 in=in.setVariable('accelerationKp',parameters.acceleration_feedback_kp*ones(23,1), ...
     'Workspace','g1_centroidal_planner');
 in=in.setVariable('accelerationKd',parameters.acceleration_feedback_kd*ones(23,1), ...

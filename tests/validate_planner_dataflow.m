@@ -51,11 +51,26 @@ solves = readtable(fullfile(folder,'solver_timing.csv'));
 assert(height(samples)==2401 && height(solves)==289);
 actual = g1log.signalMatrix(out.yout{3}.Values);
 assert(isequal(actual,samples{:,4:end}),'Model output differs from published action contract.');
+% Planner owns policy slicing, joint mapping and actuator gains.
+action=out.yout{4}.Values;
+mapping=zeros(29,23);
+mapping(sub2ind(size(mapping),cfg.mpcIndices(:),(1:23)'))=1;
+expected={actual(:,7:29)*mapping',actual(:,36:58)*mapping', ...
+    actual(:,94:116)*mapping'};
+fields=cfg.actionFields([1 2 5]);
+for k=1:numel(fields)
+    assert(isequal(g1log.signalMatrix(action.(fields{k})),expected{k}), ...
+        'Planner action bus differs from policy/torque mapping.');
+end
+kp=100*ones(1,29);kp(cfg.mpcIndices)=1200;
+kd=ones(1,29);kd(cfg.mpcIndices)=10;
+assert(isequal(g1log.signalMatrix(action.kp),repmat(kp,size(actual,1),1)));
+assert(isequal(g1log.signalMatrix(action.kd),repmat(kd,size(actual,1),1)));
 identity = readtable(fullfile(folder,'time_identity.csv'));
 assert(all(identity.canonical_control_time == double(identity.control_tick)*0.002));
 assert(all(abs(identity.raw_minus_canonical)<=1e-12));
 result = struct('passed',true,'ticks',height(samples),'updates',height(solves), ...
-    'policy_action_exact_equal',true,'stage_guards_passed',true, ...
+    'policy_action_exact_equal',true,'planner_action_bus_exact_equal',true,'stage_guards_passed',true, ...
     'baseline_exact_equal',baselineExact,'baseline_max_absolute_error',baselineMaximum, ...
     'roundoff_continuation_authorized',logical(allowRoundoff), ...
     'physical_simulation',false,'execution_wall_s',execution);

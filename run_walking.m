@@ -1,7 +1,10 @@
-function out=run_walking()
+function out=run_walking(formulation)
 % Genuine 4.8 s plant run; no ROS2 endpoints or serialized reference IPC.
 root=fileparts(mfilename('fullpath'));cd(root);addpath(fullfile(root,'matlab'));
 cfg=g1.initialize();
+if nargin<1,formulation='whole_body';end
+if strcmp(formulation,'centroidal'),out=run_centroidal_walking();return;end
+assert(strcmp(formulation,'whole_body'),'Unknown MPC formulation');
 cacheCleanup=g1.useBuildCache(); %#ok<NASGU>
 assert(exist('g1_ocp_mex','file')==3,'Build native/scripts/build_mex.sh first.');
 assert(isfile(cfg.modelFile),'Missing models/g1_walking.slx.');
@@ -21,14 +24,7 @@ session=struct('root',root,'folder',folder,'duration',4.8,'transport','IN_PROCES
 g1log.writeJson(fullfile(folder,'configuration.json'),session);
 wall=tic;g1.plannerMex('init',g1.plannerConfiguration(root,folder));startup=toc(wall);session.startup_wall_s=startup;
 if ~ispc,open_system(fullfile(root,'models',[cfg.modelName '.slx']));end
-in=Simulink.SimulationInput(cfg.modelName);
-in=in.setModelParameter('StopTime','4.8','OutputOption','SpecifiedOutputTimes', ...
- 'OutputTimes',mat2str(0:cfg.driveTs:4.8,17));
-names={'g1_q0','g1_qd0','g1_base_p0','g1_base_rpy0','g1_gravity'};
-values={cfg.initialQ,zeros(29,1),cfg.initialPosition,cfg.initialRpy,cfg.gravity};
-for k=1:numel(names),in=in.setVariable(names{k},values{k},'Workspace',cfg.modelName);end
-in=in.setVariable('g1_standing',0,'Workspace',cfg.modelName);
-in=in.setModelParameter('MaxStep','0.0005','SimMechanicsOpenEditorOnUpdate','on','CaptureErrors','on');
+in=g1.walkingSimulation(cfg,'whole_body',4.8,false);
 if exist('layout.LayoutStateManager','class')
  layoutHold=layout.LayoutStateManager.instance().getScopedLayoutListenerDisabler(cfg.modelName); %#ok<NASGU>
 end

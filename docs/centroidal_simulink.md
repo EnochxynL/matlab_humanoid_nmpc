@@ -10,13 +10,30 @@ run_centroidal_walking(1,true); % 站立验证
 run_centroidal_walking();       % 4.8 s 行走
 ```
 
-`g1_centroidal_walking` 引用 `g1_centroidal_reference` 与
-`g1_centroidal_planner`，与全身的 walking/reference/planner 命名一致。
+两种算法共用 `g1_walking`。`g1.walkingSimulation` 按算法选择
+`g1_reference` / `g1_planner` 或 `g1_centroidal_reference` / `g1_centroidal_planner`，
+通过 `SimulationInput` 临时替换模型引用，不保存替换结果。
 按 2 ms 推进观测，在首次到达 80 Hz 截止时间的 tick 同步求解，
 每 tick 查询策略并计算力矩，连接真实多体模型。
 阶段性纯查询模型及其专用运行脚本已删除。
 
 ## 信号与模型流程
+
+两套 planner 均在内部的 `ActionGenerator` 完成策略索引、23→29 关节映射、
+驱动增益和动作总线组装。第 4 个输出统一为 `RobotJointAction` 总线，
+五个字段均为 29 维；前三个策略、力矩、诊断输出保留原有布局。
+walking 只将动作总线送往驱动模块，不解释两种策略各自的数组索引。
+独立的 `g1_centroidal_walking.slx` 已删除。
+
+合并验证：两种模块组合均编译通过；全身 2401 tick / 289 次求解回放的
+策略与力矩样本文件与合并前 Windows 基线完全相同。planner 动作总线的
+关节映射和增益逐值匹配；两种算法各通过 0.1 s 多体闭环，动作映射误差为零。
+证据位于 `runtime/evidence/shared_walking/`。这次结构迁移未重跑完整行走视觉验收。
+
+```matlab
+run_walking()             % 全身 MPC
+run_walking('centroidal') % 质心 MPC，共用同一 walking
+```
 
 观测沿用 `observation74`，其中包括物理时间、基座位置、wxyz 四元数、
 局部线/角速度、29 个关节的位置/速度和两个接触标记。
@@ -82,7 +99,7 @@ centroidal 默认的只查询模式不初始化逆动力学 MEX。查询当前 t
 ## 力矩执行与多体模型
 
 `g1_centroidal_reference`、`g1_centroidal_planner` 和
-`g1_centroidal_walking` 提供独立的命令参考、力矩执行和物理闭环。
+共用 `g1_walking` 提供物理闭环。
 原全身模型继续保留。
 
 ```matlab
@@ -95,6 +112,9 @@ run_centroidal_walking()       % 4.8 s 行走命令
 在总线中仍采用 58 项完整运动学表示；执行模型将每个有效节点转换成
 35 项质心动量状态，再安装 reference359。偏航积分使用偏航角导数。
 因此这些中间节点不是交给 centroidal OCP 的状态布局。
+
+全身参考中的偏航速度索引也已修正为 x(33)，见
+[全身参考偏航索引修正及行走对比](wb_reference_yaw_fix.md)。
 
 执行模型将 MPC 的接触力与实测 `[q;v]` 交给独立逆动力学 MEX。
 关节加速度显式计算为 `Kp_acc*(q_des-q)+Kd_acc*(qd_des-qd)`，
