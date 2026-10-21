@@ -83,7 +83,7 @@ explicit time/state/input/mode arguments. References match observations by tick.
 MATLAB also writes the `time_identity` diagnostic table.
 `controller/diagnostics/Diagnostics.h` owns native diagnostic objects and typed
 in-memory batches, including extra structural evaluations. It creates no files.
-`ocs2.Problem.drainDiagnostics()` drains these batches; standalone C++ callers can
+`ocs2.Problem.diagnostics_drain()` drains these batches; standalone C++ callers can
 still use `G1Controller::drainDiagnostics()`. Consumers must drain regularly: exceeding
 250,000 buffered rows raises an explicit error instead of dropping data.
 

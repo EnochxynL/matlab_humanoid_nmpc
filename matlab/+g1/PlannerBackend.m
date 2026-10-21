@@ -27,7 +27,7 @@ classdef PlannerBackend < handle
             obj.settings=obj.problem.modelSettings();
             obj.dimensions=[obj.problem.Dimensions(1:2);obj.settings.joints];
             obj.diagnosticsEnabled=~isfield(config,'diagnosticsEnabled') || config.diagnosticsEnabled;
-            obj.problem.createSolver();obj.problem.disableGaitExtension();
+            obj.problem.createSolver();obj.problem.reference_getGaitSchedule_disableExtension();
             if obj.diagnosticsEnabled,obj.problem.enableDiagnostics();end
         end
         function delete(obj)
@@ -48,7 +48,7 @@ classdef PlannerBackend < handle
                 case 'query_policy'
                     varargout{1}=obj.query(varargin{1});
                 case 'diagnostics'
-                    batch=obj.problem.drainDiagnostics();
+                    batch=obj.problem.diagnostics_drain();
                     if ~isempty(obj.consumption)
                         row=struct('name','adapter_consumption', ...
                             'columns',{{'session','epoch','sequence','control_tick','canonical_control_time', ...
@@ -108,9 +108,9 @@ classdef PlannerBackend < handle
             require(~obj.failed,'Previous solve failed; close and initialize a fresh backend');
             require(obj.started || request==1,'Initial observation requires a solve');
             t=obj.token(2);nu=obj.dimensions(2);
-            obj.problem.setCurrentObservation(t,obj.state,zeros(nu,1),3);
+            obj.problem.mrt_setCurrentObservation(t,obj.state,zeros(nu,1),3);
             if obj.diagnosticsEnabled
-                obj.problem.diagnosticTick(obj.token(1));obj.problem.trace('observation_arrived',t);
+                obj.problem.diagnostics_observation(obj.token(1));obj.problem.diagnostics_trace('observation_arrived',t);
             end
             if request
                 try
@@ -120,18 +120,18 @@ classdef PlannerBackend < handle
                         if obj.wholeBody
                             initial(end-(6+obj.settings.joints)+1:end)=0;initial(5:6)=0;
                         end
-                        obj.problem.reset(t,initial,zeros(nu,1));
+                        obj.problem.mrt_resetMpcNode(t,initial,zeros(nu,1));
                     end
                     r=obj.reference;
-                    obj.problem.setTargetTrajectories(r.times,r.states,r.inputs);
-                    obj.problem.setModeSchedule([r.events;r.terminal],[r.modes;3]);
+                    obj.problem.reference_setTargetTrajectories(r.times,r.states,r.inputs);
+                    obj.problem.reference_getGaitSchedule_updateModeSchedule([r.events;r.terminal],[r.modes;3]);
                     if obj.diagnosticsEnabled
-                        obj.problem.diagnosticReference(t,r.filtered);obj.problem.trace('solver_started',t);
+                        obj.problem.diagnostics_reference(t,r.filtered);obj.problem.diagnostics_trace('solver_started',t);
                     end
-                    obj.problem.advanceMpc();
-                    if obj.diagnosticsEnabled,obj.problem.trace('solver_finished',t);end
-                    require(obj.problem.updatePolicy(),'Requested solve did not install a policy');
-                    if obj.diagnosticsEnabled,obj.problem.trace('policy_installed',t);end
+                    obj.problem.mrt_advanceMpc();
+                    if obj.diagnosticsEnabled,obj.problem.diagnostics_trace('solver_finished',t);end
+                    require(obj.problem.mrt_updatePolicy(),'Requested solve did not install a policy');
+                    if obj.diagnosticsEnabled,obj.problem.diagnostics_trace('policy_installed',t);end
                     obj.verifyConsumption(t);obj.started=true;
                 catch exception
                     obj.failed=true;rethrow(exception);
@@ -144,7 +144,7 @@ classdef PlannerBackend < handle
             require(~obj.failed && obj.updated,'Complete MPC update before querying policy');
             if isempty(obj.policy)
                 t=obj.token(2)+.005;
-                [x,u,mode]=obj.problem.evaluatePolicy(t,obj.state);
+                [x,u,mode]=obj.problem.mrt_evaluatePolicy(t,obj.state);
                 obj.policy=[x;u;mode;t];
             end
             policy=obj.policy;
@@ -162,7 +162,7 @@ classdef PlannerBackend < handle
             require(isequal(r.swing,obj.settings.swing),'Swing parameters differ from loaded problem');
         end
         function verifyConsumption(obj,t)
-            r=obj.reference;actual=obj.problem.referenceSnapshot();
+            r=obj.reference;actual=obj.problem.reference_getSnapshot();
             require(isequal(actual.events,r.events) && isequal(actual.modes,r.modes),'Adapter altered authoritative schedule');
             require(isequal(actual.times,r.times) && isequal(actual.states,r.states) && ...
                 isequal(actual.inputs,r.inputs),'Adapter altered authoritative target');

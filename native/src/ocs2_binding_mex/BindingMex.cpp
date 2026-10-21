@@ -26,6 +26,7 @@ using ocs2::vector_t;
 // maps borrow MATLAB memory; OCS2's internal copies are audited separately.
 struct CopyCount { double operations=0, elements=0; void add(size_t n) { ++operations; elements+=n; } };
 struct Problem {
+  // 问题接口与 reference：暂共用一个句柄，方法在下方分别分组。
   std::unique_ptr<ocs2::RobotInterface> interface;
   std::shared_ptr<ocs2::humanoid::SwitchedModelReferenceManager> reference;
   ocs2::mpc::Settings mpcSettings;
@@ -34,6 +35,7 @@ struct Problem {
   size_t joints=0;
   std::array<double,8> swing;
   std::function<vector_t(const double*)> convert;
+  // 诊断成员放在 MPC 前，保证晚于 MPC 销毁；实例在求解器创建后按需启用。
   std::function<void(Problem&)> enableDiagnostics;
   std::unique_ptr<g1_controller::diagnostics::Diagnostics> diagnostics;
   ocs2::SystemObservation diagnosticObservation;
@@ -126,9 +128,9 @@ __declspec(dllexport)
 void mexFunction(int nlhs,mxArray* plhs[],int nrhs,const mxArray* prhs[]) {
   try {
     require(nrhs>=1,"Expected command");const auto command=text(prhs[0]);
-    if(command=="create_problem") {
+    if(command=="createProblem") {
       require(nrhs==2&&nlhs==1&&mxIsStruct(prhs[1])&&mxGetNumberOfElements(prhs[1])==1,
-              "create_problem(config) requires one output");
+              "createProblem(config) requires one output");
       const auto field=[&](const char* key) { auto* a=mxGetField(prhs[1],0,key);require(a,"Missing config field");return text(a); };
       const auto formulation=field("formulation"),task=field("taskFile"),urdf=field("urdfFile"),ref=field("referenceFile");
       std::unique_ptr<Problem> p;
@@ -143,50 +145,58 @@ void mexFunction(int nlhs,mxArray* plhs[],int nrhs,const mxArray* prhs[]) {
       *static_cast<uint64_t*>(mxGetData(plhs[0]))=handle;mexLock();return;
     }
     require(nrhs>=2,"Expected object handle");auto& p=problem(prhs[1]);
-    if(command=="destroy") {
-      require(nrhs==2&&nlhs==0,"destroy(handle)");
+    // 绑定辅助：生命周期、组装、维度和模型转换（不是同名上游方法）
+    if(command=="destroyProblem") {
+      require(nrhs==2&&nlhs==0,"destroyProblem(handle)");
       problems.erase(*static_cast<const uint64_t*>(mxGetData(prhs[1])));mexUnlock();
-    } else if(command=="dimensions") {
-      require(nrhs==2&&nlhs==1,"dimensions(handle)");
-      plhs[0]=mxCreateDoubleMatrix(3,1,mxREAL);auto* a=mxGetPr(plhs[0]);
-      a[0]=p.nx;a[1]=p.nu;a[2]=1./p.mpcSettings.mpcDesiredFrequency_;
-    } else if(command=="create_solver") {
-      require(nrhs==2&&nlhs==0&&!p.mpc,"create_solver requires an unsolved problem object");
+    } else if(command=="createSolver") {
+      require(nrhs==2&&nlhs==0&&!p.mpc,"createSolver requires an unsolved problem object");
       auto mpc=std::make_unique<ocs2::SqpMpc>(p.mpcSettings,p.sqpSettings,
           p.interface->getOptimalControlProblem(),p.interface->getInitializer());
       mpc->getSolverPtr()->setReferenceManager(p.reference);
       auto mrt=std::make_unique<ocs2::MPC_MRT_Interface>(*mpc);
       p.mpc=std::move(mpc);p.mrt=std::move(mrt);
-    } else if(command=="model_settings") {
-      require(nrhs==2&&nlhs==1,"model_settings(handle)");
+    } else if(command=="dimensions") {
+      require(nrhs==2&&nlhs==1,"dimensions(handle)");
+      plhs[0]=mxCreateDoubleMatrix(3,1,mxREAL);auto* a=mxGetPr(plhs[0]);
+      a[0]=p.nx;a[1]=p.nu;a[2]=1./p.mpcSettings.mpcDesiredFrequency_;
+    } else if(command=="modelSettings") {
+      require(nrhs==2&&nlhs==1,"modelSettings(handle)");
       const char* fields[]={"joints","horizon","swing"};plhs[0]=mxCreateStructMatrix(1,1,3,fields);
       mxSetField(plhs[0],0,"joints",mxCreateDoubleScalar(p.joints));
       mxSetField(plhs[0],0,"horizon",mxCreateDoubleScalar(p.mpcSettings.timeHorizon_));
       auto* a=mxCreateDoubleMatrix(8,1,mxREAL);std::copy(p.swing.begin(),p.swing.end(),mxGetPr(a));mxSetField(plhs[0],0,"swing",a);
-    } else if(command=="convert_observation") {
-      require(nrhs==3&&nlhs==1,"convert_observation(handle,qv)");
+    } else if(command=="convertObservation") {
+      require(nrhs==3&&nlhs==1,"convertObservation(handle,qv)");
       const auto result=p.convert(numbers(prhs[2],2*(6+p.joints)));
       require(result.allFinite(),"Nonfinite converted observation");
       CopyCount ignored;plhs[0]=output(result,ignored);
-    } else if(command=="enable_diagnostics") {
-      require(nrhs==2&&nlhs==0&&!p.diagnostics,"enable_diagnostics(handle)");solver(p);p.enableDiagnostics(p);
-    } else if(command=="diagnostics") {
-      require(nrhs==2&&nlhs==1,"diagnostics(handle)");
-      plhs[0]=encodeDiagnostics(p.diagnostics?p.diagnostics->drain():g1_controller::DiagnosticBatch{});
-    } else if(command=="diagnostic_tick") {
-      require(nrhs==3&&nlhs==0,"diagnostic_tick(handle,tick)");
-      const double tick=scalar(prhs[2]);require(tick>=0&&tick<=9007199254740992.&&tick==std::floor(tick),"Invalid diagnostic tick");
-      if(p.diagnostics)p.diagnostics->observation(static_cast<uint64_t>(tick));
-    } else if(command=="diagnostic_trace") {
-      require(nrhs==4&&nlhs==0,"diagnostic_trace(handle,event,time)");
-      const auto event=text(prhs[2]);const double time=scalar(prhs[3]);
-      if(p.diagnostics)p.diagnostics->trace(event.c_str(),time);
-    } else if(command=="diagnostic_reference") {
-      require(nrhs==4&&nlhs==0,"diagnostic_reference(handle,time,command)");
-      const double time=scalar(prhs[2]);const auto* values=numbers(prhs[3],4);
-      if(p.diagnostics)p.diagnostics->reference(time,Eigen::Map<const ocs2::vector4_t>(values));
-    } else if(command=="reference_snapshot") {
-      require(nrhs==2&&nlhs==1,"reference_snapshot(handle)");
+    // reference：SwitchedModelReferenceManager 及其 GaitSchedule
+    } else if(command=="reference_setTargetTrajectories") {
+      require(nrhs==5&&nlhs==0,"reference_setTargetTrajectories(handle,times,states,inputs)");
+      auto r=target(p,prhs[2],prhs[3],prhs[4]);
+      p.reference->setTargetTrajectories(std::move(r));p.targetSet=true;
+    } else if(command=="reference_getGaitSchedule_updateModeSchedule") {
+      require(nrhs==4&&nlhs==0,"reference_getGaitSchedule_updateModeSchedule(handle,eventTimes,modes)");
+      const size_t n=mxGetNumberOfElements(prhs[2]);
+      require(n>=2,"Humanoid schedule requires real events and a terminal marker");
+      const auto* e=numbers(prhs[2],n);const auto* m=numbers(prhs[3],n+1);
+      require(std::is_sorted(e,e+n),"Events must be ordered");
+      ocs2::ModeSchedule schedule;schedule.eventTimes.assign(e,e+n);p.schedules.add(n);
+      schedule.modeSequence.resize(n+1);
+      for(size_t k=0;k<=n;++k){require(m[k]>=0&&m[k]<=3&&m[k]==std::floor(m[k]),"Unknown humanoid contact mode");schedule.modeSequence[k]=size_t(m[k]);}
+      p.schedules.add(n+1);
+      p.reference->getGaitSchedule()->updateModeSchedule(schedule);
+      p.scheduleSet=true;
+    } else if(command=="reference_getGaitSchedule_disableExtension") {
+      // 绑定辅助：构造空模板后调用 insertModeSequenceTemplate；不是上游同名方法。
+      require(nrhs==2&&nlhs==0,"reference_getGaitSchedule_disableExtension(handle)");
+      ocs2::humanoid::ModeSequenceTemplate empty({0.,1.},{3});
+      empty.modeSequence.clear();empty.switchingTimes.clear();
+      p.reference->getGaitSchedule()->insertModeSequenceTemplate(empty,0.,0.);
+    } else if(command=="reference_getSnapshot") {
+      // 绑定辅助：合并 getTargetTrajectories 和 getModeSchedule 的只读结果。
+      require(nrhs==2&&nlhs==1,"reference_getSnapshot(handle)");
       const auto& r=p.reference->getTargetTrajectories();const auto& s=p.reference->getModeSchedule();
       const char* fields[]={"times","states","inputs","events","modes"};plhs[0]=mxCreateStructMatrix(1,1,5,fields);
       auto* times=mxCreateDoubleMatrix(r.timeTrajectory.size(),1,mxREAL);
@@ -201,49 +211,33 @@ void mexFunction(int nlhs,mxArray* plhs[],int nrhs,const mxArray* prhs[]) {
       std::copy(s.eventTimes.begin(),s.eventTimes.end(),mxGetPr(events));mxSetField(plhs[0],0,"events",events);
       auto* modes=mxCreateDoubleMatrix(s.modeSequence.size(),1,mxREAL);
       std::copy(s.modeSequence.begin(),s.modeSequence.end(),mxGetPr(modes));mxSetField(plhs[0],0,"modes",modes);
-    } else if(command=="disable_gait_extension") {
-      require(nrhs==2&&nlhs==0,"disable_gait_extension(handle)");
-      ocs2::humanoid::ModeSequenceTemplate empty({0.,1.},{3});
-      empty.modeSequence.clear();empty.switchingTimes.clear();
-      p.reference->getGaitSchedule()->insertModeSequenceTemplate(empty,0.,0.);
-    } else if(command=="reset"||command=="set_target") {
-      require(nrhs==5&&nlhs==0,"Expected handle,times,stateMatrix,inputMatrix");
+    // mrt：MPC_MRT_Interface / MRT_BASE 原生方法
+    } else if(command=="mrt_resetMpcNode") {
+      require(nrhs==5&&nlhs==0,"mrt_resetMpcNode(handle,times,states,inputs)");
       auto r=target(p,prhs[2],prhs[3],prhs[4]);
-      if(command=="reset")solver(p).resetMpcNode(r);
-      else { p.reference->setTargetTrajectories(std::move(r));p.targetSet=true; }
-    } else if(command=="set_mode_schedule") {
-      require(nrhs==4&&nlhs==0,"set_mode_schedule(handle,eventTimes,modes)");
-      const size_t n=mxGetNumberOfElements(prhs[2]);
-      require(n>=2,"Humanoid schedule requires real events and a terminal marker");
-      const auto* e=numbers(prhs[2],n);const auto* m=numbers(prhs[3],n+1);
-      require(std::is_sorted(e,e+n),"Events must be ordered");
-      ocs2::ModeSchedule schedule;schedule.eventTimes.assign(e,e+n);p.schedules.add(n);
-      schedule.modeSequence.resize(n+1);
-      for(size_t k=0;k<=n;++k){require(m[k]>=0&&m[k]<=3&&m[k]==std::floor(m[k]),"Unknown humanoid contact mode");schedule.modeSequence[k]=size_t(m[k]);}
-      p.schedules.add(n+1);
-      p.reference->getGaitSchedule()->updateModeSchedule(schedule);
-      p.scheduleSet=true;
-    } else if(command=="set_observation") {
-      require(nrhs==6&&nlhs==0,"set_observation(handle,time,state,input,mode)");
+      solver(p).resetMpcNode(r);
+    } else if(command=="mrt_setCurrentObservation") {
+      require(nrhs==6&&nlhs==0,"mrt_setCurrentObservation(handle,time,state,input,mode)");
       ocs2::SystemObservation observation;observation.time=scalar(prhs[2]);
       observation.state=Eigen::Map<const vector_t>(numbers(prhs[3],p.nx),p.nx);p.observations.add(p.nx);
       observation.input=Eigen::Map<const vector_t>(numbers(prhs[4],p.nu),p.nu);p.observations.add(p.nu);
       const double mode=scalar(prhs[5]);require(mode>=0&&mode<=3&&mode==std::floor(mode),"Unknown contact mode");
+      // 同一次观测也将 measuredMode 同步给 reference，用于地面高度估计。
       observation.mode=size_t(mode);p.reference->setMeasuredMode(observation.mode);
       solver(p).setCurrentObservation(observation);
       if(p.diagnostics)p.diagnosticObservation=observation;
       p.observationSet=true;
-    } else if(command=="advance_mpc") {
-      require(nrhs==2&&nlhs==0,"advance_mpc(handle)");
+    } else if(command=="mrt_advanceMpc") {
+      require(nrhs==2&&nlhs==0,"mrt_advanceMpc(handle)");
       require(!p.failed,"Previous solve failed; destroy and recreate this object");
       require(p.observationSet&&p.targetSet&&p.scheduleSet,"Set observation, target and fresh padded schedule before solving");
       p.scheduleSet=false;
       try { solver(p).advanceMpc(); } catch(...) { p.failed=true;throw; }
-    } else if(command=="update_policy") {
-      require(nrhs==2&&nlhs==1,"update_policy(handle) requires one output");
+    } else if(command=="mrt_updatePolicy") {
+      require(nrhs==2&&nlhs==1,"mrt_updatePolicy(handle) requires one output");
       plhs[0]=mxCreateLogicalScalar(solver(p).updatePolicy());
-    } else if(command=="evaluate_policy") {
-      require(nrhs==4&&nlhs==3,"[state,input,mode]=evaluate_policy(handle,time,state)");
+    } else if(command=="mrt_evaluatePolicy") {
+      require(nrhs==4&&nlhs==3,"[state,input,mode]=mrt_evaluatePolicy(handle,time,state)");
       auto& mrt=solver(p);require(mrt.initialPolicyReceived(),"No policy installed");
       const double t=scalar(prhs[2]);
       const vector_t state=Eigen::Map<const vector_t>(numbers(prhs[3],p.nx),p.nx);p.queryStates.add(p.nx);
@@ -251,8 +245,26 @@ void mexFunction(int nlhs,mxArray* plhs[],int nrhs,const mxArray* prhs[]) {
       require(x.size()==p.nx&&u.size()==p.nu&&x.allFinite()&&u.allFinite(),"Invalid policy output");
       plhs[0]=output(x,p.policyOutputs);plhs[1]=output(u,p.policyOutputs);plhs[2]=mxCreateDoubleScalar(double(mode));
       if(p.diagnostics)p.diagnostics->policy(p.diagnosticObservation,mrt.getPolicy(),mrt.getCommand());
-    } else if(command=="copy_stats") {
-      require(nrhs==2&&nlhs==1,"copy_stats(handle)");
+    // 诊断辅助和 diagnostics 对象（不改变求解调度）
+    } else if(command=="enableDiagnostics") {
+      require(nrhs==2&&nlhs==0&&!p.diagnostics,"enableDiagnostics(handle)");solver(p);p.enableDiagnostics(p);
+    } else if(command=="diagnostics_drain") {
+      require(nrhs==2&&nlhs==1,"diagnostics_drain(handle)");
+      plhs[0]=encodeDiagnostics(p.diagnostics?p.diagnostics->drain():g1_controller::DiagnosticBatch{});
+    } else if(command=="diagnostics_observation") {
+      require(nrhs==3&&nlhs==0,"diagnostics_observation(handle,tick)");
+      const double tick=scalar(prhs[2]);require(tick>=0&&tick<=9007199254740992.&&tick==std::floor(tick),"Invalid diagnostic tick");
+      if(p.diagnostics)p.diagnostics->observation(static_cast<uint64_t>(tick));
+    } else if(command=="diagnostics_trace") {
+      require(nrhs==4&&nlhs==0,"diagnostics_trace(handle,event,time)");
+      const auto event=text(prhs[2]);const double time=scalar(prhs[3]);
+      if(p.diagnostics)p.diagnostics->trace(event.c_str(),time);
+    } else if(command=="diagnostics_reference") {
+      require(nrhs==4&&nlhs==0,"diagnostics_reference(handle,time,command)");
+      const double time=scalar(prhs[2]);const auto* values=numbers(prhs[3],4);
+      if(p.diagnostics)p.diagnostics->reference(time,Eigen::Map<const ocs2::vector4_t>(values));
+    } else if(command=="copyStats") {
+      require(nrhs==2&&nlhs==1,"copyStats(handle)");
       const char* fields[]={"targets","schedules","observations","queryStates","policyOutputs"};
       const CopyCount* counts[]={&p.targets,&p.schedules,&p.observations,&p.queryStates,&p.policyOutputs};
       plhs[0]=mxCreateStructMatrix(1,1,5,fields);

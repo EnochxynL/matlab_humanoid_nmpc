@@ -33,19 +33,26 @@
 
 ## 原型接口
 
+命名按原生对象分组：`reference_...`、`mrt_...`、`diagnostics_...`。
+下划线连接对象访问路径，具体方法沿用上游小驼峰，例如
+`reference_getGaitSchedule_updateModeSchedule` 对应
+`reference->getGaitSchedule()->updateModeSchedule(...)`。
+生命周期、组装和模型转换单独归为绑定辅助；`disableExtension` 和 `getSnapshot`
+也是绑定辅助，注释中明确标出其组成操作，不冒充上游同名方法。
+
 ```matlab
 problem = ocs2.Problem(config); % config 明确指定问题类型和三个配置路径
 cleanup = onCleanup(@()delete(problem));
 problem.createSolver();
-problem.disableGaitExtension(); % humanoid 外部完整接触时间表模式
+problem.reference_getGaitSchedule_disableExtension(); % humanoid 外部完整接触时间表模式
 
-problem.setCurrentObservation(time, state, input, measuredMode);
-problem.reset(initialTimes, initialStates, initialInputs); % 首次求解前
-problem.setTargetTrajectories(times, states, inputs);
-problem.setModeSchedule(paddedEvents, paddedModes);
-problem.advanceMpc();
-changed = problem.updatePolicy();
-[desiredState, desiredInput, mode] = problem.evaluatePolicy(queryTime, state);
+problem.mrt_setCurrentObservation(time, state, input, measuredMode);
+problem.mrt_resetMpcNode(initialTimes, initialStates, initialInputs); % 首次求解前
+problem.reference_setTargetTrajectories(times, states, inputs);
+problem.reference_getGaitSchedule_updateModeSchedule(paddedEvents, paddedModes);
+problem.mrt_advanceMpc();
+changed = problem.mrt_updatePolicy();
+[desiredState, desiredInput, mode] = problem.mrt_evaluatePolicy(queryTime, state);
 stats = problem.copyStats();
 ```
 
