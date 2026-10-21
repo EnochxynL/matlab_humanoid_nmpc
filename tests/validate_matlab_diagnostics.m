@@ -65,7 +65,7 @@ try
 catch
     rejected = true;
 end
-assert(rejected && ~mislocked('g1_ocp_mex') && ~mislocked('g1_inverse_dynamics_mex'));
+assert(rejected && ~mislocked('ocs2_binding_mex') && ~mislocked('g1_inverse_dynamics_mex'));
 g1.plannerMex('init',g1.plannerConfiguration(root,unusedFolder,false));
 g1.plannerMex('close');
 result = struct('passed',true,'native_file_output',false, ...

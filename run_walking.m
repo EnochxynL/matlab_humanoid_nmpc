@@ -6,7 +6,7 @@ if nargin<1,formulation='whole_body';end
 if strcmp(formulation,'centroidal'),out=run_centroidal_walking();return;end
 assert(strcmp(formulation,'whole_body'),'Unknown MPC formulation');
 cacheCleanup=g1.useBuildCache(); %#ok<NASGU>
-assert(exist('g1_ocp_mex','file')==3,'Build native/scripts/build_mex.sh first.');
+assert(exist('ocs2_binding_mex','file')==3,'Build native/scripts/build_mex.sh first.');
 assert(isfile(cfg.modelFile),'Missing models/g1_walking.slx.');
 folder=fullfile(root,'runtime',['walking_' char(datetime('now','TimeZone','Asia/Shanghai','Format','yyyyMMdd_HHmmss'))]);mkdir(folder);
 env=jsondecode(fileread(fullfile(root,'config/controller_environment.json')));

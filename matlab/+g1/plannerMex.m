@@ -1,7 +1,7 @@
 function varargout = plannerMex(command,varargin)
 %PLANNERMEX Coordinate OCS2 and independent inverse dynamics MEX instances.
 % Simulink calls this wrapper; the native MEX never calls MATLAB callbacks.
-persistent writer initialized inverseInitialized
+persistent writer initialized inverseInitialized backend
 persistent queryOnly centroidal
 persistent currentToken rawTime lastPolicy lastTorque
 persistent lastExecutionInput
@@ -10,10 +10,12 @@ if isempty(inverseInitialized), inverseInitialized = false; end
 if isempty(queryOnly), queryOnly = false; end
 if isempty(centroidal), centroidal = false; end
 if strcmp(command,'init')
-    g1_ocp_mex(command,varargin{:});
-    initialized = true;
+    if initialized,error('G1:PlannerMex','Close existing planner before initialization');end
     try
         config = varargin{1};
+        if ~isfield(config,'formulation'),config.formulation='whole_body';end
+        backend=g1.PlannerBackend(config);
+        initialized = true;
         centroidal = isfield(config,'formulation') && strcmp(config.formulation,'centroidal');
         queryOnly = centroidal && (~isfield(config,'executionEnabled') || ~config.executionEnabled);
         if ~queryOnly
@@ -28,7 +30,7 @@ if strcmp(command,'init')
         collect();
     catch exception
         closeNative();
-        rethrow(exception);
+        plannerError(exception);
     end
 elseif strcmp(command,'flush')
     if initialized, collect(); end
@@ -103,7 +105,8 @@ else
                     ((queryOnly && isempty(lastPolicy)) || (~queryOnly && isempty(lastTorque)))
                 error('G1:PlannerMex','Complete current action before advancing tick');
             end
-            [varargout{1:nargout}] = g1_ocp_mex(command,nativeArguments{:});
+            if ~initialized,error('G1:PlannerMex','Initialize planner first');end
+            [varargout{1:nargout}] = backend.execute(command,nativeArguments{:});
             if strcmp(command,'install_observation')
                 token = varargout{1};
                 if isempty(currentToken) || token(1) ~= currentToken(1)
@@ -127,20 +130,19 @@ else
                 % Keep the original native error if evidence collection fails.
             end
         end
-        rethrow(exception);
+        plannerError(exception);
     end
 end
 
     function collect()
         if isempty(writer), return; end
-        batch = g1_ocp_mex('diagnostics');
+        batch = backend.execute('diagnostics');
         writer.append(batch);
     end
     function closeNative()
         inverseCleanup = onCleanup(@closeInverse);
-        if initialized
-            g1_ocp_mex('close'); initialized = false;
-        end
+        if ~isempty(backend),delete(backend);backend=[];end
+        initialized = false;
         if ~isempty(writer), delete(writer); writer = []; end
         currentToken = []; rawTime = []; lastPolicy = []; lastTorque = [];
         lastExecutionInput = [];
@@ -153,6 +155,12 @@ end
             g1_inverse_dynamics_mex('close'); inverseInitialized = false;
         end
     end
+end
+
+function plannerError(exception)
+if strcmp(exception.identifier,'G1:PlannerMex'),rethrow(exception);end
+wrapped=MException('G1:PlannerMex','%s',exception.message);
+throwAsCaller(addCause(wrapped,exception));
 end
 
 function validateVector(value,count)

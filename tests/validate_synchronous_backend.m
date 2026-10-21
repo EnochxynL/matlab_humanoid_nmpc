@@ -16,7 +16,7 @@ assertInitRejected(bad);
 g1.plannerMex('init',config);
 % 时间校验不推进状态；拒绝非零起点及不一致的规范/原始时间后，仍可安装 tick 0。
 initialState = golden.expected(1,:)';
-assertRejected(@()g1_ocp_mex('install_observation',initialState,[1;0.002]));
+assertRejected(@()g1.plannerMex('install_observation',initialState,[1;0.002;0.002]));
 assertRejected(@()g1.plannerMex('install_observation',initialState,[0;eps;0]));
 assertRejected(@()g1.plannerMex('install_observation',initialState,[0;0;1e-6]));
 reference = kernels.extractReference(fixture.ref(1,:)');
@@ -30,7 +30,7 @@ for tick = 0:10
     end
     identity = [tick;double(tick)*0.002;fixture.raw(tick+1,1)];
     token = g1.plannerMex('install_observation',golden.expected(tick+1,:)',identity);
-    duplicateToken = g1_ocp_mex('install_observation',golden.expected(tick+1,:)',identity(1:2));
+    duplicateToken = g1.plannerMex('install_observation',golden.expected(tick+1,:)',identity);
     assert(isequal(token,duplicateToken));
     completed = g1.plannerMex('update_mpc',token,double(requested));
     duplicate = g1.plannerMex('update_mpc',token,double(requested));
@@ -42,7 +42,7 @@ for tick = 0:10
 end
 
 % 已查询 tick 10 后不能跳过 tick 11；拒绝后仍可继续原有序列。
-assertRejected(@()g1_ocp_mex('install_observation',initialState,[12;0.024]));
+assertRejected(@()g1.plannerMex('install_observation',initialState,[12;0.024;0.024]));
 
 % 不安装匹配 tick 的参考而强制求解：同步抛错，后端进入失败状态。
 tick = 11;
@@ -80,7 +80,7 @@ completed = g1.plannerMex('update_mpc',token,1);
 policy = g1.plannerMex('query_policy',completed);
 torque = g1.plannerMex('inverse_dynamics',policy); %#ok<NASGU>
 g1.plannerMex('close'); g1.plannerMex('close');
-assert(~mislocked('g1_ocp_mex'));
+assert(~mislocked('ocs2_binding_mex'));
 result = struct('passed',true,'external_request_times',[0;0.002], ...
     'ticks',11,'duplicate_requests_idempotent',true, ...
     'failed_backend_rejected',true,'reinitialization_passed',true);

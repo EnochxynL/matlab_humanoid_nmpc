@@ -1,6 +1,6 @@
-# Native OCS2 controller and MATLAB MEX
+# Native OCS2 problems and MATLAB bindings
 
-This CMake subproject owns the controller, humanoid problem, both MEX adapters and
+This CMake subproject owns the controller, humanoid problem, MEX adapters and
 Conan recipes. Run the commands below from the repository root. Runtime robot
 assets and configuration stay in the application root.
 
@@ -11,7 +11,13 @@ Build `g1_centroidal_smoke` with `G1_BUILD_TESTS=ON` for a native construction,
 SQP solve and MRT query check. Its configuration is in `config/centroidal/`;
 it does not use the whole-body controller API or inverse-dynamics MEX.
 
-`G1Controller` now provides the common native runtime for both formulations.
+The MATLAB/Simulink runtime now uses `ocs2_binding_mex` through
+`ocs2.Problem` and `g1.PlannerBackend`. MATLAB owns the tick/stage protocol,
+reference validation, first-reset targets, policy caching and consumption checks.
+Native bindings own problem, SQP/MRT and optional native diagnostic objects.
+See [binding migration](../docs/ocs2_matlab_binding.md).
+
+`G1Controller` remains available for standalone C++ replay and comparison.
 Select `ControllerConfig::formulation` (`WholeBody` by default, or `Centroidal`
 when enabled), and obtain state/input sizes from `dimensions()`. Reference nodes,
 observations and policies use vectors sized for the selected OCP. The existing
@@ -43,17 +49,16 @@ The `g1_planner/MPCSchedule` MATLAB Function block owns update deadlines.
 `update_mpc(token, request)` solves synchronously only when requested; otherwise
 it prepares the observation for querying the cached policy. The first update
 must request a solve. Duplicate updates must retain the same request and do not
-solve twice. C++ checks stage and policy identities, not external scheduling
+solve twice. MATLAB checks stage and policy identities, not external scheduling
 eligibility. A failed solve requires closing and initializing a fresh backend.
 
-External reference packets are the sole reference path. `G1Controller`
-always installs the external reference manager; no migration flag or
-`TASK5A_AUTHORITY`/`TASK5A_PACKET_FILE` environment selector is required.
-It checks each packet against the actual solver observation time and the
-current single-session protocol. Optional diagnostics are created and called
-inside the controller, without separate callback attachment.
+External reference packets are decoded by `g1.PlannerBackend`, which checks each
+packet against the actual solver observation and single-session protocol.
+It submits native target trajectories and a padded contact schedule directly.
+The solver registers the original switched-model reference manager, without
+`PacketManager` or `ExternalReferenceManager` in the MATLAB execution path.
 
-`G1Controller::initialize(config)` assembles and owns the native OCP, MPC, reference and
+For standalone C++ compatibility, `G1Controller::initialize(config)` still assembles the native OCP, MPC, reference and
 diagnostic objects, along with MRT access, synchronous solve/policy installation,
 policy evaluation. The independent `InverseDynamics` model in `g1_dynamics.dll` owns its own
 Pinocchio model and computes torque without MPC or MRT. `G1Controller` manages the external
@@ -73,13 +78,13 @@ are separate from this switch. `run_walking` keeps diagnostics enabled because
 its acceptance checks consume the logs.
 
 `matlab/+g1/plannerMex.m` converts ticks to canonical time and validates raw time.
-The native observation API receives `[tick, canonical time]`; `G1Controller`
-checks the initial tick and tick continuity. References match observations by tick.
+`g1.PlannerBackend` checks the initial tick and tick continuity; the binding receives
+explicit time/state/input/mode arguments. References match observations by tick.
 MATLAB also writes the `time_identity` diagnostic table.
 `controller/diagnostics/Diagnostics.h` owns native diagnostic objects and typed
 in-memory batches, including extra structural evaluations. It creates no files.
-`g1_ocp_mex('diagnostics')` drains these batches; direct native callers use
-`G1Controller::drainDiagnostics()`. Consumers must drain regularly: exceeding
+`ocs2.Problem.drainDiagnostics()` drains these batches; standalone C++ callers can
+still use `G1Controller::drainDiagnostics()`. Consumers must drain regularly: exceeding
 250,000 buffered rows raises an explicit error instead of dropping data.
 
 `matlab/+g1/plannerMex.m` initializes and closes both MEX instances. Its
