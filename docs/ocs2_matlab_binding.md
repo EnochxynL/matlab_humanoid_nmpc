@@ -7,6 +7,12 @@
 
 # OCS2 MATLAB 直接绑定原型
 
+诊断边界采用最小交换：原生策略、求解统计和配置在 C++ 内采集，统一随
+`diagnostics_drain` 返回；MATLAB 只组织自己管理的应用协议诊断并写文件。
+曾为日志迁移增加的 `mrt_getPolicy`、`mrt_getCommand`、名义插值、迭代数、
+性能指标和配置六个读取入口已撤回，整条策略和逐项属性不再跨语言往返组表。
+运行绑定仍直接映射 OCS2；诊断 tick 元数据仅在请求求解前发送。
+
 当前 MATLAB/Simulink 执行链已切换到此绑定；旧 MEX 已删除，回放改用冻结基线。
 目的是验证：MATLAB 能否直接编排问题接口、SQP 和 MRT，并减少中间容器。
 `ocs2_binding_mex` 直接链接 humanoid 问题库和 OCS2，不调用 `G1Controller`、

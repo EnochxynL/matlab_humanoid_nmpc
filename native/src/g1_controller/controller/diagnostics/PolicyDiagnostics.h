@@ -2,17 +2,17 @@
 #include <humanoid_common_mpc/common/Types.h>
 #include <ocs2_core/misc/LinearInterpolation.h>
 #include <ocs2_sqp/SqpMpc.h>
-#include "controller/diagnostics/PolicyObserver.h"
+#include <ocs2_mpc/CommandData.h>
+#include <ocs2_mpc/SystemObservation.h>
 #include <chrono>
+#include "FootDiagnostics.h"
 
-
-
-
+namespace g1_controller::diagnostics {
+// 求解计时、策略轨迹与查询采样；足端计算使用独立工作区。
 inline double wallTime(){return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();}
-#include "controller/diagnostics/FootDiagnostics.h"
-class TimingDiagnostics final:public ocs2::SolverSynchronizedModule,public ocs2::DummyObserver {
+class PolicyDiagnostics final:public ocs2::SolverSynchronizedModule {
  public:
- explicit TimingDiagnostics(g1_controller::diagnostics::DiagnosticBuffer& buffer):feet_(buffer),buffer_(buffer){
+ explicit PolicyDiagnostics(g1_controller::diagnostics::DiagnosticBuffer& buffer):feet_(buffer),buffer_(buffer){
   buffer_.define("solver_timing","solver_target_control_time_s,wall_solver_start_s,wall_solver_end_s,solver_module_wall_duration_s,policy_start_time_s,policy_end_time_s");
   buffer_.define("policy_queries","observation_time_s,policy_query_time_s,policy_reference_time_s,policy_start_time_s,policy_end_time_s,policy_age_control_s,policy_observation_age_control_s,wall_query_time_s");
   buffer_.define("policy_vectors","observation_time_s,policy_query_time_s,kind,index,value");
@@ -32,7 +32,7 @@ class TimingDiagnostics final:public ocs2::SolverSynchronizedModule,public ocs2:
   }
 
  }
- void update(const ocs2::SystemObservation&o,const ocs2::PrimalSolution&p,const ocs2::CommandData&c)override{
+ void evaluatePolicy(const ocs2::SystemObservation&o,const ocs2::PrimalSolution&p,const ocs2::CommandData&c){
   const double t=o.time+.005,ref=c.mpcInitObservation_.time;
   if(t<p.timeTrajectory_.front()-1e-12||t>p.timeTrajectory_.back()+1e-12)throw std::runtime_error("Query outside policy horizon");
   buffer_.row("policy_queries",{o.time,t,ref,p.timeTrajectory_.front(),p.timeTrajectory_.back(),t-ref,o.time-ref,wallTime()});
@@ -44,3 +44,5 @@ class TimingDiagnostics final:public ocs2::SolverSynchronizedModule,public ocs2:
  private:FootDiagnostics feet_;g1_controller::diagnostics::DiagnosticBuffer& buffer_;double target_=0,start_=0;
 
 };
+
+} // namespace g1_controller::diagnostics

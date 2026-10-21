@@ -244,13 +244,16 @@ void mexFunction(int nlhs,mxArray* plhs[],int nrhs,const mxArray* prhs[]) {
       require(x.size()==p.nx&&u.size()==p.nu&&x.allFinite()&&u.allFinite(),"Invalid policy output");
       plhs[0]=output(x,p.policyOutputs);plhs[1]=output(u,p.policyOutputs);plhs[2]=mxCreateDoubleScalar(double(mode));
       if(p.diagnostics)p.diagnostics->policy(p.diagnosticObservation,mrt.getPolicy(),mrt.getCommand());
-    // 诊断辅助和 diagnostics 对象（不改变求解调度）
+    // 原生诊断边界：C++ 内采集策略、求解统计和配置，统一由 drain 返回批次。
+    // 不为组装日志导出整条策略、CommandData 或单项统计 getter。
+    // MATLAB 管理应用协议诊断、文件输出和后续分析。
     } else if(command=="enableDiagnostics") {
       require(nrhs==2&&nlhs==0&&!p.diagnostics,"enableDiagnostics(handle)");solver(p);p.enableDiagnostics(p);
     } else if(command=="diagnostics_drain") {
       require(nrhs==2&&nlhs==1,"diagnostics_drain(handle)");
       plhs[0]=encodeDiagnostics(p.diagnostics?p.diagnostics->drain():g1_controller::DiagnosticBatch{});
     } else if(command=="diagnostics_observation") {
+      // 仅同步即将求解的控制 tick，供 structural_solver 标记本次求解。
       require(nrhs==3&&nlhs==0,"diagnostics_observation(handle,tick)");
       const double tick=scalar(prhs[2]);require(tick>=0&&tick<=9007199254740992.&&tick==std::floor(tick),"Invalid diagnostic tick");
       if(p.diagnostics)p.diagnostics->observation(static_cast<uint64_t>(tick));

@@ -127,7 +127,7 @@ classdef PlannerBackend < handle
             t=obj.token(2);nu=obj.dimensions(2);
             obj.problem.mrt_setCurrentObservation(t,obj.state,zeros(nu,1),obj.observationMode);
             if obj.diagnosticsEnabled
-                obj.problem.diagnostics_observation(obj.token(1));obj.trace('observation_arrived',t);
+                obj.trace('observation_arrived',t);
             end
             if request
                 try
@@ -143,6 +143,8 @@ classdef PlannerBackend < handle
                     obj.problem.reference_setTargetTrajectories(r.times,r.states,r.inputs);
                     obj.problem.reference_getGaitSchedule_updateModeSchedule([r.events;r.terminal],[r.modes;3]);
                     if obj.diagnosticsEnabled
+                        % tick 仅供原生求解统计使用，无需每个控制 tick 跨 MEX 传递。
+                        obj.problem.diagnostics_observation(obj.token(1));
                         obj.record('reference',num2cell([t;r.filtered]'));
                         obj.trace('solver_started',t);
                     end

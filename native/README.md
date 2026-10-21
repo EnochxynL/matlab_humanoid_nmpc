@@ -69,6 +69,10 @@ explicit time/state/input/mode arguments. References match observations by tick.
 MATLAB also writes the `time_identity` diagnostic table.
 `controller/diagnostics/Diagnostics.h` owns native diagnostic objects and typed
 in-memory batches, including extra structural evaluations. It creates no files.
+Native policy, solver and configuration diagnostics stay beside their C++ objects.
+They share the batch drain; MATLAB does not fetch full trajectories or individual
+solver properties just to assemble logs. Diagnostic tick metadata is sent only
+before requested solves. Application protocol diagnostics remain in MATLAB.
 `ocs2.Problem.diagnostics_drain()` drains these batches. Consumers must drain regularly: exceeding
 250,000 buffered rows raises an explicit error instead of dropping data.
 

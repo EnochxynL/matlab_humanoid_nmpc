@@ -1,11 +1,16 @@
 #pragma once
 #include "DiagnosticBuffer.h"
 #include <limits>
+#include <algorithm>
+#include <array>
+#include <memory>
 #include <ocs2_pinocchio_interface/PinocchioInterface.h>
 #include <humanoid_common_mpc/common/MpcRobotModelBase.h>
 #include <humanoid_common_mpc/reference_manager/SwitchedModelReferenceManager.h>
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/algorithm/frames.hpp>
+namespace g1_controller::diagnostics {
+
 class FootDiagnostics {
  std::unique_ptr<ocs2::PinocchioInterface> pin_;
  std::unique_ptr<ocs2::humanoid::MpcRobotModelBase<double>> model_;
@@ -34,3 +39,5 @@ class FootDiagnostics {
 
  }
 };
+
+} // namespace g1_controller::diagnostics

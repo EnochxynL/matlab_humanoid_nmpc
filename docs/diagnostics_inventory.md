@@ -2,6 +2,19 @@
 
 # 诊断表清点与 MATLAB 迁移边界
 
+原生诊断由 `Diagnostics` 显式组织：`PolicyDiagnostics` 负责求解计时、策略轨迹和查询采样，
+并持有自己的 `FootDiagnostics` 工作区；`OcpDiagnostics<Problem>` 负责 OCP 克隆求值和全身模型诊断。
+两者分别注册 OCS2 求解前后回调，策略查询时由总入口依次调用，彼此不再触发调用。
+`PolicyDiagnosticEvaluator` 仅用于统一持有不同 Problem 的 OCP 诊断实例，不是观察者订阅机制。
+配置描述位于 `ProblemConfiguration.h` 的 `describeProblemConfiguration()`，进程模块查询仍是独立函数。
+文件名与主要类型名一致；CSV 名称和 218 维快照格式保持不变。
+
+当前按职责分层：应用时序、参考消费和阶段事件由 MATLAB 采集；策略节点、名义插值、
+求解统计、OCP/足端求值和加载配置由 C++ 采集。原生数据统一通过已有的
+`diagnostics_drain` 批次返回，MATLAB 写文件和分析，不为日志新增逐项 getter。
+`diagnostics_observation` 仅在求解前同步 tick，不在每个控制 tick 调用。
+下文“可以迁移”的建议表示技术可行性，不代表当前实施计划。
+
 本清单针对当前 `ocs2_binding_mex` 执行链；旧 `G1Controller` 已删除，其冻结输出作为回归基线。
 首次版本仅清点；当前清单同时记录已完成的直接生成表迁移。
 所有应用 CSV、JSON、TXT、BIN 文件已经由 MATLAB 写出；
@@ -32,17 +45,17 @@
 | `reference` | `PlannerBackend.update` / S | 当前已过滤的 `vx,vy,height,yaw_rate` 和求解时间 | **已在 MATLAB**，不再经过写行专用绑定 |
 | `timing_trace` | `PlannerBackend` 主流程与首次查询 / Q、S | `event,control_time_s,wall_monotonic_time_s` | **已在 MATLAB**；统一会话相对时钟，见计时说明 |
 | `gait_queries` | `PlannerBackend.query` / Q | observation/query time、观测模式、MRT 返回的策略模式 | **已在 MATLAB**；重复查询不重复写行 |
-| `policy_queries` | `TimingDiagnostics.update` / Q | observation/query time、策略所属求解观测时间、策略区间、两类年龄、wall time | **补少量只读数据后迁移**：策略区间与 `getCommand().mpcInitObservation_.time`；其余是 MATLAB 算术 |
-| `policy_vectors` | `TimingDiagnostics.update` / Q，按标量展开 | 实测状态、名义轨迹插值状态、名义轨迹插值输入 | **补轨迹/名义插值数据后迁移**；不能直接用反馈策略输入代替 |
-| `policy_knots` | `TimingDiagnostics.postSolverRun` / S，遍历全部节点 | 完整名义状态/输入轨迹，带求解时间、节点时间、kind、零基索引和值 | **补完整策略读取后迁移**；建议矩阵传输，MATLAB 展开为表 |
+| `policy_queries` | `PolicyDiagnostics.evaluatePolicy` / Q | observation/query time、策略所属求解观测时间、策略区间、两类年龄、wall time | **补少量只读数据后迁移**：策略区间与 `getCommand().mpcInitObservation_.time`；其余是 MATLAB 算术 |
+| `policy_vectors` | `PolicyDiagnostics.evaluatePolicy` / Q，按标量展开 | 实测状态、名义轨迹插值状态、名义轨迹插值输入 | **补轨迹/名义插值数据后迁移**；不能直接用反馈策略输入代替 |
+| `policy_knots` | `PolicyDiagnostics.postSolverRun` / S，遍历全部节点 | 完整名义状态/输入轨迹，带求解时间、节点时间、kind、零基索引和值 | **补完整策略读取后迁移**；建议矩阵传输，MATLAB 展开为表 |
 | `gait_schedule` | 同上 / S | 当前求解策略的事件时间和模式，按 kind/index/value 展开 | **补策略 mode schedule 后迁移**；不要用参考管理器的计划表冒充已发布策略表 |
 | `logging_load` | MATLAB 在初始化时定义 | 列为 observation time/repeat/knot count/first state norm；没有写行调用 | **MATLAB 保留空表头兼容**，本次不删 |
-| `solver_timing` | `TimingDiagnostics` 求解前/后同步模块 / S | 采样起止 wall time、区间长度、策略起止时间 | **必须先确定计时语义**；保留旧边界需极小的原生时间探针，改成 MATLAB 外层计时则应另命名 |
-| `structural_solver` | `StructuralObserver.postSolverRun` / S | tick、累计/本次迭代、目标值、动力学/等式/不等式 SSE、不可用的计时字段和状态占位 | **补求解器 getter 后迁移**；差分、tick、NaN 和状态文字放 MATLAB |
-| `structural_dynamics` | `StructuralObserver` 的 OCP 克隆 / S 的一个内部节点 | `linearApproximation` 的 f，每个分量一行；A/B 只有尺寸，**没有矩阵元素** | **保留原生计算 API，MATLAB 选择采样并组表** |
+| `solver_timing` | `PolicyDiagnostics` 求解前/后同步模块 / S | 采样起止 wall time、区间长度、策略起止时间 | **必须先确定计时语义**；保留旧边界需极小的原生时间探针，改成 MATLAB 外层计时则应另命名 |
+| `structural_solver` | `OcpDiagnostics.postSolverRun` / S | tick、累计/本次迭代、目标值、动力学/等式/不等式 SSE、不可用的计时字段和状态占位 | **补求解器 getter 后迁移**；差分、tick、NaN 和状态文字放 MATLAB |
+| `structural_dynamics` | `OcpDiagnostics` 的 OCP 克隆 / S 的一个内部节点 | `linearApproximation` 的 f，每个分量一行；A/B 只有尺寸，**没有矩阵元素** | **保留原生计算 API，MATLAB 选择采样并组表** |
 | `structural_costs` | 同一 OCP 克隆 / S | running、input soft、state soft 各项，三者合计，以及单列的 terminal 各项 | **保留原生项求值 API，MATLAB 组表/合计**；终端项不加到 running total |
 | `structural_constraints` | 同一 OCP 克隆 / S | 当前只覆盖 state-input hard equality 和 input soft 包裹约束的原始残差；不活动项写 sentinel | **保留原生残差/活动性 API，MATLAB 展开和补 sentinel**；不是全部约束家族的清单 |
-| `structural_id` | `StructuralObserver.update` / 全身 Q | 23 关节的 q/qd/qdd、用名义轨迹计算的 tau、两侧各 6 项 wrench 分散在前 6 行 | **模型 getter + 原生逆动力学/加速度计算 API，MATLAB 组表**；不能直接复用实际动作的力矩 |
+| `structural_id` | `OcpDiagnostics.evaluatePolicy` / 全身 Q | 23 关节的 q/qd/qdd、用名义轨迹计算的 tau、两侧各 6 项 wrench 分散在前 6 行 | **模型 getter + 原生逆动力学/加速度计算 API，MATLAB 组表**；不能直接复用实际动作的力矩 |
 | `foot_kinematics` | `FootDiagnostics.write` / S 所有节点 + Q 两种采样 | 两脚位姿、线速度、mode/support、摆腿高度约束、四角最低高度 | **保留 Pinocchio/模型/摆腿规划器数值 API，MATLAB 编排和组表**；详见下文 |
 
 ## 不能混用的数据语义
@@ -95,8 +108,8 @@
 
 `SolverBase` 先更新 reference manager，再调用同步模块的 `preSolverRun`。
 当前 `solver_timing.start` 因而不包含前面的参考管理器更新。
-`TimingDiagnostics.postSolverRun` 先计算所有节点的脚部数据，再展开 gait schedule，然后才取 end：
-**该时长包含这些诊断开销**；后面的 policy_knots 标量组表和之后的 StructuralObserver 求值则不在这个区间内。
+`PolicyDiagnostics.postSolverRun` 先计算所有节点的脚部数据，再展开 gait schedule，然后才取 end：
+**该时长包含这些诊断开销**；后面的 policy_knots 标量组表和之后的 OcpDiagnostics 求值则不在这个区间内。
 它不是纯 SQP 数值时间，也不是整个 `advanceMpc` 的墙钟时间。
 
 MATLAB 包围 `mrt_advanceMpc` 的计时包含更大的调用范围，包括其余原生诊断、MRT 策略缓冲和边界开销。
@@ -107,7 +120,7 @@ MATLAB 包围 `mrt_advanceMpc` 的计时包含更大的调用范围，包括其�
 `PlannerBackend` 诊断初始化开始的 `toc` 秒数。`diagnostic_clock.json` 声明时间原点、单位和范围。
 它不能与尚在原生生成的 `policy_queries`、`solver_timing` 的 `steady_clock` 时间戳直接相减。
 `policy_consumed` 现在在原生查询（包括其原生诊断计算）完整返回后记录，
-比旧实现中在 TimingDiagnostics 内、结构诊断之前记录的位置稍晚；事件控制时间和顺序保留。
+比旧实现中在 PolicyDiagnostics 内、结构诊断之前记录的位置稍晚；事件控制时间和顺序保留。
 旧独立 C++ 执行器继续使用原时钟与原有表生成逻辑。
 
 ## 表外产物
@@ -150,8 +163,8 @@ MATLAB 包围 `mrt_advanceMpc` 的计时包含更大的调用范围，包括其�
 
 ## 核对来源
 
-- `TimingDiagnostics.h`：9 个 schema、求解/查询采样位置、名义轨迹插值和计时范围。
-- `StructuralDiagnostics.h`：5 个 schema、OCP 克隆求值、全身逆动力学和 218 项快照。
+- `PolicyDiagnostics.h`：9 个 schema、求解/查询采样位置、名义轨迹插值和计时范围。
+- `OcpDiagnostics.h`：5 个 schema、OCP 克隆求值、全身逆动力学和 218 项快照。
 - `FootDiagnostics.h`：脚部 schema、Pinocchio 计算与四点足底几何。
 - `Diagnostics.h`：可选对象装配与 adapter schema。
 - `PlannerBackend.m`：当前绑定路径的参考消费记录。

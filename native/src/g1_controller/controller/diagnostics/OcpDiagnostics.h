@@ -1,36 +1,23 @@
-#include "extensions/TermRegistry.h"
 #pragma once
+#include "extensions/TermRegistry.h"
 // Read-only clone evaluation: never writes an active solver OCP or reference.
 
-#include "controller/diagnostics/TimingDiagnostics.h"
+#include "DiagnosticBuffer.h"
+#include "PolicyDiagnosticEvaluator.h"
+#include <ocs2_sqp/SqpMpc.h>
+#include <ocs2_core/misc/LinearInterpolation.h>
 #include <limits>
 #include <type_traits>
 #include <humanoid_wb_mpc/WBMpcInterface.h>
 #include <humanoid_wb_mpc/dynamics/DynamicsHelperFunctions.h>
 #include "extensions/StateInputSoftConstraint.h"
 #include "extensions/StateSoftConstraint.h"
-#include <boost/property_tree/info_parser.hpp>
-#include <boost/property_tree/json_parser.hpp>
 namespace g1_controller::diagnostics {
 using namespace ocs2;using namespace ocs2::humanoid;
+// 独立 OCP 克隆求值与全身模型诊断，不触发其他诊断对象。
 template<class Problem>
-inline std::string configurationJson(Problem& i,const std::string&task){
- boost::property_tree::ptree raw,out;boost::property_tree::read_info(task,raw);out.add_child("source_config",raw);
- auto&s=i.sqpSettings();auto&m=i.mpcSettings();out.put("state_dim",i.getMpcRobotModel().getStateDim());out.put("input_dim",i.getMpcRobotModel().getInputDim());
- out.put("loaded.horizon",m.timeHorizon_);out.put("loaded.mpc_hz",m.mpcDesiredFrequency_);out.put("loaded.mrt_hz",m.mrtDesiredFrequency_);out.put("loaded.cold_start",m.coldStart_);
- #define FIELD(name) out.put("loaded.sqp." #name,s.name)
- FIELD(sqpIteration);FIELD(deltaTol);FIELD(costTol);FIELD(alpha_decay);FIELD(alpha_min);FIELD(gamma_c);FIELD(g_max);FIELD(g_min);FIELD(armijoFactor);FIELD(dt);FIELD(useFeedbackPolicy);FIELD(createValueFunction);FIELD(inequalityConstraintMu);FIELD(inequalityConstraintDelta);FIELD(projectStateInputEqualityConstraints);FIELD(extractProjectionMultiplier);FIELD(nThreads);FIELD(threadPriority);
- #undef FIELD
- out.put("loaded.sqp.integrator",sensitivity_integrator::toString(s.integratorType));
- boost::property_tree::ptree names;for(auto&n:i.modelSettings().mpcModelJointNames){boost::property_tree::ptree item;item.put("",n);names.push_back({"",item});}out.add_child("joint_names_mpc_order",names);
- auto&ocp=i.getOptimalControlProblem();
- auto inventory=[&](const char*name,auto&collection){boost::property_tree::ptree rows;for(auto&[n,index]: ::humanoid::ocp_extensions::termNames(*collection)){boost::property_tree::ptree row;row.put("name",n);row.put("index",index);rows.push_back({"",row});}out.add_child(name,rows);};
- inventory("running_cost",ocp.costPtr);inventory("terminal_cost",ocp.finalCostPtr);inventory("state_soft",ocp.stateSoftConstraintPtr);inventory("input_soft",ocp.softConstraintPtr);inventory("hard_equality",ocp.equalityConstraintPtr);
- std::ostringstream text;boost::property_tree::write_json(text,out);return text.str();
-}
-template<class Problem>
-class StructuralObserver final:public SolverSynchronizedModule,public DummyObserver {
- Problem&interface_;SqpMpc&mpc_;std::shared_ptr<TimingDiagnostics>log_;
+class OcpDiagnostics final:public SolverSynchronizedModule,public PolicyDiagnosticEvaluator {
+ Problem&interface_;SqpMpc&mpc_;
  OptimalControlProblem clone_;PinocchioInterface pin_;std::unique_ptr<MpcRobotModelBase<double>>model_;
  DiagnosticBuffer& buffer_;vector_t lastDerivative_;double lastSampleTime_=0;std::array<double,8>lastSolver_{};
  double target_=0;size_t previousIterations_=0;
@@ -40,8 +27,8 @@ class StructuralObserver final:public SolverSynchronizedModule,public DummyObser
   buffer_.row("structural_costs",{target_,t,group,name,value});
  }
  public:
- StructuralObserver(Problem&i,SqpMpc&m,std::shared_ptr<TimingDiagnostics>log,DiagnosticBuffer&buffer,const uint64_t& observationTick)
-  :interface_(i),mpc_(m),log_(log),clone_(i.getOptimalControlProblem()),pin_(i.getPinocchioInterface()),model_(i.getMpcRobotModel().clone()),buffer_(buffer),lastDerivative_(vector_t::Zero(i.getMpcRobotModel().getStateDim())),observationTick_(observationTick){
+ OcpDiagnostics(Problem&i,SqpMpc&m,DiagnosticBuffer&buffer,const uint64_t& observationTick)
+  :interface_(i),mpc_(m),clone_(i.getOptimalControlProblem()),pin_(i.getPinocchioInterface()),model_(i.getMpcRobotModel().clone()),buffer_(buffer),lastDerivative_(vector_t::Zero(i.getMpcRobotModel().getStateDim())),observationTick_(observationTick){
   buffer_.define("structural_solver","control_tick,observation_time,iterations_this_solve,total_iterations,objective,dynamics_sse,equality_sse,inequality_sse,lq_wall_ms,qp_wall_ms,linesearch_wall_ms,controller_wall_ms,status");
   buffer_.define("structural_dynamics","solver_time,sample_time,index,derivative,A_rows,A_cols,B_rows,B_cols");
   buffer_.define("structural_costs","solver_time,sample_time,group,term,value");
@@ -74,8 +61,7 @@ class StructuralObserver final:public SolverSynchronizedModule,public DummyObser
   for(auto&[name,index]: ::humanoid::ocp_extensions::termNames(*clone_.finalCostPtr))scalarCost("terminal",name,tf,clone_.finalCostPtr->get(name).getValue(tf,xf,*clone_.targetTrajectoriesPtr,pc));
 
  }
- void update(const SystemObservation&o,const PrimalSolution&p,const CommandData&c)override{
-  log_->update(o,p,c);
+ void evaluatePolicy(const SystemObservation&o,const PrimalSolution&p)override{
   // 通用 OCP 诊断适用于两种问题；以下力矩和 218 维快照仅适用于全身模型。
   if constexpr (std::is_same_v<Problem, WBMpcInterface>) {
   auto& model = static_cast<WBAccelMpcRobotModel<double>&>(*model_);double t=o.time+.005;auto x=LinearInterpolation::interpolate(t,p.timeTrajectory_,p.stateTrajectory_);auto u=LinearInterpolation::interpolate(t,p.timeTrajectory_,p.inputTrajectory_);
