@@ -1,4 +1,6 @@
-#include "g1_controller/InverseDynamics.h"
+#include <humanoid_common_mpc/pinocchio_model/createPinocchioModel.h>
+#include <humanoid_wb_mpc/dynamics/DynamicsHelperFunctions.h>
+#include <humanoid_wb_mpc/common/WBAccelMpcRobotModel.h>
 #include "mex.h"
 #include <algorithm>
 #include <cmath>
@@ -7,7 +9,17 @@
 #include <string>
 
 namespace {
-std::unique_ptr<g1_controller::InverseDynamics> model;
+// MEX 自己持有独立模型；数学实现仍在共享 model 层。
+struct InverseDynamicsModel {
+  ocs2::humanoid::ModelSettings settings;
+  ocs2::PinocchioInterface pinocchio;
+  ocs2::humanoid::WBAccelMpcRobotModel<ocs2::scalar_t> robotModel;
+  InverseDynamicsModel(const std::string& taskFile,const std::string& urdfFile)
+      : settings(taskFile,urdfFile,"wb_mpc_",true),
+        pinocchio(ocs2::humanoid::createCustomPinocchioInterface(taskFile,urdfFile,settings)),
+        robotModel(settings) {}
+};
+std::unique_ptr<InverseDynamicsModel> model;
 void closeModel() { model.reset(); }
 std::string readString(const mxArray* value) {
   if (!mxIsChar(value)) throw std::runtime_error("Expected character vector");
@@ -18,19 +30,22 @@ std::string readString(const mxArray* value) {
   return result;
 }
 template<size_t N>
-std::array<double, N> readVector(const mxArray* value) {
+Eigen::Map<const ocs2::vector_t> readVector(const mxArray* value) {
   if (!mxIsDouble(value) || mxIsComplex(value) || mxIsSparse(value) ||
       mxGetNumberOfElements(value) != N)
     throw std::runtime_error("Invalid numeric argument dimensions");
-  std::array<double, N> result;
-  std::copy_n(mxGetPr(value), N, result.begin());
-  for (double x : result)
-    if (!std::isfinite(x)) throw std::runtime_error("Nonfinite argument");
-  return result;
+  const auto* data=mxGetPr(value);
+  for(size_t k=0;k<N;++k)
+    if(!std::isfinite(data[k])) throw std::runtime_error("Nonfinite argument");
+  return Eigen::Map<const ocs2::vector_t>(data,N);
 }
 }
 
 /** 独立模型生命周期；compute(x58,u35) 不访问另一 MEX 的任何原生对象。 */
+// Pinocchio 的显式 DLL 导出会关闭 MinGW 的隐式 export-all。
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   try {
     if (!nrhs) throw std::runtime_error("Expected inverse dynamics command");
@@ -46,7 +61,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         if (!value) throw std::runtime_error(std::string("Missing configuration field: ") + name);
         return readString(value);
       };
-      model = std::make_unique<g1_controller::InverseDynamics>(field("taskFile"), field("urdfFile"));
+      model = std::make_unique<InverseDynamicsModel>(field("taskFile"), field("urdfFile"));
       mexLock();
     } else if (command == "close") {
       if (nrhs != 1 || nlhs) throw std::runtime_error("close takes no arguments or outputs");
@@ -55,9 +70,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     } else if (command == "compute") {
       if (nrhs != 3 || nlhs != 1) throw std::runtime_error("compute requires x58, u35 and one output");
       if (!model) throw std::runtime_error("Initialize inverse dynamics MEX first");
-      const auto torque = model->compute(readVector<58>(prhs[1]), readVector<35>(prhs[2]));
+      const auto state=readVector<58>(prhs[1]);
+      const auto input=readVector<35>(prhs[2]);
+      const auto torque=ocs2::humanoid::computeJointTorques<ocs2::scalar_t>(
+          state,input,model->pinocchio,model->robotModel);
+      if(torque.size()!=23 || !torque.allFinite())
+        throw std::runtime_error("Invalid inverse dynamics output");
       plhs[0] = mxCreateDoubleMatrix(torque.size(), 1, mxREAL);
-      std::copy(torque.begin(), torque.end(), mxGetPr(plhs[0]));
+      std::copy_n(torque.data(),torque.size(),mxGetPr(plhs[0]));
     } else throw std::runtime_error("Unknown inverse dynamics command");
   } catch (const std::exception& error) {
     mexErrMsgIdAndTxt("G1:InverseDynamicsMex", "%s", error.what());

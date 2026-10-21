@@ -18,8 +18,7 @@ def verify(native: Path):
                 headers.setdefault(path.relative_to(root).as_posix(), set()).add(path)
 
     def owner(path):
-        if path in (core / "InverseDynamics.cpp",
-                    native / "include/g1_controller/InverseDynamics.h"):
+        if path == native / "src/g1_controller_mex/InverseDynamicsMex.cpp":
             return "dynamics"
         for layer in ("model", "problem", "dynamics"):
             if path.is_relative_to(core / layer):
@@ -28,7 +27,7 @@ def verify(native: Path):
 
     include = re.compile(r'^\s*#include\s*["<]([^">]+)[">]', re.MULTILINE)
     suffixes = header_suffixes | {".cpp", ".cc", ".cxx"}
-    files = {path for root in (core, native / "include") for path in root.rglob("*")
+    files = {path for root in (core, native / "include", native / "src/g1_controller_mex") for path in root.rglob("*")
              if path.is_file() and path.suffix in suffixes}
     graph = {}
     for path in files:

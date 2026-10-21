@@ -19,12 +19,9 @@
 其中力矩算法既供独立逆动力学使用，也供规划代价和原生诊断使用，
 因此属于共享模型层，不能放到 dynamics 后再让 problem 引用它。
 
-`problem` 保留两套原包的规划问题代码。独立的 `InverseDynamics` 类位于
-`native/src/g1_controller/InverseDynamics.cpp`，公共接口位于
-`native/include/g1_controller/InverseDynamics.h`，不额外包装成包目录。
-公共维度与力矩类型位于
-`native/include/g1_controller/ModelTypes.h`，逆动力学头文件不再引用
-旧控制器头文件。
+`problem` 保留两套原包的规划问题代码。独立逆动力学模型生命周期与 MEX 入口
+合并在 `native/src/g1_controller_mex/InverseDynamicsMex.cpp`，直接链接 `humanoid_model`。
+不再保留 InverseDynamics 公共类、PImpl、独立 DLL 或专用 ModelTypes 头文件。
 
 构建关系：
 
@@ -32,10 +29,10 @@
 ocs2_binding_mex -> humanoid_wb_mpc / humanoid_centroidal_mpc
                          -> humanoid_common_mpc -> humanoid_model
 
-g1_inverse_dynamics_mex -> g1_dynamics.dll -> humanoid_model
+g1_inverse_dynamics_mex -> humanoid_model
 ```
 
-`humanoid_model` 是静态库。绑定 MEX 与逆动力学 DLL 各自链接所需数学代码，各自创建
+`humanoid_model` 是静态库。两套 MEX 各自链接所需数学代码，各自创建
 ModelSettings、Pinocchio 和状态输入映射对象，不共享求解器实例。
 独立逆动力学项目目标不链接 humanoid_common_mpc、humanoid_wb_mpc 或
 ocs2_binding_mex。

@@ -23,8 +23,8 @@ See [centroidal Simulink integration](../docs/centroidal_simulink.md).
 
 - `src/g1_controller/model/`: shared robot model and numerical functions.
 - `src/g1_controller/problem/`: planning problem, costs, constraints and references.
-- `src/g1_controller/InverseDynamics.cpp`, `include/g1_controller/InverseDynamics.h`:
-  independent inverse-dynamics implementation and API, linked in a separate target.
+- `src/g1_controller_mex/InverseDynamicsMex.cpp`: independent model ownership and
+  inverse-dynamics binding, linked directly to `humanoid_model` without a facade DLL.
 - `src/g1_controller/controller/`: native diagnostic computations.
 - `src/ocs2_binding_mex/`: direct OCS2 binding.
 - `src/g1_controller_mex/`: inverse-dynamics adapter.

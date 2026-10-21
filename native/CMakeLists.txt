@@ -56,7 +56,7 @@ if(G1_BUILD_MATLAB)
     set_target_properties(ocs2_binding_mex PROPERTIES INSTALL_RPATH "$ORIGIN")
   endif()
   matlab_add_mex(NAME g1_inverse_dynamics_mex SRC src/g1_controller_mex/InverseDynamicsMex.cpp
-    LINK_TO g1_dynamics_core)
+    LINK_TO humanoid_model)
   install(TARGETS g1_inverse_dynamics_mex LIBRARY DESTINATION lib RUNTIME DESTINATION lib)
   if(UNIX AND NOT APPLE)
     target_link_options(g1_inverse_dynamics_mex PRIVATE -Wl,--disable-new-dtags)
